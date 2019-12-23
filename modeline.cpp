@@ -6,18 +6,24 @@
 
    SwitchRes   Modeline generation engine for emulation
 
-   GroovyMAME  Integration of SwitchRes into the MAME project
-               Some reworked patches from SailorSat's CabMAME
-
    License     GPL-2.0+
-   Copyright   2010-2016 - Chris Kennedy, Antonio Giner
+   Copyright   2010-2019 - Chris Kennedy, Antonio Giner
 
  **************************************************************/
 
-#include "emu.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <math.h>
+#include "switchres.h"
+#include "monitor.h"
+#include "modeline.h"
 
 #define max(a,b)({ __typeof__ (a) _a = (a);__typeof__ (b) _b = (b);_a > _b ? _a : _b; })
 #define min(a,b)({ __typeof__ (a) _a = (a);__typeof__ (b) _b = (b);_a < _b ? _a : _b; })
+
+const auto log_verbose = printf;
+const auto log_error = printf;
 
 //============================================================
 //  PROTOTYPES
@@ -31,6 +37,8 @@ int stretch_into_range(float vfreq, monitor_range *range, bool interlace_allowed
 int total_lines_for_yres(int yres, float vfreq, monitor_range *range, float interlace);
 float max_vfreq_for_yres (int yres, monitor_range *range, float interlace);
 int round_near (double number);
+int normalize(int a, int b);
+int real_res(int x);
 
 //============================================================
 //  modeline_create
@@ -474,7 +482,7 @@ char * modeline_print(modeline *mode, char *modeline, int flags)
 
 char * modeline_result(modeline *mode, char *result)
 {
-	osd_printf_verbose("   rng(%d): ", mode->range);
+	log_verbose("   rng(%d): ", mode->range);
 
 	if (mode->result.weight & R_OUT_OF_RANGE)
 		sprintf(result, " out of range");
@@ -627,7 +635,7 @@ int modeline_parse(const char *user_modeline, modeline *mode)
 
 		if (e != 9)
 		{
-			osd_printf_error("SwitchRes: missing parameter in user modeline\n  %s\n", user_modeline);
+			log_error("SwitchRes: missing parameter in user modeline\n  %s\n", user_modeline);
 			memset(mode, 0, sizeof(struct modeline));
 			return false;
 		}
@@ -637,7 +645,7 @@ int modeline_parse(const char *user_modeline, modeline *mode)
 		mode->hfreq = mode->pclock / mode->htotal;
 		mode->vfreq = mode->hfreq / mode->vtotal * (mode->interlace?2:1);
 		mode->refresh = mode->vfreq;
-		osd_printf_verbose("SwitchRes: user modeline %s\n", modeline_print(mode, modeline_txt, MS_FULL));
+		log_verbose("SwitchRes: user modeline %s\n", modeline_print(mode, modeline_txt, MS_FULL));
 	}
 	return true;
 }
@@ -681,6 +689,57 @@ int modeline_to_monitor_range(monitor_range *range, modeline *mode)
 }
 
 //============================================================
+//  monitor_fill_vesa_gtf
+//============================================================
+
+int monitor_fill_vesa_gtf(monitor_range *range, const char *max_lines)
+{
+	int lines = 0;
+	sscanf(max_lines, "vesa_%d", &lines);
+
+	if (!lines)
+		return 0;
+
+	int i = 0;
+	if (lines >= 480)
+		i += monitor_fill_vesa_range(&range[i], 384, 480);
+	if (lines >= 600)
+		i += monitor_fill_vesa_range(&range[i], 480, 600);
+	if (lines >= 768)
+		i += monitor_fill_vesa_range(&range[i], 600, 768);
+	if (lines >= 1024)
+		i += monitor_fill_vesa_range(&range[i], 768, 1024);
+
+	return i;
+}
+
+//============================================================
+//  monitor_fill_vesa_range
+//============================================================
+
+int monitor_fill_vesa_range(monitor_range *range, int lines_min, int lines_max)
+{
+	modeline mode;
+	memset(&mode, 0, sizeof(modeline));
+
+	mode.width = real_res(STANDARD_CRT_ASPECT * lines_max);
+	mode.height = lines_max;
+	mode.refresh = 60;
+	range->vfreq_min = 50;
+	range->vfreq_max = 65;
+
+	modeline_vesa_gtf(&mode);
+	modeline_to_monitor_range(range, &mode);
+
+	range->progressive_lines_min = lines_min;
+	range->hfreq_min = mode.hfreq - 500;
+	range->hfreq_max = mode.hfreq + 500;
+	monitor_show_range(range);
+
+	return 1;
+}
+
+//============================================================
 //  round_near
 //============================================================
 
@@ -688,3 +747,22 @@ int round_near(double number)
 {
     return number < 0.0 ? ceil(number - 0.5) : floor(number + 0.5);
 }
+
+//============================================================
+//  normalize
+//============================================================
+
+int normalize(int a, int b)
+{
+	int c, d;
+	c = a % b;
+	d = a / b;
+	if (c) d++;
+	return d * b;
+}
+
+//============================================================
+//  real_res
+//============================================================
+
+int real_res(int x) {return (int) (x / 8) * 8;}
