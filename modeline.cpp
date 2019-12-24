@@ -12,7 +12,6 @@
  **************************************************************/
 
 #include <stdio.h>
-#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include "switchres.h"
@@ -44,7 +43,7 @@ int real_res(int x);
 //  modeline_create
 //============================================================
 
-int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, config_settings *cs)
+int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, generator_settings *cs)
 {
 	float vfreq = 0;
 	float vfreq_real = 0;

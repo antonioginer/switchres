@@ -1,7 +1,7 @@
 PLATFORM := $(shell uname)
 
 MAIN = switchres
-SRC = monitor.cpp modeline.cpp util.cpp
+SRC = monitor.cpp modeline.cpp switchres.cpp
 
 CC = g++
 

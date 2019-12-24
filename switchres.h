@@ -17,6 +17,9 @@
 #ifndef __SWITCHRES_H__
 #define __SWITCHRES_H__
 
+#include "monitor.h"
+#include "modeline.h"
+
 //============================================================
 //  CONSTANTS
 //============================================================
@@ -39,42 +42,42 @@ typedef struct game_info
 	int    screens;
 } game_info;
 
+
 typedef struct config_settings
 {
 	char   connector[32];
 	char   monitor[32];
-	bool   modeline_generation;
 	bool   monitor_orientation;
-	bool   effective_orientation;
 	bool   desktop_rotated;
 	bool   monitor_rotates_cw;
-	float  monitor_aspect;
 	int    monitor_count;
-	int    pclock_min;
-	int    pclock_align;
-	int    interlace;
-	int    doublescan;
-	int    width;
-	int    height;
-	int    refresh;
-	int    super_width;
 	bool   lock_unsupported_modes;
 	bool   lock_system_modes;
 	bool   refresh_dont_care;
-	float  sync_refresh_tolerance;
 } config_settings;
 
-#include "monitor.h"
-#include "modeline.h"
 
-typedef struct switchres_manager
+class switchres_manager
 {
-	struct config_settings cs;
-	struct game_info game;
-	struct modeline best_mode;
-	struct modeline user_mode;
-	struct monitor_range range[MAX_RANGES];
-	struct modeline video_modes[MAX_MODELINES];
-} switchres;
+public:
+
+	switchres_manager();
+	~switchres_manager();
+
+	config_settings cs;
+	generator_settings gs;
+	game_info game;
+	modeline best_mode;
+	modeline user_mode;
+	monitor_range range[MAX_RANGES];
+	modeline video_modes[MAX_MODELINES];
+
+	void init();
+	int get_monitor_specs();
+	bool get_video_mode();
+
+
+private:
+};
 
 #endif

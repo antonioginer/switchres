@@ -17,7 +17,9 @@
 #ifndef __MODELINE_H__
 #define __MODELINE_H__
 
+#include <stdint.h>
 #include "monitor.h"
+
 
 //============================================================
 //  CONSTANTS
@@ -103,11 +105,27 @@ typedef struct modeline
 	mode_result result;
 } modeline;
 
+typedef struct generator_settings
+{
+	int    width;
+	int    height;
+	int    refresh;
+	int    interlace;
+	int    doublescan;
+	int    pclock_min;
+	int    pclock_align;
+	float  monitor_aspect;
+	bool   effective_orientation;
+	int    super_width;
+	float  sync_refresh_tolerance;
+	bool   modeline_generation;
+} generator_settings;
+
 //============================================================
 //  PROTOTYPES
 //============================================================
 
-int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, config_settings *cs);
+int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, generator_settings *cs);
 int modeline_compare(modeline *t_mode, modeline *best_mode);
 char * modeline_print(modeline *mode, char *modeline, int flags);
 char * modeline_result(modeline *mode, char *result);
@@ -116,3 +134,4 @@ int modeline_parse(const char *user_modeline, modeline *mode);
 int modeline_to_monitor_range(monitor_range *range, modeline *mode);
 
 #endif
+
