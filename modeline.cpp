@@ -13,7 +13,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include "switchres.h"
 #include "monitor.h"
 #include "modeline.h"
@@ -737,31 +736,3 @@ int monitor_fill_vesa_range(monitor_range *range, int lines_min, int lines_max)
 
 	return 1;
 }
-
-//============================================================
-//  round_near
-//============================================================
-
-int round_near(double number)
-{
-    return number < 0.0 ? ceil(number - 0.5) : floor(number + 0.5);
-}
-
-//============================================================
-//  normalize
-//============================================================
-
-int normalize(int a, int b)
-{
-	int c, d;
-	c = a % b;
-	d = a / b;
-	if (c) d++;
-	return d * b;
-}
-
-//============================================================
-//  real_res
-//============================================================
-
-int real_res(int x) {return (int) (x / 8) * 8;}

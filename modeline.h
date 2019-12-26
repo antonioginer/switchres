@@ -18,6 +18,7 @@
 #define __MODELINE_H__
 
 #include <stdint.h>
+#include <math.h>
 #include "monitor.h"
 
 
@@ -133,5 +134,33 @@ int modeline_vesa_gtf(modeline *m);
 int modeline_parse(const char *user_modeline, modeline *mode);
 int modeline_to_monitor_range(monitor_range *range, modeline *mode);
 
-#endif
+//============================================================
+//  round_near
+//============================================================
 
+int round_near(double number)
+{
+    return number < 0.0 ? ceil(number - 0.5) : floor(number + 0.5);
+}
+
+//============================================================
+//  normalize
+//============================================================
+
+int normalize(int a, int b)
+{
+	int c, d;
+	c = a % b;
+	d = a / b;
+	if (c) d++;
+	return d * b;
+}
+
+//============================================================
+//  real_res
+//============================================================
+
+int real_res(int x) {return (int) (x / 8) * 8;}
+
+
+#endif

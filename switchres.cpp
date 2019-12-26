@@ -23,6 +23,26 @@ const auto log_verbose = printf;
 const auto log_error = printf;
 const auto log_info = printf;
 
+bool effective_orientation() { return false; }
+
+
+switchres_manager::switchres_manager()
+{
+	// Get default config options
+	sprintf(cs.monitor, "generic_15");
+	sprintf(cs.orientation, "horizontal");
+
+	gs.modeline_generation = true;
+	gs.doublescan = true;
+	gs.interlace = true;
+	gs.super_width = 2560;
+	gs.sync_refresh_tolerance = 2.0f;
+	gs.pclock_min = 0.0;
+
+	cs.lock_system_modes = true;
+	cs.lock_unsupported_modes = true;
+	cs.refresh_dont_care = false;
+}
 
 //============================================================
 //  switchres_manager::init
@@ -30,21 +50,17 @@ const auto log_info = printf;
 
 void switchres_manager::init()
 {
-	emu_options &options = machine.options();
-
 	log_verbose("SwitchRes: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
-		SWITCHRES_VERSION, options.monitor(), options.orientation(), options.modeline_generation()?"enabled":"disabled");
+		SWITCHRES_VERSION, cs.monitor, cs.orientation, gs.modeline_generation?"enabled":"disabled");
 
 	// Get user defined modeline
-	if (options.modeline_generation())
+	if (gs.modeline_generation)
 	{
-		modeline_parse(options.modeline(), &user_mode);
+		modeline_parse(cs.modeline, &user_mode);
 		user_mode.type |= MODE_USER_DEF;
 	}
 
 	// Get monitor specs
-	sprintf(cs.monitor, "%s", options.monitor());
-	sprintf(cs.connector, "%s", options.connector());
 	for (int i = 0; cs.monitor[i]; i++) cs.monitor[i] = tolower(cs.monitor[i]);
 	if (user_mode.hactive)
 	{
@@ -54,18 +70,12 @@ void switchres_manager::init()
 	else
 		get_monitor_specs();
 
-	// Get rest of config options
-	gs.modeline_generation = options.modeline_generation();
-	gs.doublescan = options.doublescan();
-	gs.interlace = options.interlace();
-	cs.lock_system_modes = options.lock_system_modes();
-	cs.lock_unsupported_modes = options.lock_unsupported_modes();
-	cs.refresh_dont_care = options.refresh_dont_care();
-	gs.super_width = options.super_width();
+/*	
 	sscanf(options.sync_refresh_tolerance(), "%f", &gs.sync_refresh_tolerance);
 	float pclock_min;
 	sscanf(options.dotclock_min(), "%f", &pclock_min);
 	gs.pclock_min = pclock_min * 1000000;
+*/
 }
 
 
@@ -81,19 +91,19 @@ int switchres_manager::get_monitor_specs()
 
 	if (!strcmp(cs.monitor, "custom"))
 	{
-		monitor_fill_range(&range[0],machine.options().crt_range0());
-		monitor_fill_range(&range[1],machine.options().crt_range1());
-		monitor_fill_range(&range[2],machine.options().crt_range2());
-		monitor_fill_range(&range[3],machine.options().crt_range3());
-		monitor_fill_range(&range[4],machine.options().crt_range4());
-		monitor_fill_range(&range[5],machine.options().crt_range5());
-		monitor_fill_range(&range[6],machine.options().crt_range6());
-		monitor_fill_range(&range[7],machine.options().crt_range7());
-		monitor_fill_range(&range[8],machine.options().crt_range8());
-		monitor_fill_range(&range[9],machine.options().crt_range9());
+		monitor_fill_range(&range[0],cs.crt_range0);
+		monitor_fill_range(&range[1],cs.crt_range1);
+		monitor_fill_range(&range[2],cs.crt_range2);
+		monitor_fill_range(&range[3],cs.crt_range3);
+		monitor_fill_range(&range[4],cs.crt_range4);
+		monitor_fill_range(&range[5],cs.crt_range5);
+		monitor_fill_range(&range[6],cs.crt_range6);
+		monitor_fill_range(&range[7],cs.crt_range7);
+		monitor_fill_range(&range[8],cs.crt_range8);
+		monitor_fill_range(&range[9],cs.crt_range9);
 	}
 	else if (!strcmp(cs.monitor, "lcd"))
-		monitor_fill_lcd_range(&range[0],machine.options().lcd_range());
+		monitor_fill_lcd_range(&range[0],cs.lcd_range);
 
 	else if (monitor_set_preset(cs.monitor, range) == 0)
 		monitor_set_preset(default_monitor, range);
@@ -115,7 +125,7 @@ bool switchres_manager::get_video_mode()
 	char result[256]={'\x00'};
 	int i = 0, j = 0, table_size = 0;
 
-	gs.effective_orientation = effective_orientation(machine);
+	gs.effective_orientation = effective_orientation();
 
 	log_verbose("SwitchRes: v%s:[%s] Calculating best video mode for %dx%d@%.6f orientation: %s\n",
 						SWITCHRES_VERSION, game.name, game.width, game.height, game.refresh,
