@@ -26,11 +26,16 @@ const auto log_info = printf;
 bool effective_orientation() { return false; }
 
 
+//============================================================
+//  switchres_manager::switchres_manager
+//============================================================
+
 switchres_manager::switchres_manager()
 {
 	// Get default config options
 	sprintf(cs.monitor, "generic_15");
 	sprintf(cs.orientation, "horizontal");
+	sprintf(cs.modeline, "auto");
 
 	gs.modeline_generation = true;
 	gs.doublescan = true;
@@ -42,6 +47,10 @@ switchres_manager::switchres_manager()
 	cs.lock_system_modes = true;
 	cs.lock_unsupported_modes = true;
 	cs.refresh_dont_care = false;
+}
+
+switchres_manager::~switchres_manager()
+{
 }
 
 //============================================================

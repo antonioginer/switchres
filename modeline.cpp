@@ -34,9 +34,6 @@ int scale_into_aspect (int source_res, int tot_res, float original_monitor_aspec
 int stretch_into_range(float vfreq, monitor_range *range, bool interlace_allowed, float *interlace);
 int total_lines_for_yres(int yres, float vfreq, monitor_range *range, float interlace);
 float max_vfreq_for_yres (int yres, monitor_range *range, float interlace);
-int round_near (double number);
-int normalize(int a, int b);
-int real_res(int x);
 
 //============================================================
 //  modeline_create
@@ -736,3 +733,31 @@ int monitor_fill_vesa_range(monitor_range *range, int lines_min, int lines_max)
 
 	return 1;
 }
+
+//============================================================
+//  round_near
+//============================================================
+
+int round_near(double number)
+{
+    return number < 0.0 ? ceil(number - 0.5) : floor(number + 0.5);
+}
+
+//============================================================
+//  normalize
+//============================================================
+
+int normalize(int a, int b)
+{
+	int c, d;
+	c = a % b;
+	d = a / b;
+	if (c) d++;
+	return d * b;
+}
+
+//============================================================
+//  real_res
+//============================================================
+
+int real_res(int x) {return (int) (x / 8) * 8;}

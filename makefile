@@ -1,6 +1,6 @@
 PLATFORM := $(shell uname)
 
-MAIN = switchres
+MAIN = switchres_main
 SRC = monitor.cpp modeline.cpp switchres.cpp
 
 CC = g++
@@ -14,7 +14,7 @@ REMOVE = rm -f
 
 # Windows
 else ifneq (,$(findstring NT,$(PLATFORM)))
-SRC += switchres_linux.cpp 
+#SRC += switchres_windows.cpp 
 CFLAGS = -O3 -static -static-libgcc -static-libstdc++ 
 LIBS = 
 REMOVE = del /f
