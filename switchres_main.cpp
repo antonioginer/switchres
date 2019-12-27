@@ -72,6 +72,7 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 		{
 			switch (s2i(key.c_str()))
 			{
+				// Switchres options
 				case s2i("monitor"):
 					transform(value.begin(), value.end(), value.begin(), ::tolower);
 					sprintf(switchres.cs.monitor, value.c_str());
@@ -112,21 +113,33 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 				case s2i("lcd_range"):
 					sprintf(switchres.cs.lcd_range, value.c_str());
 					break;
+				case s2i("lock_unsupported_modes"):
+					switchres.cs.lock_unsupported_modes = atoi(value.c_str());
+					break;
+				case s2i("lock_system_modes"):
+					switchres.cs.lock_system_modes = atoi(value.c_str());
+					break;
+				case s2i("refresh_dont_care"):
+					switchres.cs.refresh_dont_care = atoi(value.c_str());
+					break;
 
 				// Modeline generation options
+				case s2i("modeline_generation"):
+					switchres.gs.modeline_generation = atoi(value.c_str());
+					break;
 				case s2i("interlace"):
-					sscanf(value.c_str(), "%d", &switchres.gs.interlace);
+					switchres.gs.interlace = atoi(value.c_str());
 					break;
 				case s2i("doublescan"):
-					sscanf(value.c_str(), "%d", &switchres.gs.doublescan);
-					break;
-				case s2i("sync_refresh_tolerance"):
-					sscanf(value.c_str(), "%f", &switchres.gs.sync_refresh_tolerance);
+					switchres.gs.doublescan = atoi(value.c_str());
 					break;
 				case s2i("dotclock_min"):
 					float pclock_min;
 					sscanf(value.c_str(), "%f", &pclock_min);
 					switchres.gs.pclock_min = pclock_min * 1000000;
+					break;
+				case s2i("sync_refresh_tolerance"):
+					sscanf(value.c_str(), "%f", &switchres.gs.refresh_tolerance);
 					break;
 				case s2i("super_width"):
 					sscanf(value.c_str(), "%d", &switchres.gs.super_width);
@@ -153,6 +166,7 @@ int main(int argc, char **argv)
 	switchres_manager switchres;
 
 	parse_config(switchres, "switchres.ini");
+
 	switchres.init();
 
 }

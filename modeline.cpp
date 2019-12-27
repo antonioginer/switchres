@@ -178,7 +178,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 		{
 			if (t_mode->type & Y_RES_EDITABLE) yres *= y_scale;
 			x_scale = y_scale;
-			xres = normalize(float(xres) * float(x_scale) * cs->monitor_aspect / (cs->effective_orientation? (1.0/(STANDARD_CRT_ASPECT)) : (STANDARD_CRT_ASPECT)), 8);
+			xres = normalize(float(xres) * float(x_scale) * cs->monitor_aspect / (cs->rotation? (1.0/(STANDARD_CRT_ASPECT)) : (STANDARD_CRT_ASPECT)), 8);
 		}
 
 		// otherwise, try to get the best out of our current xres
@@ -188,7 +188,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 			// if the source width fits our xres, try applying integer scaling
 			if (x_scale)
 			{
-				x_scale = scale_into_aspect(s_mode->hactive, xres, cs->effective_orientation?1.0/(STANDARD_CRT_ASPECT):STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff);
+				x_scale = scale_into_aspect(s_mode->hactive, xres, cs->rotation?1.0/(STANDARD_CRT_ASPECT):STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff);
 				if (x_diff > 15.0 && t_mode->width < cs->super_width)
 						t_mode->result.weight |= R_RES_STRETCH;
 			}
@@ -215,7 +215,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 			xres = max(xres, normalize(STANDARD_CRT_ASPECT * yres, 8));
 
 		// calculate integer scale for prescaling
-		x_scale = max(1, scale_into_aspect(s_mode->hactive, xres, cs->effective_orientation?1.0/(STANDARD_CRT_ASPECT):STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff));
+		x_scale = max(1, scale_into_aspect(s_mode->hactive, xres, cs->rotation?1.0/(STANDARD_CRT_ASPECT):STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff));
 		y_scale = max(1, floor(float(yres) / s_mode->vactive));
 
 		scan_factor = interlace;
@@ -226,7 +226,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 	y_ratio = float(yres) / s_mode->vactive;
 	v_scale = max(round_near(vfreq_real / s_mode->vfreq), 1);
 	v_diff = (vfreq_real / v_scale) -  s_mode->vfreq;
-	if (fabs(v_diff) > cs->sync_refresh_tolerance)
+	if (fabs(v_diff) > cs->refresh_tolerance)
 		t_mode->result.weight |= R_V_FREQ_OFF;
 
 	// ··· Modeline generation ···
@@ -296,7 +296,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 	t_mode->result.x_ratio = x_ratio;
 	t_mode->result.y_ratio = y_ratio;
 	t_mode->result.v_ratio = 0;
-	t_mode->result.rotated = cs->effective_orientation;
+	t_mode->result.rotated = cs->rotation;
 
 	return 0;
 }

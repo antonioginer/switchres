@@ -105,18 +105,17 @@ typedef struct modeline
 
 typedef struct generator_settings
 {
+	bool   modeline_generation;
 	int    width;
 	int    height;
 	int    refresh;
 	int    interlace;
 	int    doublescan;
 	int    pclock_min;
-	int    pclock_align;
+	bool   rotation;
 	float  monitor_aspect;
-	bool   effective_orientation;
+	float  refresh_tolerance;
 	int    super_width;
-	float  sync_refresh_tolerance;
-	bool   modeline_generation;
 } generator_settings;
 
 //============================================================

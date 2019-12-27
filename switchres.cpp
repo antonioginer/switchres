@@ -31,21 +31,40 @@ bool effective_orientation() { return false; }
 
 switchres_manager::switchres_manager()
 {
-	// Get default config options
+	// Set Switchres default config options
 	sprintf(cs.monitor, "generic_15");
 	sprintf(cs.orientation, "horizontal");
 	sprintf(cs.modeline, "auto");
-
-	gs.modeline_generation = true;
-	gs.doublescan = true;
-	gs.interlace = true;
-	gs.super_width = 2560;
-	gs.sync_refresh_tolerance = 2.0f;
-	gs.pclock_min = 0.0;
-
-	cs.lock_system_modes = true;
+	sprintf(cs.crt_range0, "auto");
+	sprintf(cs.crt_range1, "auto");
+	sprintf(cs.crt_range2, "auto");
+	sprintf(cs.crt_range3, "auto");
+	sprintf(cs.crt_range4, "auto");
+	sprintf(cs.crt_range5, "auto");
+	sprintf(cs.crt_range6, "auto");
+	sprintf(cs.crt_range7, "auto");
+	sprintf(cs.crt_range8, "auto");
+	sprintf(cs.crt_range9, "auto");
+	sprintf(cs.lcd_range, "auto");
+	cs.desktop_rotated = false;
+	cs.monitor_rotates_cw = false;
+	cs.monitor_count = 1;
 	cs.lock_unsupported_modes = true;
+	cs.lock_system_modes = true;
 	cs.refresh_dont_care = false;
+
+	// Set modeline generator default options
+	gs.modeline_generation = true;
+	gs.width = 0;
+	gs.height = 0;
+	gs.refresh = 0;
+	gs.interlace = true;
+	gs.doublescan = true;
+	gs.pclock_min = 0.0;
+	gs.rotation = false;
+	gs.monitor_aspect = STANDARD_CRT_ASPECT;
+	gs.refresh_tolerance = 2.0f;
+	gs.super_width = 2560;
 }
 
 switchres_manager::~switchres_manager()
@@ -125,11 +144,11 @@ bool switchres_manager::get_video_mode()
 	char result[256]={'\x00'};
 	int i = 0, j = 0, table_size = 0;
 
-	gs.effective_orientation = effective_orientation();
+	gs.rotation = effective_orientation();
 
 	log_verbose("SwitchRes: v%s:[%s] Calculating best video mode for %dx%d@%.6f orientation: %s\n",
 						SWITCHRES_VERSION, game.name, game.width, game.height, game.refresh,
-						gs.effective_orientation?"rotated":"normal");
+						gs.rotation?"rotated":"normal");
 
 	memset(&best_mode, 0, sizeof(struct modeline));
 	best_mode.result.weight |= R_OUT_OF_RANGE;
