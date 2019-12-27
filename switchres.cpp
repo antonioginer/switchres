@@ -13,7 +13,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include "switchres.h"
 
 #define CUSTOM_VIDEO_TIMING_SYSTEM      0x00000010
@@ -70,7 +69,6 @@ void switchres_manager::init()
 	}
 
 	// Get monitor specs
-	for (int i = 0; cs.monitor[i]; i++) cs.monitor[i] = tolower(cs.monitor[i]);
 	if (user_mode.hactive)
 	{
 		modeline_to_monitor_range(range, &user_mode);
@@ -78,13 +76,6 @@ void switchres_manager::init()
 	}
 	else
 		get_monitor_specs();
-
-/*	
-	sscanf(options.sync_refresh_tolerance(), "%f", &gs.sync_refresh_tolerance);
-	float pclock_min;
-	sscanf(options.dotclock_min(), "%f", &pclock_min);
-	gs.pclock_min = pclock_min * 1000000;
-*/
 }
 
 

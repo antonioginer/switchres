@@ -9,7 +9,9 @@ using namespace std;
 
 const string WHITESPACE = " \n\r\t\f\v";
 
-// File parsing helpers
+//============================================================
+//  File parsing helpers
+//============================================================
 
 string ltrim(const string& s)
 {
@@ -46,10 +48,14 @@ constexpr unsigned int s2i(const char* str, int h = 0)
     return !str[h] ? 5381 : (s2i(str, h+1)*33) ^ str[h];
 }
 
-bool parse_config(switchres_manager &switchres)
-{
-	
-	ifstream config_file("switchres.ini");
+
+//============================================================
+//  parse_config
+//============================================================
+
+bool parse_config(switchres_manager &switchres, const char *file_name)
+{	
+	ifstream config_file(file_name);
 
 	if (!config_file.is_open())
 		return false;
@@ -64,10 +70,10 @@ bool parse_config(switchres_manager &switchres)
 		string key, value;
 		if(get_value(line, key, value))
 		{
-			//cout << key << " " << value << '\n';
 			switch (s2i(key.c_str()))
 			{
 				case s2i("monitor"):
+					transform(value.begin(), value.end(), value.begin(), ::tolower);
 					sprintf(switchres.cs.monitor, value.c_str());
 					break;
 				case s2i("orientation"):
@@ -103,6 +109,28 @@ bool parse_config(switchres_manager &switchres)
 				case s2i("crt_range9"):
 					sprintf(switchres.cs.crt_range9, value.c_str());
 					break;
+				case s2i("lcd_range"):
+					sprintf(switchres.cs.lcd_range, value.c_str());
+					break;
+
+				// Modeline generation options
+				case s2i("interlace"):
+					sscanf(value.c_str(), "%d", &switchres.gs.interlace);
+					break;
+				case s2i("doublescan"):
+					sscanf(value.c_str(), "%d", &switchres.gs.doublescan);
+					break;
+				case s2i("sync_refresh_tolerance"):
+					sscanf(value.c_str(), "%f", &switchres.gs.sync_refresh_tolerance);
+					break;
+				case s2i("dotclock_min"):
+					float pclock_min;
+					sscanf(value.c_str(), "%f", &pclock_min);
+					switchres.gs.pclock_min = pclock_min * 1000000;
+					break;
+				case s2i("super_width"):
+					sscanf(value.c_str(), "%d", &switchres.gs.super_width);
+					break;
 
 				default:
 					cout << "Invalid option " << key << '\n';
@@ -115,12 +143,16 @@ bool parse_config(switchres_manager &switchres)
 }
 
 
+//============================================================
+//  main
+//============================================================
+
 int main(int argc, char **argv)
 {
 
 	switchres_manager switchres;
 
-	parse_config(switchres);
+	parse_config(switchres, "switchres.ini");
 	switchres.init();
 
 }
