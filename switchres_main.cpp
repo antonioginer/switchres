@@ -169,4 +169,15 @@ int main(int argc, char **argv)
 
 	switchres.init();
 
+	// Create test modeline
+	switchres.game.width = 640;
+	switchres.game.height = 480;
+	switchres.game.refresh = 60.00;
+	switchres.video_modes[1].width = switchres.video_modes[1].height = 1;
+	switchres.video_modes[1].refresh = 60;
+	switchres.video_modes[1].vfreq = switchres.video_modes[1].refresh;
+	switchres.video_modes[1].hactive = switchres.video_modes[1].vactive = 1;
+	switchres.video_modes[1].type = XYV_EDITABLE;
+	switchres.get_video_mode();
+
 }
