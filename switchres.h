@@ -21,7 +21,7 @@
 //  CONSTANTS
 //============================================================
 
-#define SWITCHRES_VERSION "0.017o"
+#define SWITCHRES_VERSION "1.00"
 
 //============================================================
 //  TYPE DEFINITIONS
@@ -87,5 +87,6 @@ public:
 
 private:
 };
+
 
 #endif

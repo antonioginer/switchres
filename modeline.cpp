@@ -13,8 +13,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "switchres.h"
-#include "monitor.h"
 #include "modeline.h"
 
 #define max(a,b)({ __typeof__ (a) _a = (a);__typeof__ (b) _b = (b);_a > _b ? _a : _b; })

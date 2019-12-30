@@ -3,11 +3,14 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
+#include <getopt.h>
 #include "switchres.h"
 
 using namespace std;
 
 const string WHITESPACE = " \n\r\t\f\v";
+int show_version();
+int show_usage();
 
 //============================================================
 //  File parsing helpers
@@ -167,17 +170,149 @@ int main(int argc, char **argv)
 
 	parse_config(switchres, "switchres.ini");
 
+	int verbose_flag = false;
+	bool version_flag = false;
+	bool help_flag = false;
+	bool resolution_flag = false;
+	int c;
+
+	while (1)
+	{
+		static struct option long_options[] =
+		{
+			{"verbose",     no_argument,       &verbose_flag, '1'},
+			{"version",     no_argument,       0, 'v'},
+			{"help",        no_argument,       0, 'h'},
+			{"monitor",     required_argument, 0, 'm'},
+			{"orientation", required_argument, 0, 'o'},
+			{"resolution",  required_argument, 0, 'r'},
+			{0, 0, 0, 0}
+		};
+
+		int option_index = 0;
+		c = getopt_long(argc, argv, "vhm:o:r:", long_options, &option_index);
+
+		if (c == -1)
+			break;
+
+		switch (c)
+		{
+			case 'v':
+				version_flag = true;
+				break;
+
+			case 'h':
+				help_flag = true;
+				break;
+
+			case 'm':
+				sprintf(switchres.cs.monitor, optarg);
+				break;
+
+			case 'o':
+				sprintf(switchres.cs.orientation, optarg);
+				break;
+
+			case 'r':
+				if ((sscanf(optarg, "%dx%d@%d", &switchres.gs.width, &switchres.gs.height, &switchres.gs.refresh) < 3))
+				{
+					printf ("SwitchRes: illegal -resolution value: %s\n", optarg);
+					break;
+				}
+				resolution_flag = true;
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	if (version_flag)
+	{
+		show_version();
+		return 0;
+	}
+
+	if (help_flag)
+		goto usage;
+
+	// Get user video mode information from command line
+	if ((argc - optind) < 3)
+	{
+		printf ("Error: missing argument\n");
+		goto usage;
+	}
+	else if ((argc - optind) > 3)
+	{
+		printf ("Error: too many arguments\n");
+		goto usage;
+	}
+	else
+	{
+		switchres.game.width = atoi(argv[optind]);
+		switchres.game.height = atoi(argv[optind + 1]);
+		switchres.game.refresh = atof(argv[optind + 2]);
+		sprintf(switchres.game.name, "user");
+		resolution_flag = true;
+	}
+
 	switchres.init();
 
-	// Create test modeline
-	switchres.game.width = 640;
-	switchres.game.height = 480;
-	switchres.game.refresh = 60.00;
-	switchres.video_modes[1].width = switchres.video_modes[1].height = 1;
-	switchres.video_modes[1].refresh = 60;
-	switchres.video_modes[1].vfreq = switchres.video_modes[1].refresh;
-	switchres.video_modes[1].hactive = switchres.video_modes[1].vactive = 1;
-	switchres.video_modes[1].type = XYV_EDITABLE;
-	switchres.get_video_mode();
+	if (resolution_flag)
+	{
+		// Create dummy mode entry
+		switchres.video_modes[1].width = switchres.game.width;
+		switchres.video_modes[1].height = switchres.game.height;
+		switchres.video_modes[1].refresh = switchres.game.refresh;
+		switchres.video_modes[1].vfreq = switchres.video_modes[1].refresh;
+		switchres.video_modes[1].hactive = switchres.video_modes[1].vactive = 1;
+		switchres.video_modes[1].type = XYV_EDITABLE;
+		switchres.get_video_mode();
+	}
 
+	return (0);
+
+usage:
+	show_usage();
+	return 0;
+}
+
+//============================================================
+//  show_version
+//============================================================
+
+int show_version()
+{
+	char version[]
+	{
+		"Switchres " SWITCHRES_VERSION "\n"
+		"Modeline generation engine for emulation\n"
+		"Copyright (C) 2010-2019 - Chris Kennedy, Antonio Giner\n"
+		"License GPL-2.0+\n"
+		"This is free software: you are free to change and redistribute it.\n"
+		"There is NO WARRANTY, to the extent permitted by law.\n"
+	};
+	
+	printf("%s", version);
+	return 0;
+}
+
+//============================================================
+//  show_usage
+//============================================================
+
+int show_usage()
+{
+	char usage[] =
+	{
+		"Usage: switchres <width> <height> <refresh> [options]\n"
+		"Options:\n"
+		"  -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)\n"
+		"  -o, --orientation <orientation>   Monitor orientation (horizontal, vertical, rotate_r, rotate_l)\n"
+		"  -r, --resolution <width>x<height>@<refresh>\n"
+		"                                    Force a specific resolution\n"
+	};
+
+	printf("%s", usage);
+	return 0;
 }
