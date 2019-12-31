@@ -10,7 +10,7 @@
                Some reworked patches from SailorSat's CabMAME
 
    License     GPL-2.0+
-   Copyright   2010-2017 - Chris Kennedy, Antonio Giner, Alexandre W 
+   Copyright   2010-2017 - Chris Kennedy, Antonio Giner, Alexandre W
 
  **************************************************************/
 
@@ -48,9 +48,9 @@ bool switchres_modeline_setup(running_machine &machine);
 bool switchres_modeline_remove(running_machine &machine);
 bool switchres_modeline_reset(running_machine &machine);
 bool switchres_resolution_change(sdl_window_info *window);
-static bool add_custom_video_mode(modeline *mode, char *connector);
-static bool set_custom_video_mode(modeline *mode, char *connector);
-static int del_custom_video_mode(modeline *mode, char *connector);
+static bool add_custom_video_mode(modeline *mode);
+static bool set_custom_video_mode(modeline *mode);
+static int del_custom_video_mode(modeline *mode);
 static void set_option_osd(running_machine &machine, const char *option_ID, bool state);
 
 //============================================================
@@ -60,7 +60,7 @@ static void set_option_osd(running_machine &machine, const char *option_ID, bool
 int mode_count = 1;
 
 //============================================================
-//  XRANDR 
+//  XRANDR
 //============================================================
 
 static Display *dpy;
@@ -73,9 +73,10 @@ static int width = 0;
 static int height = 0;
 
 static int gmoutput_primary = 0;
+static int gmoutput_total = 0;
 static int gmoutput_mode = 0;
 
-static int (*old_error_handler)(Display *, XErrorEvent *); 
+static int (*old_error_handler)(Display *, XErrorEvent *);
 
 static int xerrors = 0;
 
@@ -97,8 +98,9 @@ bool switchres_init_osd(running_machine &machine)
 	modeline *user_mode = &machine.switchres.user_mode;
 	monitor_range *range = machine.switchres.range;
 	const char * aspect;
-	char *connector = machine.switchres.cs.connector;
 	char resolution[32]={'\x00'};
+
+	osd_printf_verbose("SwitchRes: DEVELOPMENT VERSION - NOT RECOMMENDED FOR PRODUCTION ENVIRONMENT\n");
 
 	sdl_options &options = downcast<sdl_options &>(machine.options());
 
@@ -121,7 +123,7 @@ bool switchres_init_osd(running_machine &machine)
 	int major_version, minor_version;
 	XRRQueryVersion(dpy, &major_version, &minor_version);
 	osd_printf_verbose("SwitchRes: xrandr version %d.%d\n",major_version,minor_version);
-	
+
 	// select current display and root window
 	// root is global to reduce open/close calls, resource is freed when modeline is reset
 	screen = DefaultScreen(dpy); // multiple screen ScreenCount (dpy)
@@ -129,7 +131,7 @@ bool switchres_init_osd(running_machine &machine)
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
 
 	// get screen size, rate and rotation from screen configuration
-	XRRScreenConfiguration *sc = XRRGetScreenInfo(dpy, root); 
+	XRRScreenConfiguration *sc = XRRGetScreenInfo(dpy, root);
 	original_rate = XRRConfigCurrentRate(sc);
 	original_size_id = XRRConfigCurrentConfiguration(sc, &original_rotation);
 	XRRFreeScreenConfigInfo(sc);
@@ -138,7 +140,7 @@ bool switchres_init_osd(running_machine &machine)
 	for (int o = 0; o < res->noutput && !gmoutput_mode; o++)
 	{
 		XRROutputInfo *output_info = XRRGetOutputInfo (dpy, res, res->outputs[o]);
-		if (!output_info) 
+		if (!output_info)
 			osd_printf_error("SwitchRes: error could not get output 0x%x information\n", (uint) res->outputs[o]);
 
 		// first connected output
@@ -153,9 +155,9 @@ bool switchres_init_osd(running_machine &machine)
 					if (!strcmp(cs->connector, "auto") || !strcmp(cs->connector,output_info->name))
 					{
 						// connector name is kept but not necessary due to global gmoutput_primary varial, optimization can happen here
-						sprintf(connector,"%s", output_info->name);
-						osd_printf_verbose("SwitchRes: Found output connector '%s'\n", connector);
+						osd_printf_verbose("SwitchRes: Found output connector '%s'\n", output_info->name);
 						gmoutput_primary = o;
+						gmoutput_total++;
 					}
 					for (int m = 0; m < res->nmode && !gmoutput_mode; m++)
 					{
@@ -179,6 +181,13 @@ bool switchres_init_osd(running_machine &machine)
 		XRRFreeOutputInfo(output_info);
 	}
 	XRRFreeScreenResources(res);
+
+	//handle no screen detected case
+	if (gmoutput_total == 0)
+	{
+		osd_printf_error("Switchres: error, no screen detected\n");
+		return false;
+	}
 
 	// Get per window resolution
 	strcpy(resolution, strcmp(options.resolution(0), "auto")? options.resolution(0) : options.resolution());
@@ -266,7 +275,6 @@ bool switchres_modeline_setup(running_machine &machine)
 {
 	modeline *best_mode = &machine.switchres.best_mode;
 	modeline *mode_table = machine.switchres.video_modes;
-	char *connector = machine.switchres.cs.connector;
 	sdl_options &options = downcast<sdl_options &>(machine.options());
 	sdl_osd_interface &osd = downcast<sdl_osd_interface &>(machine.osd());
 	std::string error_string;
@@ -298,11 +306,11 @@ bool switchres_modeline_setup(running_machine &machine)
 		{
 			mode_count++;
 			memcpy(&mode_table[mode_count], best_mode, sizeof(modeline));
-			add_custom_video_mode(best_mode, connector);
+			add_custom_video_mode(best_mode);
 		}
 
 		// Switch to the new mode
-		set_custom_video_mode(best_mode, connector);
+		set_custom_video_mode(best_mode);
 	}
 
 	// Set MAME common options
@@ -344,13 +352,12 @@ bool switchres_modeline_remove(running_machine &machine)
 
 bool switchres_modeline_reset(running_machine &machine)
 {
-	config_settings *cs = &machine.switchres.cs;
 	modeline *mode_table = machine.switchres.video_modes;
 
 	// Restore desktop resolution
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
 	XRRScreenConfiguration *sc = XRRGetScreenInfo(dpy, root);
-	
+
 	XRRSetScreenConfigAndRate(dpy, sc, root, original_size_id, original_rotation, original_rate, CurrentTime);
 	XRRFreeScreenConfigInfo(sc);
 	XRRFreeScreenResources(res);
@@ -360,7 +367,7 @@ bool switchres_modeline_reset(running_machine &machine)
 	// Remove modelines
 	while (mode_count > 1)
 	{
-		del_custom_video_mode(&mode_table[mode_count], cs->connector);
+		del_custom_video_mode(&mode_table[mode_count]);
 		mode_count--;
 	}
 
@@ -397,7 +404,7 @@ bool switchres_resolution_change(sdl_window_info *window)
 //  add_custom_video_mode
 //============================================================
 
-static bool add_custom_video_mode(modeline *mode, char *connector)
+static bool add_custom_video_mode(modeline *mode)
 {
 	if (!mode)
 		return false;
@@ -409,7 +416,7 @@ static bool add_custom_video_mode(modeline *mode, char *connector)
 	// Setup the xrandr mode structure
 	XRRModeInfo xmode;
 	xmode.name       = name;
-	xmode.nameLength = strlen(name); 
+	xmode.nameLength = strlen(name);
 	xmode.dotClock   = float(mode->pclock);
 	xmode.width      = mode->hactive;
 	xmode.hSyncStart = mode->hbegin;
@@ -425,10 +432,10 @@ static bool add_custom_video_mode(modeline *mode, char *connector)
 	XSync(dpy, False);
 	xerrors = 0;
 	old_error_handler = XSetErrorHandler(error_handler);
-	RRMode gmid = XRRCreateMode(dpy, root, &xmode); 
+	RRMode gmid = XRRCreateMode(dpy, root, &xmode);
 	XSync(dpy, False);
 	XSetErrorHandler(old_error_handler);
-	if (xerrors) 
+	if (xerrors)
 		osd_printf_error("Switchres: xrandr error in %s\n","XRRCreateMode");
 
 	// Add new modeline to primary output
@@ -440,7 +447,7 @@ static bool add_custom_video_mode(modeline *mode, char *connector)
 	XRRAddOutputMode(dpy, res->outputs[gmoutput_primary], gmid);
 	XSync(dpy, False);
 	XSetErrorHandler(old_error_handler);
-	if (xerrors) 
+	if (xerrors)
 		osd_printf_error("Switchres: xrandr error in %s\n","XRRAddOutputMode");
 
 	XRRFreeScreenResources(res);
@@ -451,7 +458,7 @@ static bool add_custom_video_mode(modeline *mode, char *connector)
 //  set_custom_video_mode
 //============================================================
 
-static bool set_custom_video_mode(modeline *mode, char *connector)
+static bool set_custom_video_mode(modeline *mode)
 {
 	// Use xrandr to switch to new mode. SDL_SetVideoMode doesn't work when (new_width, new_height)==(old_width, old_height)
 	char name[48];
@@ -476,7 +483,7 @@ static bool set_custom_video_mode(modeline *mode, char *connector)
 	XGrabServer(dpy);
 
 	// Disable all CRTCs
-	for (int i = 0; i < output_info->ncrtc; i++) 
+	for (int i = 0; i < output_info->ncrtc; i++)
 	{
 		if (XRRSetCrtcConfig(dpy, res, output_info->crtcs[i], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0) != RRSetConfigSuccess)
 			osd_printf_error("Switchres: xrandr error when disabling CRTC.\n");
@@ -506,7 +513,7 @@ static bool set_custom_video_mode(modeline *mode, char *connector)
 		XRRSetScreenSize(dpy, root, width, height, (25.4 * width) / 96.0, (25.4 * height) / 96.0);
 		XSync(dpy, False);
 		XSetErrorHandler(old_error_handler);
-		if (xerrors) 
+		if (xerrors)
 			osd_printf_error("Switchres: xrandr error in %s\n","XRRSetScreenSize");
 	}
 
@@ -532,7 +539,7 @@ static bool set_custom_video_mode(modeline *mode, char *connector)
 	if (crtc_info->mode == 0)
 	{
 		osd_printf_error("Switchres: xrandr resolution switch error, original mode restored\n");
-		XRRScreenConfiguration *sc = XRRGetScreenInfo(dpy, root); 
+		XRRScreenConfiguration *sc = XRRGetScreenInfo(dpy, root);
 		XRRSetScreenConfigAndRate(dpy, sc, root, original_size_id, original_rotation, original_rate, CurrentTime);
 		XRRFreeScreenConfigInfo(sc);
 	}
@@ -556,12 +563,12 @@ static bool set_custom_video_mode(modeline *mode, char *connector)
 //  del_custom_video_mode
 //============================================================
 
-static int del_custom_video_mode(modeline *mode, char *connector)
+static int del_custom_video_mode(modeline *mode)
 {
 	if (!mode)
 		return false;
 
-	char name[48]; 
+	char name[48];
 	sprintf(name,"GM-%dx%d_%.6f",mode->hactive, mode->vactive, mode->vfreq); // add ID
 
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent (dpy, root);
@@ -583,7 +590,7 @@ static int del_custom_video_mode(modeline *mode, char *connector)
 			XRRDestroyMode (dpy, xmode->id);
 			XSync(dpy, False);
 			XSetErrorHandler(old_error_handler);
-			if (xerrors) 
+			if (xerrors)
 				osd_printf_error("Switchres: xrandr error in %s\n","XRRDestroyMode");
 		}
 	}
