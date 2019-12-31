@@ -46,10 +46,8 @@ switchres_manager::switchres_manager()
 	sprintf(cs.crt_range8, "auto");
 	sprintf(cs.crt_range9, "auto");
 	sprintf(cs.lcd_range, "auto");
-	cs.desktop_rotated = false;
 	cs.monitor_rotates_cw = false;
 	cs.monitor_count = 1;
-	cs.lock_unsupported_modes = true;
 	cs.lock_system_modes = true;
 	cs.refresh_dont_care = false;
 

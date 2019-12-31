@@ -116,9 +116,9 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 				case s2i("lcd_range"):
 					sprintf(switchres.cs.lcd_range, value.c_str());
 					break;
-				case s2i("lock_unsupported_modes"):
+				/*case s2i("lock_unsupported_modes"):
 					switchres.cs.lock_unsupported_modes = atoi(value.c_str());
-					break;
+					break;*/
 				case s2i("lock_system_modes"):
 					switchres.cs.lock_system_modes = atoi(value.c_str());
 					break;

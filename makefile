@@ -14,7 +14,7 @@ REMOVE = rm -f
 
 # Windows
 else ifneq (,$(findstring NT,$(PLATFORM)))
-#SRC += switchres_windows.cpp 
+SRC += display_windows.cpp 
 CFLAGS = -O3 -static -static-libgcc -static-libstdc++ 
 LIBS = 
 REMOVE = del /f

@@ -56,10 +56,8 @@ typedef struct config_settings
 	char   crt_range8[256];
 	char   crt_range9[256];
 	char   lcd_range[256];
-	bool   desktop_rotated;
 	bool   monitor_rotates_cw;
 	int    monitor_count;
-	bool   lock_unsupported_modes;
 	bool   lock_system_modes;
 	bool   refresh_dont_care;
 } config_settings;
