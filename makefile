@@ -7,7 +7,7 @@ CC = g++
 
 # Linux
 ifeq  ($(PLATFORM),Linux)
-SRC += switchres_sdl.cpp 
+#SRC += switchres_sdl.cpp 
 CFLAGS = -O3
 LIBS =
 REMOVE = rm -f 
