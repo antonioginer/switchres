@@ -257,6 +257,9 @@ int main(int argc, char **argv)
 	}
 
 	switchres.init();
+	switchres.display.init("auto");
+	switchres.display.get_desktop_mode();
+	switchres.display.get_available_video_modes();
 
 	if (resolution_flag)
 	{

@@ -37,6 +37,13 @@ static char m_device_id[128];
 static char m_device_key[128];
 static DEVMODEA desktop_devmode;
 
+display_manager::display_manager()
+{
+}
+
+display_manager::~display_manager()
+{
+}
 
 //============================================================
 //  display_manager::init
@@ -103,20 +110,17 @@ int display_manager::init(const char *screen_option)
 //  display_manager::get_desktop_mode
 //============================================================
 
-int display_manager::get_desktop_mode(modeline *current)
+int display_manager::get_desktop_mode()
 {
 	memset(&desktop_devmode, 0, sizeof(DEVMODEA));
 	desktop_devmode.dmSize = sizeof(DEVMODEA);
 
 	if (EnumDisplaySettingsExA(!strcmp(m_device_name, "auto")?NULL:m_device_name, ENUM_CURRENT_SETTINGS, &desktop_devmode, 0))
 	{
-		if (current)
-		{
-			current->width = desktop_devmode.dmDisplayOrientation == DMDO_DEFAULT || desktop_devmode.dmDisplayOrientation == DMDO_180? desktop_devmode.dmPelsWidth:desktop_devmode.dmPelsHeight;
-			current->height = desktop_devmode.dmDisplayOrientation == DMDO_DEFAULT || desktop_devmode.dmDisplayOrientation == DMDO_180? desktop_devmode.dmPelsHeight:desktop_devmode.dmPelsWidth;
-			current->refresh = desktop_devmode.dmDisplayFrequency;
-			current->interlace = (desktop_devmode.dmDisplayFlags & DM_INTERLACED)?1:0;
-		}
+		desktop_mode.width = desktop_devmode.dmDisplayOrientation == DMDO_DEFAULT || desktop_devmode.dmDisplayOrientation == DMDO_180? desktop_devmode.dmPelsWidth:desktop_devmode.dmPelsHeight;
+		desktop_mode.height = desktop_devmode.dmDisplayOrientation == DMDO_DEFAULT || desktop_devmode.dmDisplayOrientation == DMDO_180? desktop_devmode.dmPelsHeight:desktop_devmode.dmPelsWidth;
+		desktop_mode.refresh = desktop_devmode.dmDisplayFrequency;
+		desktop_mode.interlace = (desktop_devmode.dmDisplayFlags & DM_INTERLACED)?1:0;
 		return true;
 	}
 	return false;
@@ -128,11 +132,12 @@ int display_manager::get_desktop_mode(modeline *current)
 
 int display_manager::set_desktop_mode(modeline *mode, int flags)
 {
-	modeline *backup_mode = custom_video_get_backup_mode();
+	//modeline *backup_mode = custom_video_get_backup_mode();
+	modeline *backup_mode = nullptr;
 	modeline *mode_to_check_interlace = backup_mode->hactive? backup_mode : mode;
 	DEVMODEA lpDevMode;
 
-	get_desktop_mode(NULL);
+	get_desktop_mode();
 
 	if (mode)
 	{
@@ -167,7 +172,7 @@ int display_manager::restore_desktop_mode()
 //  display_manager::get_available_video_modes
 //============================================================
 
-int display_manager::get_available_video_modes(modeline *mode, modeline *current)
+int display_manager::get_available_video_modes()
 {
 	int iModeNum = 0, i = 0, j = 0, k = 1;
 	DEVMODEA lpDevMode;
@@ -186,7 +191,7 @@ int display_manager::get_available_video_modes(modeline *mode, modeline *current
 		}
 		else if (lpDevMode.dmBitsPerPel == 32 && lpDevMode.dmDisplayFixedOutput == DMDFO_DEFAULT)
 		{
-			modeline *m = &mode[k];
+			modeline *m = &video_modes[k];
 			memset(m, 0, sizeof(struct modeline));
 			m->interlace = (lpDevMode.dmDisplayFlags & DM_INTERLACED)?1:0;
 			m->width = lpDevMode.dmDisplayOrientation == DMDO_DEFAULT || lpDevMode.dmDisplayOrientation == DMDO_180? lpDevMode.dmPelsWidth:lpDevMode.dmPelsHeight;
@@ -197,9 +202,9 @@ int display_manager::get_available_video_modes(modeline *mode, modeline *current
 			m->vfreq = m->refresh;
 			m->type |= lpDevMode.dmDisplayOrientation == DMDO_90 || lpDevMode.dmDisplayOrientation == DMDO_270? MODE_ROTATED : MODE_OK;
 
-			for (i = 0; i < k; i++) if (mode[i].width == m->width && mode[i].height == m->height && mode[i].refresh == m->refresh) goto found;
+			for (i = 0; i < k; i++) if (video_modes[i].width == m->width && video_modes[i].height == m->height && video_modes[i].refresh == m->refresh) goto found;
 
-			if (current && m->width == current->width && m->height == current->height && m->refresh == current->refresh)
+			if (m->width == desktop_mode.width && m->height == desktop_mode.height && m->refresh == desktop_mode.refresh)
 			{
 				m->type |= MODE_DESKTOP;
 				if (m->type & MODE_ROTATED) m_desktop_rotated = true;
@@ -207,11 +212,11 @@ int display_manager::get_available_video_modes(modeline *mode, modeline *current
 
 			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s %s: ", k, m->width, m->height, m->refresh, m->type & MODE_DESKTOP?"*":"",  m->type & MODE_ROTATED?"rot":"");
 
-			if (custom_video_get_timing(m))
+/*			if (custom_video_get_timing(m))
 			{
 				j++;
-				if (m->type & MODE_DESKTOP) memcpy(current, m, sizeof(modeline));
-			}
+				if (m->type & MODE_DESKTOP) memcpy(desktop_mode, m, sizeof(modeline));
+			}*/
 			k++;
 		}
 		found:
