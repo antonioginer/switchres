@@ -22,12 +22,13 @@ public:
 	~display_manager();
 
 	modeline video_modes[MAX_MODELINES];
+	modeline desktop_mode;
 
 	int init(const char *screen_option);
-	int get_desktop_mode(modeline *current);
+	int get_desktop_mode();
 	int set_desktop_mode(modeline *mode, int flags);
 	int restore_desktop_mode();
-	int get_available_video_modes(modeline *mode, modeline *current);
+	int get_available_video_modes();
 
 private:
 	bool m_lock_unsupported_modes;

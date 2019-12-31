@@ -16,6 +16,7 @@
 
 #include "monitor.h"
 #include "modeline.h"
+#include "display.h"
 
 //============================================================
 //  CONSTANTS
@@ -77,6 +78,8 @@ public:
 	modeline user_mode;
 	monitor_range range[MAX_RANGES];
 	modeline video_modes[MAX_MODELINES];
+
+	display_manager display;
 
 	void init();
 	int get_monitor_specs();
