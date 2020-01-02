@@ -163,7 +163,7 @@ bool switchres_manager::get_video_mode()
 	{
 		i = 1;
 		table_size = MAX_MODELINES;
-		mode = &video_modes[i];
+		mode = &display.video_modes[i];
 	}
 
 	while (mode->width && i < table_size)
