@@ -6,9 +6,6 @@
 
 	SwitchRes	Modeline generation engine for emulation
 
-	GroovyMAME  Integration of SwitchRes into the MAME project
-				Some reworked patches from SailorSat's CabMAME
-
 	License     GPL-2.0+
 	Copyright   2010-2016 - Chris Kennedy, Antonio Giner
 
@@ -17,8 +14,12 @@
 //	Constants and structures ported from AMD ADL SDK files
 
 #include <windows.h>
-#include "emu.h"
+#include <stdio.h>
 #include "custom_video_adl.h"
+
+const auto log_verbose = printf;
+const auto log_info = printf;
+const auto log_error = printf;
 
 bool enum_displays(HINSTANCE h_dll);
 
@@ -86,7 +87,7 @@ bool adl_get_driver_version(char *device_key)
 		{
 			found = true;
 			sscanf((char *)cat_ver, "%d.%d", &cat_version, &sub_version);
-			osd_printf_verbose("AMD driver version %d.%d\n", cat_version, sub_version);
+			log_verbose("AMD driver version %d.%d\n", cat_version, sub_version);
 		}
 		RegCloseKey(hkey);
 	}
@@ -113,7 +114,7 @@ int adl_open()
 	}
 	else
 	{
-		osd_printf_verbose("ADL Library not found!\n");
+		log_verbose("ADL Library not found!\n");
 	}
 
 	return ADL_Err;
@@ -127,7 +128,7 @@ void adl_close()
 {
 	ADL_MAIN_CONTROL_DESTROY ADL_Main_Control_Destroy;
 
-	osd_printf_verbose("ATI/AMD ADL close\n");
+	log_verbose("ATI/AMD ADL close\n");
 
 	for (int i = 0; i <= iNumberAdapters - 1; i++)
 		ADL_Main_Memory_Free((void **)&lpAdapter[i].m_display_list);
@@ -150,61 +151,61 @@ bool adl_init(char *device_name, char *device_key, char *device_id)
 {
 	int ADL_Err = ADL_ERR;
 
-	osd_printf_verbose("ATI/AMD ADL init\n");
+	log_verbose("ATI/AMD ADL init\n");
 
 	ADL_Err = adl_open();
 	if (ADL_Err != ADL_OK)
 	{
-		osd_printf_verbose("ERROR: ADL Initialization error!\n");
+		log_verbose("ERROR: ADL Initialization error!\n");
 		return false;
 	}
 
 	ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET)GetProcAddress(hDLL,"ADL_Adapter_NumberOfAdapters_Get");
 	if (ADL_Adapter_NumberOfAdapters_Get == NULL)
 	{
-		osd_printf_verbose("ERROR: ADL_Adapter_NumberOfAdapters_Get not available!");
+		log_verbose("ERROR: ADL_Adapter_NumberOfAdapters_Get not available!");
 		return false;
 	}
 	ADL_Adapter_AdapterInfo_Get = (ADL_ADAPTER_ADAPTERINFO_GET)GetProcAddress(hDLL,"ADL_Adapter_AdapterInfo_Get");
 	if (ADL_Adapter_AdapterInfo_Get == NULL)
 	{
-		osd_printf_verbose("ERROR: ADL_Adapter_AdapterInfo_Get not available!");
+		log_verbose("ERROR: ADL_Adapter_AdapterInfo_Get not available!");
 		return false;
 	}
 	ADL_Display_DisplayInfo_Get = (ADL_DISPLAY_DISPLAYINFO_GET)GetProcAddress(hDLL,"ADL_Display_DisplayInfo_Get");
 	if (ADL_Display_DisplayInfo_Get == NULL)
 	{
-		osd_printf_verbose("ERROR: ADL_Display_DisplayInfo_Get not available!");
+		log_verbose("ERROR: ADL_Display_DisplayInfo_Get not available!");
 		return false;
 	}
 	ADL_Display_ModeTimingOverride_Get = (ADL_DISPLAY_MODETIMINGOVERRIDE_GET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverride_Get");
 	if (ADL_Display_ModeTimingOverride_Get == NULL)
 	{
-		osd_printf_verbose("ERROR: ADL_Display_ModeTimingOverride_Get not available!");
+		log_verbose("ERROR: ADL_Display_ModeTimingOverride_Get not available!");
 		return false;
 	}
 	ADL_Display_ModeTimingOverride_Set = (ADL_DISPLAY_MODETIMINGOVERRIDE_SET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverride_Set");
 	if (ADL_Display_ModeTimingOverride_Set == NULL)
 	{
-		osd_printf_verbose("ERROR: ADL_Display_ModeTimingOverride_Set not available!");
+		log_verbose("ERROR: ADL_Display_ModeTimingOverride_Set not available!");
 		return false;
 	}
 	ADL_Display_ModeTimingOverrideList_Get = (ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverrideList_Get");
 	if (ADL_Display_ModeTimingOverrideList_Get == NULL)
 	{
-		osd_printf_verbose("ERROR: ADL_Display_ModeTimingOverrideList_Get not available!");
+		log_verbose("ERROR: ADL_Display_ModeTimingOverrideList_Get not available!");
 		return false;
 	}
 
 	if (!enum_displays(hDLL))
 	{
-		osd_printf_error("ADL error enumerating displays.\n");
+		log_error("ADL error enumerating displays.\n");
 		return false;
 	}
 
 	adl_get_driver_version(device_key);
 
-	osd_printf_verbose("ADL functions retrieved successfully.\n");
+	log_verbose("ADL functions retrieved successfully.\n");
 	return true;
 }
 

@@ -14,6 +14,8 @@
 #ifndef __DISPLAY_H__
 #define __DISPLAY_H__
 
+#include "custom_video.h"
+
 class display_manager
 {
 public:
@@ -23,6 +25,8 @@ public:
 
 	modeline video_modes[MAX_MODELINES];
 	modeline desktop_mode;
+
+	custom_video custom_video;
 
 	int init(const char *screen_option);
 	int get_desktop_mode();

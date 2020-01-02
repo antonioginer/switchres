@@ -102,6 +102,12 @@ int display_manager::init(const char *screen_option)
 	}
 
 	log_verbose("SwitchRes: Device key: %s\n", m_device_key);
+	
+	// Initialize custom video
+	modeline user_mode;
+	memset(&user_mode, 0, sizeof(modeline));
+	custom_video.init(m_device_name, m_device_id, &desktop_mode, &user_mode, video_modes, 0, m_device_key);
+
 	return 0;
 }
 
@@ -132,8 +138,7 @@ int display_manager::get_desktop_mode()
 
 int display_manager::set_desktop_mode(modeline *mode, int flags)
 {
-	//modeline *backup_mode = custom_video_get_backup_mode();
-	modeline *backup_mode = nullptr;
+	modeline *backup_mode = custom_video.get_backup_mode();
 	modeline *mode_to_check_interlace = backup_mode->hactive? backup_mode : mode;
 	DEVMODEA lpDevMode;
 
@@ -212,11 +217,11 @@ int display_manager::get_available_video_modes()
 
 			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s %s: ", k, m->width, m->height, m->refresh, m->type & MODE_DESKTOP?"*":"",  m->type & MODE_ROTATED?"rot":"");
 
-/*			if (custom_video_get_timing(m))
+			if (custom_video.get_timing(m))
 			{
 				j++;
-				if (m->type & MODE_DESKTOP) memcpy(desktop_mode, m, sizeof(modeline));
-			}*/
+				if (m->type & MODE_DESKTOP) memcpy(&desktop_mode, m, sizeof(modeline));
+			}
 			k++;
 		}
 		found:
