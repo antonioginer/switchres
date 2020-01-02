@@ -77,7 +77,6 @@ public:
 	modeline best_mode;
 	modeline user_mode;
 	monitor_range range[MAX_RANGES];
-	modeline video_modes[MAX_MODELINES];
 
 	display_manager display;
 

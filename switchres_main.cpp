@@ -264,12 +264,13 @@ int main(int argc, char **argv)
 	if (resolution_flag)
 	{
 		// Create dummy mode entry
-		switchres.video_modes[1].width = switchres.game.width;
-		switchres.video_modes[1].height = switchres.game.height;
-		switchres.video_modes[1].refresh = switchres.game.refresh;
-		switchres.video_modes[1].vfreq = switchres.video_modes[1].refresh;
-		switchres.video_modes[1].hactive = switchres.video_modes[1].vactive = 1;
-		switchres.video_modes[1].type = XYV_EDITABLE;
+		modeline *mode = &switchres.display.video_modes[1];
+		mode->width = switchres.game.width;
+		mode->height = switchres.game.height;
+		mode->refresh = switchres.game.refresh;
+		mode->vfreq = mode->refresh;
+		mode->hactive = mode->vactive = 1;
+		mode->type = XYV_EDITABLE;
 		switchres.get_video_mode();
 	}
 
