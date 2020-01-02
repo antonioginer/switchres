@@ -6,13 +6,16 @@
 
    SwitchRes   Modeline generation engine for emulation
 
-   GroovyMAME  Integration of SwitchRes into the MAME project
-               Some reworked patches from SailorSat's CabMAME
-
    License     GPL-2.0+
    Copyright   2010-2016 - Chris Kennedy, Antonio Giner
 
  **************************************************************/
+
+#ifndef __CUSTOM_VIDEO__
+#define __CUSTOM_VIDEO__
+
+
+#include "modeline.h"
 
 #define CUSTOM_VIDEO_TIMING_MASK        0x00000ff0
 #define CUSTOM_VIDEO_TIMING_SYSTEM      0x00000010
@@ -21,11 +24,32 @@
 #define CUSTOM_VIDEO_TIMING_ATI_LEGACY  0x00000080
 #define CUSTOM_VIDEO_TIMING_ATI_ADL     0x00000100  
 
-bool custom_video_init(char *device_name, char *device_id, modeline *desktop_mode, modeline *user_mode, modeline *mode_table, int method, char *s_param);
-void custom_video_close();
-bool custom_video_get_timing(modeline *mode);
-bool custom_video_set_timing(modeline *mode);
-bool custom_video_restore_timing();
-bool custom_video_update_timing(modeline *mode);
-int custom_video_parse_pci_id(char *device_id, int *vendor, int *device);
-modeline *custom_video_get_backup_mode();
+class custom_video
+{
+public:
+
+	custom_video();
+	~custom_video();
+
+	bool init(char *device_name, char *device_id, modeline *desktop_mode, modeline *user_mode, modeline *mode_table, int method, char *s_param);
+	void close();
+	bool get_timing(modeline *mode);
+	bool set_timing(modeline *mode);
+	bool restore_timing();
+	void refresh_timing();
+	bool update_timing(modeline *mode);
+	int parse_pci_id(char *device_id, int *vendor, int *device);
+	modeline *get_backup_mode();
+
+	int custom_method;
+	modeline m_user_mode;
+	modeline m_backup_mode;
+	modeline *m_mode_table;
+	char m_device_name[32];
+	char m_device_key[128];
+	char ps_timing[256];
+
+private:
+};
+
+#endif

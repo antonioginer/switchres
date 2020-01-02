@@ -6,9 +6,6 @@
 
    SwitchRes   Modeline generation engine for emulation
 
-   GroovyMAME  Integration of SwitchRes into the MAME project
-               Some reworked patches from SailorSat's CabMAME
-
    License     GPL-2.0+
    Copyright   2010-2016 - Chris Kennedy, Antonio Giner
 
@@ -122,11 +119,12 @@
 #include <windows.h>
 #include <stdio.h>
 
-// MAME headers
-#include "emu.h"
-
 // PowerStrip header
 #include "custom_video_pstrip.h"
+
+const auto log_verbose = printf;
+const auto log_info = printf;
+const auto log_error = printf;
 
 //============================================================
 //  GLOBALS
@@ -167,7 +165,7 @@ int ps_init(int monitor_index, modeline *modeline)
 
 	if (hPSWnd)
 	{
-		osd_printf_verbose("PStrip: PowerStrip found!\n");
+		log_verbose("PStrip: PowerStrip found!\n");
 		if (ps_get_monitor_timing(monitor_index, &timing_backup) && modeline)
 		{
 			ps_pstiming_to_modeline(&timing_backup, modeline);
@@ -175,7 +173,7 @@ int ps_init(int monitor_index, modeline *modeline)
 		}
 	}
 	else
-		osd_printf_verbose("PStrip: Could not get PowerStrip API interface\n");
+		log_verbose("PStrip: Could not get PowerStrip API interface\n");
 
 	return 0;
 }
@@ -238,17 +236,17 @@ int ps_get_monitor_timing(int monitor_index, MonitorTiming *timing)
 
 	if (lresult == -1)
 	{
-		osd_printf_verbose("PStrip: Could not get PowerStrip timing string\n");
+		log_verbose("PStrip: Could not get PowerStrip timing string\n");
 		return 0;
 	}
 
 	if (!GlobalGetAtomNameA(lresult, in, sizeof(in)))
 	{
-		osd_printf_verbose("PStrip: GlobalGetAtomName failed\n");
+		log_verbose("PStrip: GlobalGetAtomName failed\n");
 		return 0;
 	}
 
-	osd_printf_verbose("PStrip: ps_get_monitor_timing(%d): %s\n", monitor_index, in);
+	log_verbose("PStrip: ps_get_monitor_timing(%d): %s\n", monitor_index, in);
 
 	ps_read_timing_string(in, timing);
 
@@ -278,16 +276,16 @@ int ps_set_monitor_timing(int monitor_index, MonitorTiming *timing)
 
 		if (lresult < 0)
 		{
-			osd_printf_verbose("PStrip: SendMessage failed\n");
+			log_verbose("PStrip: SendMessage failed\n");
 			GlobalDeleteAtom(atom);
 		}
 		else
 		{
-			osd_printf_verbose("PStrip: ps_set_monitor_timing(%d): %s\n", monitor_index, out);
+			log_verbose("PStrip: ps_set_monitor_timing(%d): %s\n", monitor_index, out);
 			return 1;
 		}
 	}
-	else osd_printf_verbose("PStrip: ps_set_monitor_timing atom creation failed\n");
+	else log_verbose("PStrip: ps_set_monitor_timing atom creation failed\n");
 
 	return 0;
 }
@@ -350,7 +348,7 @@ int ps_best_pclock(int monitor_index, MonitorTiming *timing, int desired_pclock)
 	MonitorTiming timing_read;
 	int best_pclock = 0;
 
-	osd_printf_verbose("PStrip: ps_best_pclock(%d), getting stable dotclocks for %d...\n", monitor_index, desired_pclock);
+	log_verbose("PStrip: ps_best_pclock(%d), getting stable dotclocks for %d...\n", monitor_index, desired_pclock);
 
 	for (int i = -50; i <= 50; i += 25)
 	{
@@ -363,7 +361,7 @@ int ps_best_pclock(int monitor_index, MonitorTiming *timing, int desired_pclock)
 			best_pclock = timing_read.PixelClockInKiloHertz;
 	}
 
-	osd_printf_verbose("PStrip: ps_best_pclock(%d), new dotclock: %d\n", monitor_index, best_pclock);
+	log_verbose("PStrip: ps_best_pclock(%d), new dotclock: %d\n", monitor_index, best_pclock);
 
 	return best_pclock;
 }
@@ -392,17 +390,17 @@ int ps_create_resolution(int monitor_index, modeline *modeline)
 
 		if (lresult < 0)
         	{
-        		osd_printf_verbose("PStrip: SendMessage failed\n");
+        		log_verbose("PStrip: SendMessage failed\n");
         		GlobalDeleteAtom(atom);
         	}
         	else
         	{
-        		osd_printf_verbose("PStrip: ps_create_resolution(%d): %dx%d succeded \n",
+        		log_verbose("PStrip: ps_create_resolution(%d): %dx%d succeded \n",
         			modeline->width, modeline->height, monitor_index);
         		return 1;
         	}
         }
-        else osd_printf_verbose("PStrip: ps_create_resolution atom creation failed\n");
+        else log_verbose("PStrip: ps_create_resolution atom creation failed\n");
 
 	return 0;
 }

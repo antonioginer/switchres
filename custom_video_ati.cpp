@@ -5,17 +5,13 @@
 
    SwitchRes   Modeline generation engine for emulation
 
-   GroovyMAME  Integration of SwitchRes into the MAME project
-               Some reworked patches from SailorSat's CabMAME
-
    License     GPL-2.0+
    Copyright   2010-2016 - Chris Kennedy, Antonio Giner
 
  **************************************************************/
 
 #include <windows.h>
-
-#include "emu.h"
+#include <stdio.h>
 #include "custom_video_ati.h"
 
 #define CRTC_DOUBLE_SCAN                    0x0001
@@ -31,6 +27,10 @@ static int os_version(void);
 static bool is_elevated();
 static int win_interlace_factor(modeline *mode);
 
+const auto log_verbose = printf;
+const auto log_info = printf;
+const auto log_error = printf;
+
 char m_device_name[32];
 char m_device_key[256];
 int win_version;
@@ -41,14 +41,14 @@ int win_version;
 
 bool ati_init(char *device_name, char *device_key, char *device_id)
 {
-	osd_printf_verbose("ATI legacy init\n");
+	log_verbose("ATI legacy init\n");
 
 	// Get Windows version
 	win_version = os_version();
 
 	if (win_version > 5 && !is_elevated())
 	{
-		osd_printf_error("ATI legacy error: the program needs administrator rights.\n");
+		log_error("ATI legacy error: the program needs administrator rights.\n");
 		return false;
 	}
 
@@ -107,12 +107,12 @@ bool ati_get_modeline(modeline *mode)
 			int checksum = 65535 - get_DWORD(0, lp_data) - mode->htotal - mode->hactive - mode->hend
 						- mode->vtotal - mode->vactive - mode->vend - mode->pclock/10000;
 			if (checksum != get_DWORD(64, lp_data))
-				osd_printf_verbose("bad checksum! ");
+				log_verbose("bad checksum! ");
 		}
 		RegCloseKey(hKey);
 		return (found);
 	}
-	osd_printf_info("Failed opening registry entry for mode.\n");
+	log_info("Failed opening registry entry for mode.\n");
 	return false;
 }
 
@@ -161,13 +161,13 @@ bool ati_set_modeline(modeline *mode)
 		}
 
 		if (!(found && RegSetValueExA(hKey, lp_name, 0, REG_BINARY, (LPBYTE)lp_data, 68) == ERROR_SUCCESS))
-			osd_printf_info("Failed saving registry entry %s\n", lp_name);
+			log_info("Failed saving registry entry %s\n", lp_name);
 
 		RegCloseKey(hKey);
 		return (found);
 	}
 
-	osd_printf_info("Failed updating registry entry for mode.\n");
+	log_info("Failed updating registry entry for mode.\n");
 	return 0;
 }
 
