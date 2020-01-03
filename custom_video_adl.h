@@ -124,18 +124,51 @@ typedef struct AdapterList
 } AdapterList, *LPAdapterList;
 
 
-void adl_close();
-bool adl_get_modeline(char *target_display, modeline *m);
-bool adl_set_modeline(char *target_display, modeline *m, int update_mode);
+typedef void* (__stdcall *ADL_MAIN_MALLOC_CALLBACK)(int);
+typedef int (*ADL_MAIN_CONTROL_CREATE)(ADL_MAIN_MALLOC_CALLBACK, int);
+typedef int (*ADL_MAIN_CONTROL_DESTROY)();
+typedef int (*ADL_ADAPTER_NUMBEROFADAPTERS_GET) (int*);
+typedef int (*ADL_ADAPTER_ADAPTERINFO_GET) (LPAdapterInfo, int);
+typedef int (*ADL_DISPLAY_DISPLAYINFO_GET) (int, int *, ADLDisplayInfo **, int);
+typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_GET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayMode *lpModeIn, ADLDisplayModeInfo *lpModeInfoOut);
+typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_SET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayModeInfo *lpMode, int iForceUpdate);
+typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET) (int iAdapterIndex, int iDisplayIndex, int iMaxNumOfOverrides, ADLDisplayModeInfo *lpModeInfoList, int *lpNumOfOverrides);
 
 
 class adl_timing : public custom_video
 {
 	public:
-		adl_timing(char *device_name, char *device_key);
-		bool init();
+		adl_timing(char *display_name, char *device_key);
+		virtual const char *api_name() { return "ATI ADL"; }
+		virtual bool init();
+		virtual void close();
+		virtual bool get_timing(modeline *m);
+		virtual bool set_timing(modeline *m, int update_mode);
 
 	private:
-		char m_device_name[32];
+		int open();
+		bool get_driver_version(char *device_key);
+		bool enum_displays(HINSTANCE h_dll);
+		bool get_device_mapping_from_display_name(int *adapter_index, int *display_index);
+		bool display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m);
+
+		char m_display_name[32];
 		char m_device_key[128];
+
+		ADL_ADAPTER_NUMBEROFADAPTERS_GET        ADL_Adapter_NumberOfAdapters_Get;
+		ADL_ADAPTER_ADAPTERINFO_GET             ADL_Adapter_AdapterInfo_Get;
+		ADL_DISPLAY_DISPLAYINFO_GET             ADL_Display_DisplayInfo_Get;
+		ADL_DISPLAY_MODETIMINGOVERRIDE_GET      ADL_Display_ModeTimingOverride_Get;
+		ADL_DISPLAY_MODETIMINGOVERRIDE_SET      ADL_Display_ModeTimingOverride_Set;
+		ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET  ADL_Display_ModeTimingOverrideList_Get;
+
+		HINSTANCE hDLL;
+		LPAdapterInfo lpAdapterInfo = NULL;
+		LPAdapterList lpAdapter;
+		int iNumberAdapters;
+		int cat_version;
+		int sub_version;
+
+		int invert_pol(bool on_read) { return ((cat_version <= 12) || (cat_version >= 15 && on_read)); }
+		int interlace_factor(bool interlace, bool on_read) { return interlace && ((cat_version <= 12) || (cat_version >= 15 && on_read))? 2 : 1; }
 };

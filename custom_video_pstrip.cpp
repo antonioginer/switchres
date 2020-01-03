@@ -166,7 +166,6 @@ pstrip_timing::pstrip_timing(char *device_name, modeline *user_mode, char *ps_ti
 		m_backup_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
 
 		// If we have a -ps_timing string defined, use it as user defined modeline
-		memcpy(ps_timing, s_param, sizeof(ps_timing));
 		if (strcmp(ps_timing, "auto"))
 		{
 			MonitorTiming timing;
@@ -181,7 +180,7 @@ pstrip_timing::pstrip_timing(char *device_name, modeline *user_mode, char *ps_ti
 			}
 			else log_verbose("Switchres: ps_timing string with invalid format\n");
 		}
-		return true;
+		//return true;
 	}
 }
 

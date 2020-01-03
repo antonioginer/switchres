@@ -32,10 +32,11 @@ public:
 	~custom_video();
 
 	custom_video *make(char *device_name, char *device_id, modeline *user_mode, modeline *mode_table, int method, char *s_param);
-	bool init();
-	void close();
-	bool get_timing(modeline *mode);
-	bool set_timing(modeline *mode);
+	virtual const char *api_name() { return "empty"; }
+	virtual bool init();
+	virtual void close();
+	virtual bool get_timing(modeline *mode);
+	virtual bool set_timing(modeline *mode);
 	bool restore_timing();
 	void refresh_timing();
 	bool update_timing(modeline *mode);

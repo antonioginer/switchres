@@ -60,9 +60,10 @@ custom_video *custom_video::make(char *device_name, char *device_id, modeline *u
 
 		if (vendor == 0x1002) // ATI/AMD
 		{
-			if (ati_is_legacy(vendor, device))
+			if (1)
+			//if (ati_is_legacy(vendor, device))
 			{
-				m_custom_video = new ati_timing(device_name, s_param, device_id);
+				m_custom_video = new ati_timing(device_name, s_param);
 				if (m_custom_video)
 				{
 					custom_method = CUSTOM_VIDEO_TIMING_ATI_LEGACY;
@@ -86,10 +87,19 @@ custom_video *custom_video::make(char *device_name, char *device_id, modeline *u
 	return nullptr;
 }
 
+
+//============================================================
+//  custom_video::init
+//============================================================
+
+bool custom_video::init() { return false; }
+
 //============================================================
 //  custom_video::close
 //============================================================
 
+void custom_video::close() {}
+/*
 void custom_video::close()
 {
 	switch (custom_method)
@@ -105,6 +115,7 @@ void custom_video::close()
 			break;
 	}
 }
+*/
 
 //============================================================
 //  custom_video::get_timing
@@ -116,6 +127,7 @@ bool custom_video::get_timing(modeline *mode)
 
 	switch (custom_method)
 	{
+/*
 		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
 			if (ati_get_modeline(mode))
 			{
@@ -133,7 +145,7 @@ bool custom_video::get_timing(modeline *mode)
 				return true;
 			}
 			break;
-
+*/
 		case CUSTOM_VIDEO_TIMING_POWERSTRIP:
 			if ((mode->type & MODE_DESKTOP) && ps_get_modeline(ps_monitor_index(m_device_name), mode))
 				log_verbose("Powerstrip timing %s\n", modeline_print(mode, modeline_txt, MS_FULL));
@@ -166,7 +178,7 @@ bool custom_video::set_timing(modeline *mode)
 				return true;
 			}
 			break;
-		
+/*		
 		case CUSTOM_VIDEO_TIMING_ATI_ADL:
 			if (adl_set_modeline(m_device_name, mode, mode->interlace != m_backup_mode.interlace? MODELINE_UPDATE_LIST : MODELINE_UPDATE))
 			{
@@ -174,7 +186,7 @@ bool custom_video::set_timing(modeline *mode)
 				return true;
 			}
 			break;
-
+*/
 		case CUSTOM_VIDEO_TIMING_POWERSTRIP:
 			// In case -ps_timing is provided, pass it as raw string
 			if (m_user_mode.type & CUSTOM_VIDEO_TIMING_POWERSTRIP)
