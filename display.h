@@ -23,10 +23,11 @@ public:
 	display_manager() {};
 	~display_manager()
 	{
+		if (factory) delete factory;
 		if (video) delete video;
 	};
 
-	modeline video_modes[MAX_MODELINES];
+	modeline video_modes[MAX_MODELINES] = {};
 	modeline desktop_mode;
 
 	custom_video *factory = 0;

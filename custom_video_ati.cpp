@@ -63,6 +63,7 @@ bool ati_timing::get_timing(modeline *mode)
 	bool found = false;
 	int refresh_label = mode->refresh_label? mode->refresh_label : mode->refresh * win_interlace_factor(mode);
 	int vfreq_incr = 0;
+	mode->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 
 	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, m_device_key, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
 	{
@@ -95,6 +96,7 @@ bool ati_timing::get_timing(modeline *mode)
 			mode->hfreq = mode->pclock / mode->htotal;
 			mode->vfreq = mode->hfreq / mode->vtotal * (mode->interlace?2:1);
 			mode->refresh_label = refresh_label;
+			mode->type &= ~CUSTOM_VIDEO_TIMING_SYSTEM;
 			mode->type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY | (!(mode->type & MODE_DESKTOP)? V_FREQ_EDITABLE | (mode->width == DUMMY_WIDTH? X_RES_EDITABLE:0):0);
 
 			int checksum = 65535 - get_DWORD(0, lp_data) - mode->htotal - mode->hactive - mode->hend
@@ -102,14 +104,10 @@ bool ati_timing::get_timing(modeline *mode)
 			if (checksum != get_DWORD(64, lp_data))
 				log_verbose("bad checksum! ");
 		}
-		else
-		{
-			m->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
-		}
 		RegCloseKey(hKey);
 		return (found);
 	}
-	log_info("Failed opening registry entry for mode.\n");
+	log_verbose("Failed opening registry entry for mode. ");
 	return false;
 }
 

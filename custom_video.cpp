@@ -35,7 +35,6 @@ custom_video::~custom_video()
 {
 }
 
-
 //============================================================
 //  custom_video::make
 //============================================================
@@ -60,8 +59,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, modeline *u
 
 		if (vendor == 0x1002) // ATI/AMD
 		{
-			if (1)
-			//if (ati_is_legacy(vendor, device))
+			if (ati_is_legacy(vendor, device))
 			{
 				m_custom_video = new ati_timing(device_name, s_param);
 				if (m_custom_video)
@@ -171,6 +169,7 @@ bool custom_video::set_timing(modeline *mode)
 	
 	switch (custom_method)
 	{
+/*
 		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
 			if (ati_set_modeline(mode))
 			{
@@ -178,7 +177,7 @@ bool custom_video::set_timing(modeline *mode)
 				return true;
 			}
 			break;
-/*		
+		
 		case CUSTOM_VIDEO_TIMING_ATI_ADL:
 			if (adl_set_modeline(m_device_name, mode, mode->interlace != m_backup_mode.interlace? MODELINE_UPDATE_LIST : MODELINE_UPDATE))
 			{
@@ -228,7 +227,7 @@ void custom_video::refresh_timing()
 	switch (custom_method)
 	{
 		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
-			ati_refresh_timings();
+//			ati_refresh_timings();
 			break;
 		
 		case CUSTOM_VIDEO_TIMING_ATI_ADL:
@@ -302,36 +301,6 @@ bool custom_video::update_timing(modeline *mode)
 error:
 	log_verbose(": error updating video timings\n");
 	return false;
-}
-
-//============================================================
-//  custom_video::parse_timing
-//============================================================
-
-bool custom_video_parse_timing(char *timing_string, modeline *user_mode)
-{
-	char modeline_txt[256]={'\x00'};
-
-	if (!strcmp(timing_string, "auto"))
-		return false;
-
-	if (strstr(timing_string, "="))
-	{
-		// Powerstrip timing string
-		MonitorTiming timing;
-		ps_read_timing_string(timing_string, &timing);
-		ps_pstiming_to_modeline(&timing, user_mode);
-		user_mode->type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
-		log_verbose("SwitchRes: ps_string: %s (%s)\n", timing_string, modeline_print(user_mode, modeline_txt, MS_PARAMS));
-	}
-	else
-	{
-		// Normal modeline
-		modeline_parse(timing_string, user_mode);
-		log_verbose("SwitchRes: modeline: %s \n", modeline_print(user_mode, modeline_txt, MS_PARAMS));
-	}
-
-	return true;
 }
 
 //============================================================
