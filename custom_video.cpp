@@ -37,38 +37,21 @@ custom_video::~custom_video()
 
 
 //============================================================
-//  custom_video::init
+//  custom_video::make
 //============================================================
 
-bool custom_video::init(char *device_name, char *device_id, modeline *desktop_mode, modeline *user_mode, modeline *mode_table, int method, char *s_param)
+custom_video *custom_video::make(char *device_name, char *device_id, modeline *user_mode, modeline *mode_table, int method, char *s_param)
 {
-	memset(&m_backup_mode, 0, sizeof(modeline));
-	memcpy(&m_user_mode, user_mode, sizeof(modeline));
-	memcpy(m_device_name, device_name, sizeof(m_device_name));
 	m_mode_table = mode_table;
 
-	if ((method == CUSTOM_VIDEO_TIMING_POWERSTRIP) && ps_init(ps_monitor_index(m_device_name), &m_backup_mode))
+	if (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)
 	{
-		custom_method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
-		m_backup_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
-
-		// If we have a -ps_timing string defined, use it as user defined modeline
-		memcpy(ps_timing, s_param, sizeof(ps_timing));
-		if (strcmp(ps_timing, "auto"))
+		m_custom_video = new pstrip_timing(device_name, user_mode, s_param);
+		if (m_custom_video)
 		{
-			MonitorTiming timing;
-			if (ps_read_timing_string(ps_timing, &timing))
-			{
-				ps_pstiming_to_modeline(&timing, &m_user_mode);
-				m_user_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
-				memcpy(user_mode, &m_user_mode, sizeof(modeline));
-
-				char modeline_txt[256]={'\x00'};
-				log_verbose("SwitchRes: ps_string: %s (%s)\n", ps_timing, modeline_print(&m_user_mode, modeline_txt, MS_PARAMS));
-			}
-			else log_verbose("Switchres: ps_timing string with invalid format\n");
+			custom_method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
+			return m_custom_video;
 		}
-		return true;
 	}
 	else
 	{
@@ -79,20 +62,20 @@ bool custom_video::init(char *device_name, char *device_id, modeline *desktop_mo
 		{
 			if (ati_is_legacy(vendor, device))
 			{
-				memcpy(m_device_key, s_param, sizeof(m_device_key));
-				if (ati_init(m_device_name, m_device_key, device_id))
+				m_custom_video = new ati_timing(device_name, s_param, device_id);
+				if (m_custom_video)
 				{
 					custom_method = CUSTOM_VIDEO_TIMING_ATI_LEGACY;
-					return true;
+					return m_custom_video;
 				}
 			}
 			else
 			{
-				memcpy(m_device_key, s_param, sizeof(m_device_key));
-				if (adl_init(m_device_name, m_device_key, device_id))
+				m_custom_video = new adl_timing(device_name, s_param);
+				if (m_custom_video)
 				{
 					custom_method = CUSTOM_VIDEO_TIMING_ATI_ADL;
-					return true;
+					return m_custom_video;
 				}
 			}
 		}
@@ -100,7 +83,7 @@ bool custom_video::init(char *device_name, char *device_id, modeline *desktop_mo
 			log_info("Video chipset is not compatible.\n");
 	}
 
-	return false;
+	return nullptr;
 }
 
 //============================================================

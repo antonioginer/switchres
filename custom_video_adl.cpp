@@ -144,10 +144,20 @@ void adl_close()
 }
 
 //============================================================
-//  adl_init
+//  aadl_timing::adl_timing
 //============================================================
 
-bool adl_init(char *device_name, char *device_key, char *device_id)
+adl_timing::adl_timing(char *device_name, char *device_key)
+		: m_device_name(device_name)
+{
+
+}
+
+//============================================================
+//  adl_timing::init
+//============================================================
+
+bool adl_timing::init()
 {
 	int ADL_Err = ADL_ERR;
 
