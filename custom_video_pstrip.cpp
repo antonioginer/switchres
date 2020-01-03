@@ -156,6 +156,36 @@ static MonitorTiming timing_backup;
 #define ClosePowerStrip                 0x63
 
 //============================================================
+//  pstrip_timing::pstrip_timing
+//============================================================
+
+pstrip_timing::pstrip_timing(char *device_name, modeline *user_mode, char *ps_timing)
+{
+	if (ps_init(ps_monitor_index(m_device_name), &m_backup_mode))
+	{
+		m_backup_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
+
+		// If we have a -ps_timing string defined, use it as user defined modeline
+		memcpy(ps_timing, s_param, sizeof(ps_timing));
+		if (strcmp(ps_timing, "auto"))
+		{
+			MonitorTiming timing;
+			if (ps_read_timing_string(ps_timing, &timing))
+			{
+				ps_pstiming_to_modeline(&timing, &m_user_mode);
+				m_user_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
+				memcpy(user_mode, &m_user_mode, sizeof(modeline));
+
+				char modeline_txt[256]={'\x00'};
+				log_verbose("SwitchRes: ps_string: %s (%s)\n", ps_timing, modeline_print(&m_user_mode, modeline_txt, MS_PARAMS));
+			}
+			else log_verbose("Switchres: ps_timing string with invalid format\n");
+		}
+		return true;
+	}
+}
+
+//============================================================
 //  ps_init
 //============================================================
 

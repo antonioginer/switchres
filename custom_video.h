@@ -31,7 +31,8 @@ public:
 	custom_video();
 	~custom_video();
 
-	bool init(char *device_name, char *device_id, modeline *desktop_mode, modeline *user_mode, modeline *mode_table, int method, char *s_param);
+	custom_video *make(char *device_name, char *device_id, modeline *user_mode, modeline *mode_table, int method, char *s_param);
+	bool init();
 	void close();
 	bool get_timing(modeline *mode);
 	bool set_timing(modeline *mode);
@@ -41,9 +42,10 @@ public:
 	int parse_pci_id(char *device_id, int *vendor, int *device);
 	modeline *get_backup_mode();
 
+	custom_video *m_custom_video = 0;
 	int custom_method;
-	modeline m_user_mode;
-	modeline m_backup_mode;
+	modeline m_user_mode = {};
+	modeline m_backup_mode = {};
 	modeline *m_mode_table;
 	char m_device_name[32];
 	char m_device_key[128];

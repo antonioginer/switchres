@@ -11,7 +11,7 @@
 
  **************************************************************/
 
-#include "modeline.h"
+#include "custom_video.h"
 
 //	Constants and structures ported from AMD ADL SDK files
 
@@ -123,7 +123,19 @@ typedef struct AdapterList
 	ADLDisplayInfo *m_display_list;
 } AdapterList, *LPAdapterList;
 
-bool adl_init(char *device_name, char *device_key, char *device_id);
+
 void adl_close();
 bool adl_get_modeline(char *target_display, modeline *m);
 bool adl_set_modeline(char *target_display, modeline *m, int update_mode);
+
+
+class adl_timing : public custom_video
+{
+	public:
+		adl_timing(char *device_name, char *device_key);
+		bool init();
+
+	private:
+		char m_device_name[32];
+		char m_device_key[128];
+};

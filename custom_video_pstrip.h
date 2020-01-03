@@ -1,17 +1,17 @@
 /**************************************************************
  
-   custom_video_powerstrip.h - PowerStrip interface routines
-   
-   ---------------------------------------------------------
+	 custom_video_powerstrip.h - PowerStrip interface routines
+	 
+	 ---------------------------------------------------------
  
-   SwitchRes   Modeline generation engine for emulation
+	 SwitchRes   Modeline generation engine for emulation
 
-   License     GPL-2.0+
-   Copyright   2010-2016 - Chris Kennedy, Antonio Giner
+	 License     GPL-2.0+
+	 Copyright   2010-2016 - Chris Kennedy, Antonio Giner
 
  **************************************************************/
 
-#include "modeline.h"
+#include "custom_video.h"
 
 //============================================================
 //  TYPE DEFINITIONS
@@ -19,26 +19,26 @@
 
 typedef struct
 {
-    int HorizontalActivePixels;
-    int HorizontalFrontPorch;
-    int HorizontalSyncWidth;
-    int HorizontalBackPorch;
-    int VerticalActivePixels;
-    int VerticalFrontPorch;
-    int VerticalSyncWidth;
-    int VerticalBackPorch;
-    int PixelClockInKiloHertz;
-    union
-    {
-        int w;
-        struct
-        {
-            unsigned :1;
-            unsigned HorizontalPolarityNegative:1;
-            unsigned VerticalPolarityNegative:1;
-            unsigned :29;
-        } b;
-    } TimingFlags;
+	int HorizontalActivePixels;
+	int HorizontalFrontPorch;
+	int HorizontalSyncWidth;
+	int HorizontalBackPorch;
+	int VerticalActivePixels;
+	int VerticalFrontPorch;
+	int VerticalSyncWidth;
+	int VerticalBackPorch;
+	int PixelClockInKiloHertz;
+	union
+	{
+		int w;
+		struct
+		{
+			unsigned :1;
+			unsigned HorizontalPolarityNegative:1;
+			unsigned VerticalPolarityNegative:1;
+			unsigned :29;
+		} b;
+	} TimingFlags;
 } MonitorTiming;
 
 //============================================================
@@ -60,3 +60,10 @@ void ps_fill_timing_string(char *out, MonitorTiming *timing);
 int ps_modeline_to_pstiming(modeline *modeline, MonitorTiming *timing);
 int ps_pstiming_to_modeline(MonitorTiming *timing, modeline *modeline);
 int ps_monitor_index (const char *display_name);
+
+
+class pstrip_timing : public custom_video
+{
+	public:
+		pstrip_timing(char *device_name, modeline *user_mode, char *ps_timing);
+};

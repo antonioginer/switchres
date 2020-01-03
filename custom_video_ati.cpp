@@ -36,10 +36,20 @@ char m_device_key[256];
 int win_version;
 
 //============================================================
-//  ati_custom_video_init
+//  ati_timing::ati_timing
 //============================================================
 
-bool ati_init(char *device_name, char *device_key, char *device_id)
+ati_timing::ati_timing(char *device_name, char *device_key, char *device_id)
+{
+
+}
+
+
+//============================================================
+//  ati_timing::ati_timing
+//============================================================
+
+bool ati_timing::init()
 {
 	log_verbose("ATI legacy init\n");
 
@@ -51,9 +61,6 @@ bool ati_init(char *device_name, char *device_key, char *device_id)
 		log_error("ATI legacy error: the program needs administrator rights.\n");
 		return false;
 	}
-
-	memcpy(m_device_name, device_name, sizeof(m_device_name));
-	memcpy(m_device_key, device_key, sizeof(m_device_key));
 
 	return true;
 }
