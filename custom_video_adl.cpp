@@ -21,34 +21,6 @@ const auto log_verbose = printf;
 const auto log_info = printf;
 const auto log_error = printf;
 
-bool enum_displays(HINSTANCE h_dll);
-
-typedef void* (__stdcall *ADL_MAIN_MALLOC_CALLBACK)(int);
-typedef int (*ADL_MAIN_CONTROL_CREATE)(ADL_MAIN_MALLOC_CALLBACK, int);
-typedef int (*ADL_MAIN_CONTROL_DESTROY)();
-typedef int (*ADL_ADAPTER_NUMBEROFADAPTERS_GET) (int*);
-typedef int (*ADL_ADAPTER_ADAPTERINFO_GET) (LPAdapterInfo, int);
-typedef int (*ADL_DISPLAY_DISPLAYINFO_GET) (int, int *, ADLDisplayInfo **, int);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_GET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayMode *lpModeIn, ADLDisplayModeInfo *lpModeInfoOut);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_SET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayModeInfo *lpMode, int iForceUpdate);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET) (int iAdapterIndex, int iDisplayIndex, int iMaxNumOfOverrides, ADLDisplayModeInfo *lpModeInfoList, int *lpNumOfOverrides);
-
-ADL_ADAPTER_NUMBEROFADAPTERS_GET        ADL_Adapter_NumberOfAdapters_Get;
-ADL_ADAPTER_ADAPTERINFO_GET             ADL_Adapter_AdapterInfo_Get;
-ADL_DISPLAY_DISPLAYINFO_GET             ADL_Display_DisplayInfo_Get;
-ADL_DISPLAY_MODETIMINGOVERRIDE_GET      ADL_Display_ModeTimingOverride_Get;
-ADL_DISPLAY_MODETIMINGOVERRIDE_SET      ADL_Display_ModeTimingOverride_Set;
-ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET  ADL_Display_ModeTimingOverrideList_Get;
-
-HINSTANCE hDLL;
-LPAdapterInfo lpAdapterInfo = NULL;
-LPAdapterList lpAdapter;
-int iNumberAdapters;
-int cat_version, sub_version;
-
-int invert_pol(bool on_read) { return ((cat_version <= 12) || (cat_version >= 15 && on_read)); }
-int interlace_factor(bool interlace, bool on_read) { return interlace && ((cat_version <= 12) || (cat_version >= 15 && on_read))? 2 : 1; }
-
 
 //============================================================
 //  memory allocation callbacks
@@ -70,87 +42,13 @@ void __stdcall ADL_Main_Memory_Free(void** lpBuffer)
 }
 
 //============================================================
-//  adl_get_driver_version
+//  adl_timing::adl_timing
 //============================================================
 
-bool adl_get_driver_version(char *device_key)
+adl_timing::adl_timing(char *display_name, char *device_key)
 {
-	HKEY hkey;
-	bool found = false;
-
-	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, device_key, 0, KEY_READ , &hkey) == ERROR_SUCCESS)
-	{
-		BYTE cat_ver[32];
-		DWORD length = sizeof(cat_ver);
-		if ((RegQueryValueExA(hkey, "Catalyst_Version", NULL, NULL, cat_ver, &length) == ERROR_SUCCESS) ||
-			(RegQueryValueExA(hkey, "RadeonSoftwareVersion", NULL, NULL, cat_ver, &length) == ERROR_SUCCESS))
-		{
-			found = true;
-			sscanf((char *)cat_ver, "%d.%d", &cat_version, &sub_version);
-			log_verbose("AMD driver version %d.%d\n", cat_version, sub_version);
-		}
-		RegCloseKey(hkey);
-	}
-	return found;
-}
-
-//============================================================
-//  adl_open
-//============================================================
-
-int adl_open()
-{
-	ADL_MAIN_CONTROL_CREATE ADL_Main_Control_Create;
-	int ADL_Err = ADL_ERR;
-
-	hDLL = LoadLibraryA("atiadlxx.dll");
-	if (hDLL == NULL) hDLL = LoadLibraryA("atiadlxy.dll");
-
-	if (hDLL != NULL)
-	{
-		ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE)GetProcAddress(hDLL, "ADL_Main_Control_Create");
-		if (ADL_Main_Control_Create != NULL)
-				ADL_Err = ADL_Main_Control_Create(ADL_Main_Memory_Alloc, 1);
-	}
-	else
-	{
-		log_verbose("ADL Library not found!\n");
-	}
-
-	return ADL_Err;
-}
-
-//============================================================
-//  adl_close
-//============================================================
-
-void adl_close()
-{
-	ADL_MAIN_CONTROL_DESTROY ADL_Main_Control_Destroy;
-
-	log_verbose("ATI/AMD ADL close\n");
-
-	for (int i = 0; i <= iNumberAdapters - 1; i++)
-		ADL_Main_Memory_Free((void **)&lpAdapter[i].m_display_list);
-
-	ADL_Main_Memory_Free((void **)&lpAdapterInfo);
-	ADL_Main_Memory_Free((void **)&lpAdapter);
-
-	ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY)GetProcAddress(hDLL, "ADL_Main_Control_Destroy");
-	if (ADL_Main_Control_Destroy != NULL)
-		ADL_Main_Control_Destroy();
-
-	FreeLibrary(hDLL);
-}
-
-//============================================================
-//  aadl_timing::adl_timing
-//============================================================
-
-adl_timing::adl_timing(char *device_name, char *device_key)
-		: m_device_name(device_name)
-{
-
+	strcpy (m_display_name, display_name);
+	strcpy (m_device_key, device_key);
 }
 
 //============================================================
@@ -163,7 +61,7 @@ bool adl_timing::init()
 
 	log_verbose("ATI/AMD ADL init\n");
 
-	ADL_Err = adl_open();
+	ADL_Err = open();
 	if (ADL_Err != ADL_OK)
 	{
 		log_verbose("ERROR: ADL Initialization error!\n");
@@ -213,17 +111,91 @@ bool adl_timing::init()
 		return false;
 	}
 
-	adl_get_driver_version(device_key);
+	get_driver_version(m_device_key);
 
 	log_verbose("ADL functions retrieved successfully.\n");
 	return true;
 }
 
 //============================================================
-//  enum_displays
+//  adl_timing::adl_open
 //============================================================
 
-bool enum_displays(HINSTANCE h_dll)
+int adl_timing::open()
+{
+	ADL_MAIN_CONTROL_CREATE ADL_Main_Control_Create;
+	int ADL_Err = ADL_ERR;
+
+	hDLL = LoadLibraryA("atiadlxx.dll");
+	if (hDLL == NULL) hDLL = LoadLibraryA("atiadlxy.dll");
+
+	if (hDLL != NULL)
+	{
+		ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE)GetProcAddress(hDLL, "ADL_Main_Control_Create");
+		if (ADL_Main_Control_Create != NULL)
+				ADL_Err = ADL_Main_Control_Create(ADL_Main_Memory_Alloc, 1);
+	}
+	else
+	{
+		log_verbose("ADL Library not found!\n");
+	}
+
+	return ADL_Err;
+}
+
+//============================================================
+//  adl_timing::close
+//============================================================
+
+void adl_timing::close()
+{
+	ADL_MAIN_CONTROL_DESTROY ADL_Main_Control_Destroy;
+
+	log_verbose("ATI/AMD ADL close\n");
+
+	for (int i = 0; i <= iNumberAdapters - 1; i++)
+		ADL_Main_Memory_Free((void **)&lpAdapter[i].m_display_list);
+
+	ADL_Main_Memory_Free((void **)&lpAdapterInfo);
+	ADL_Main_Memory_Free((void **)&lpAdapter);
+
+	ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY)GetProcAddress(hDLL, "ADL_Main_Control_Destroy");
+	if (ADL_Main_Control_Destroy != NULL)
+		ADL_Main_Control_Destroy();
+
+	FreeLibrary(hDLL);
+}
+
+//============================================================
+//  adl_timing::get_driver_version
+//============================================================
+
+bool adl_timing::get_driver_version(char *device_key)
+{
+	HKEY hkey;
+	bool found = false;
+
+	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, device_key, 0, KEY_READ , &hkey) == ERROR_SUCCESS)
+	{
+		BYTE cat_ver[32];
+		DWORD length = sizeof(cat_ver);
+		if ((RegQueryValueExA(hkey, "Catalyst_Version", NULL, NULL, cat_ver, &length) == ERROR_SUCCESS) ||
+			(RegQueryValueExA(hkey, "RadeonSoftwareVersion", NULL, NULL, cat_ver, &length) == ERROR_SUCCESS))
+		{
+			found = true;
+			sscanf((char *)cat_ver, "%d.%d", &cat_version, &sub_version);
+			log_verbose("AMD driver version %d.%d\n", cat_version, sub_version);
+		}
+		RegCloseKey(hkey);
+	}
+	return found;
+}
+
+//============================================================
+//  adl_timing::enum_displays
+//============================================================
+
+bool adl_timing::enum_displays(HINSTANCE h_dll)
 {
 	ADL_Adapter_NumberOfAdapters_Get(&iNumberAdapters);
 
@@ -246,14 +218,14 @@ bool enum_displays(HINSTANCE h_dll)
 }
 
 //============================================================
-//  get_device_mapping_from_display_name
+//  adl_timing::get_device_mapping_from_display_name
 //============================================================
 
-bool get_device_mapping_from_display_name(char *target_display, int *adapter_index, int *display_index)
+bool adl_timing::get_device_mapping_from_display_name(int *adapter_index, int *display_index)
 {
 	for (int i = 0; i <= iNumberAdapters -1; i++)
 	{
-		if (!strcmp(target_display, lpAdapter[i].m_display_name))
+		if (!strcmp(m_display_name, lpAdapter[i].m_display_name))
 		{
 			ADLDisplayInfo *display_list;
 			display_list = lpAdapter[i].m_display_list;
@@ -273,10 +245,10 @@ bool get_device_mapping_from_display_name(char *target_display, int *adapter_ind
 }
 
 //============================================================
-//  ADL_display_mode_info_to_modeline
+//  adl_timing::display_mode_info_to_modeline
 //============================================================
 
-bool adl_display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m)
+bool adl_timing::display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m)
 {
 	if (dmi->sDetailedTiming.sHTotal == 0) return false;
 
@@ -308,10 +280,10 @@ bool adl_display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m)
 }
 
 //============================================================
-//  ADL_get_modeline
+//  adl_timing::get_timing
 //============================================================
 
-bool adl_get_modeline(char *target_display, modeline *m)
+bool adl_timing::get_timing(modeline *m)
 {
 	int adapter_index = 0;
 	int display_index = 0;
@@ -325,24 +297,27 @@ bool adl_get_modeline(char *target_display, modeline *m)
 	mode_in.iBitsPerPel       = 32;
 	mode_in.iDisplayFrequency = m->refresh * interlace_factor(m->interlace, 1);
 
-	if (!get_device_mapping_from_display_name(target_display, &adapter_index, &display_index)) return false;
-	if (ADL_Display_ModeTimingOverride_Get(adapter_index, display_index, &mode_in, &mode_info_out) != ADL_OK) return false;
-	if (adl_display_mode_info_to_modeline(&mode_info_out, &m_temp))
+	if (!get_device_mapping_from_display_name(&adapter_index, &display_index)) return false;
+	if (ADL_Display_ModeTimingOverride_Get(adapter_index, display_index, &mode_in, &mode_info_out) != ADL_OK) goto not_found;
+	if (display_mode_info_to_modeline(&mode_info_out, &m_temp))
 	{
 		if (m_temp.interlace == m->interlace)
 		{
 			memcpy(m, &m_temp, sizeof(modeline));
+			m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL | (!(m->type & MODE_DESKTOP)? V_FREQ_EDITABLE :0);
 			return true;
 		}
 	}
+	not_found:
+	m->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 	return false;
 }
 
 //============================================================
-//  ADL_set_modeline
+//  adl_timing::set_timing
 //============================================================
 
-bool adl_set_modeline(char *target_display, modeline *m, int update_mode)
+bool adl_timing::set_timing(modeline *m, int update_mode)
 {
 	int adapter_index = 0;
 	int display_index = 0;
@@ -376,12 +351,12 @@ bool adl_set_modeline(char *target_display, modeline *m, int update_mode)
 	dt->sVOverscanBottom = 0;
 	dt->sVOverscanTop    = 0;
 
-	if (!get_device_mapping_from_display_name(target_display, &adapter_index, &display_index)) return false;
+	if (!get_device_mapping_from_display_name(&adapter_index, &display_index)) return false;
 	if (ADL_Display_ModeTimingOverride_Set(adapter_index, display_index, &mode_info, (update_mode & MODELINE_UPDATE_LIST)? 1 : 0) != ADL_OK) return false;
 
 	// read modeline to trigger timing refresh on modded drivers
 	memcpy(&m_temp, m, sizeof(modeline));
-	if (update_mode & MODELINE_UPDATE) adl_get_modeline(target_display, &m_temp);
+	if (update_mode & MODELINE_UPDATE) get_timing(&m_temp);
 
 	return true;
 }

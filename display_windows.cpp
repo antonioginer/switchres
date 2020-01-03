@@ -99,8 +99,10 @@ int display_manager::init(const char *screen_option)
 	// Initialize custom video
 	modeline user_mode;
 	memset(&user_mode, 0, sizeof(modeline));
-	video = new custom_video();
-	video->init(m_device_name, m_device_id, &user_mode, video_modes, 0, m_device_key);
+	factory = new custom_video();
+	video = factory->make(m_device_name, m_device_id, &user_mode, video_modes, 0, m_device_key);
+	video->init();
+
 
 	return 0;
 }
@@ -215,6 +217,13 @@ int display_manager::get_available_video_modes()
 			{
 				j++;
 				if (m->type & MODE_DESKTOP) memcpy(&desktop_mode, m, sizeof(modeline));
+
+				char modeline_txt[256];
+				log_verbose("%s timing %s\n", video->api_name(), modeline_print(m, modeline_txt, MS_FULL));
+			}
+			else
+			{
+				log_verbose("system mode\n");
 			}
 			k++;
 		}

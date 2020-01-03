@@ -29,6 +29,7 @@ public:
 	modeline video_modes[MAX_MODELINES];
 	modeline desktop_mode;
 
+	custom_video *factory = 0;
 	custom_video *video = 0;
 
 	int init(const char *screen_option);

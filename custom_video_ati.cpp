@@ -14,34 +14,19 @@
 #include <stdio.h>
 #include "custom_video_ati.h"
 
-#define CRTC_DOUBLE_SCAN                    0x0001
-#define CRTC_INTERLACED                     0x0002
-#define CRTC_H_SYNC_POLARITY                0x0004
-#define CRTC_V_SYNC_POLARITY                0x0008
-
-static int get_DWORD(int i, char *lp_data);
-static int get_DWORD_BCD(int i, char *lp_data);
-static void set_DWORD(char *data_string, UINT32 data_word, int offset);
-static void set_DWORD_BCD(char *data_string, UINT32 data_word, int offset);
-static int os_version(void);
-static bool is_elevated();
-static int win_interlace_factor(modeline *mode);
-
 const auto log_verbose = printf;
 const auto log_info = printf;
 const auto log_error = printf;
 
-char m_device_name[32];
-char m_device_key[256];
-int win_version;
 
 //============================================================
 //  ati_timing::ati_timing
 //============================================================
 
-ati_timing::ati_timing(char *device_name, char *device_key, char *device_id)
+ati_timing::ati_timing(char *device_name, char *device_key)
 {
-
+	strcpy (m_device_name, device_name);
+	strcpy (m_device_key, device_key);
 }
 
 
@@ -66,10 +51,10 @@ bool ati_timing::init()
 }
 
 //============================================================
-//  ati_get_modeline
+//  ati_timing::get_timing
 //============================================================
 
-bool ati_get_modeline(modeline *mode)
+bool ati_timing::get_timing(modeline *mode)
 {
 	HKEY hKey;
 	char lp_name[1024];
@@ -110,11 +95,16 @@ bool ati_get_modeline(modeline *mode)
 			mode->hfreq = mode->pclock / mode->htotal;
 			mode->vfreq = mode->hfreq / mode->vtotal * (mode->interlace?2:1);
 			mode->refresh_label = refresh_label;
+			mode->type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY | (!(mode->type & MODE_DESKTOP)? V_FREQ_EDITABLE | (mode->width == DUMMY_WIDTH? X_RES_EDITABLE:0):0);
 
 			int checksum = 65535 - get_DWORD(0, lp_data) - mode->htotal - mode->hactive - mode->hend
 						- mode->vtotal - mode->vactive - mode->vend - mode->pclock/10000;
 			if (checksum != get_DWORD(64, lp_data))
 				log_verbose("bad checksum! ");
+		}
+		else
+		{
+			m->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 		}
 		RegCloseKey(hKey);
 		return (found);
@@ -124,10 +114,10 @@ bool ati_get_modeline(modeline *mode)
 }
 
 //============================================================
-//  ati_set_modeline
+//  ati_timing::set_timing
 //============================================================
 
-bool ati_set_modeline(modeline *mode)
+bool ati_timing::set_timing(modeline *mode)
 {
 	HKEY hKey;
 	char lp_name[1024];
@@ -182,7 +172,7 @@ bool ati_set_modeline(modeline *mode)
 //  ati_refresh_timings
 //============================================================
 
-void ati_refresh_timings(void)
+void ati_timing::refresh_timings(void)
 {
 	int iModeNum = 0;
 	DEVMODEA lpDevMode;
@@ -198,7 +188,7 @@ void ati_refresh_timings(void)
 // get_DWORD
 //============================================================
 
-static int get_DWORD(int i, char *lp_data)
+int ati_timing::get_DWORD(int i, char *lp_data)
 {
 	char out[32] = "";
 	UINT32 x;
@@ -212,7 +202,7 @@ static int get_DWORD(int i, char *lp_data)
 // get_DWORD_BCD
 //============================================================
 
-static int get_DWORD_BCD(int i, char *lp_data)
+int ati_timing::get_DWORD_BCD(int i, char *lp_data)
 {
 	char out[32] = "";
 	UINT32 x;
@@ -226,7 +216,7 @@ static int get_DWORD_BCD(int i, char *lp_data)
 // set_DWORD
 //============================================================
 
-static void set_DWORD(char *data_string, UINT32 data_dword, int offset)
+void ati_timing::set_DWORD(char *data_string, UINT32 data_dword, int offset)
 {
 	char *p_dword = (char*)&data_dword;
 
@@ -240,7 +230,7 @@ static void set_DWORD(char *data_string, UINT32 data_dword, int offset)
 // set_DWORD_BCD
 //============================================================
 
-static void set_DWORD_BCD(char *data_string, UINT32 data_dword, int offset)
+void ati_timing::set_DWORD_BCD(char *data_string, UINT32 data_dword, int offset)
 {
 	if (data_dword < 100000000)
 	{
@@ -265,7 +255,7 @@ static void set_DWORD_BCD(char *data_string, UINT32 data_dword, int offset)
 // os_version
 //============================================================
 
-static int os_version(void)
+int ati_timing::os_version(void)
 {
 	OSVERSIONINFOA lpVersionInfo;
 
@@ -280,7 +270,7 @@ static int os_version(void)
 //  is_elevated
 //============================================================
 
-static bool is_elevated()
+bool ati_timing::is_elevated()
 {
 	HANDLE htoken;
 	bool result = false;
@@ -307,7 +297,7 @@ static bool is_elevated()
 // win_interlace_factor
 //============================================================
 
-static int win_interlace_factor(modeline *mode)
+int ati_timing::win_interlace_factor(modeline *mode)
 {
 	if (win_version > 5 && mode->interlace)
 		return 2;
