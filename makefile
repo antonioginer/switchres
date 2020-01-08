@@ -3,12 +3,12 @@ PLATFORM := $(shell uname)
 MAIN = switchres_main
 SRC = monitor.cpp modeline.cpp switchres.cpp
 
-CC = g++
+CXX ?= g++
 
 # Linux
 ifeq  ($(PLATFORM),Linux)
 #SRC += switchres_sdl.cpp 
-CFLAGS = -O3
+CPPFLAGS = -O3
 LIBS =
 REMOVE = rm -f 
 
@@ -21,11 +21,11 @@ REMOVE = del /f
 endif
 
 %.o : %.cpp
-		$(CC) -c $(CFLAGS) $< -o $@ 
+		$(CXX) -c $(CPPFLAGS) $< -o $@
 
 all: $(SRC:.cpp=.o) $(MAIN).cpp
 		@echo $(OSFLAG)
-		$(CC) $(CFLAGS) $(SRC:.cpp=.o) $(MAIN).cpp $(LIBS) -o $(MAIN)
+		$(CXX) $(CPPFLAGS) $(SRC:.cpp=.o) $(MAIN).cpp $(LIBS) -o $(MAIN)
 
 clean:
 		$(REMOVE) $(SRC:.cpp=.o) $(MAIN)
