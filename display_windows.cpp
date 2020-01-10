@@ -80,7 +80,7 @@ bool windows_display::init(const char *screen_option)
 	memset(&user_mode, 0, sizeof(modeline));
 	factory = new custom_video();
 	video = factory->make(m_device_name, m_device_id, &user_mode, video_modes, 0, m_device_key);
-	video->init();
+	if (video) video->init();
 
 
 	return true;
@@ -192,7 +192,7 @@ int windows_display::get_available_video_modes()
 
 			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s %s: ", k, m->width, m->height, m->refresh, m->type & MODE_DESKTOP?"*":"",  m->type & MODE_ROTATED?"rot":"");
 
-			if (video->get_timing(m))
+			if (video && video->get_timing(m))
 			{
 				j++;
 				if (m->type & MODE_DESKTOP) memcpy(&desktop_mode, m, sizeof(modeline));
