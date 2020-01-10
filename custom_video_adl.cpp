@@ -309,7 +309,6 @@ bool adl_timing::get_timing(modeline *m)
 		}
 	}
 	not_found:
-	m->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 	return false;
 }
 

@@ -17,6 +17,15 @@
 #include "modeline.h"
 #include "custom_video.h"
 
+typedef struct display_settings
+{
+	char   screen[32];
+	bool   lock_unsupported_modes;
+	bool   lock_system_modes;
+	bool   refresh_dont_care;
+} display_settings;
+
+
 class display_manager
 {
 public:
@@ -35,7 +44,7 @@ public:
 	custom_video *video = 0;
 
 	display_manager *make();
-	virtual bool init(const char *screen_option) { return false; }
+	virtual bool init(display_settings *ds) { return false; }
 	virtual bool get_desktop_mode() { return false; }
 	virtual bool set_desktop_mode(modeline *mode, int flags) { return false; }
 	virtual bool restore_desktop_mode() { return false; }
