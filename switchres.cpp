@@ -65,10 +65,6 @@ switchres_manager::switchres_manager()
 	gs.super_width = 2560;
 }
 
-switchres_manager::~switchres_manager()
-{
-}
-
 //============================================================
 //  switchres_manager::init
 //============================================================
@@ -93,6 +89,9 @@ void switchres_manager::init()
 	}
 	else
 		get_monitor_specs();
+
+	m_display_factory = new display_manager();
+	m_display = m_display_factory->make();
 }
 
 
@@ -103,7 +102,7 @@ void switchres_manager::init()
 int switchres_manager::get_monitor_specs()
 {
 	char default_monitor[] = "generic_15";
-
+	
 	memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 
 	if (!strcmp(cs.monitor, "custom"))
@@ -163,7 +162,7 @@ bool switchres_manager::get_video_mode()
 	{
 		i = 1;
 		table_size = MAX_MODELINES;
-		mode = &display.video_modes[i];
+		mode = &m_display->video_modes[i];
 	}
 
 	while (mode->width && i < table_size)
