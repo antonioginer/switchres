@@ -27,7 +27,7 @@ class windows_display : public display_manager
 {
 	public:
 		windows_display() {};
-		bool init(const char *screen_option);
+		bool init(display_settings *ds);
 		bool get_desktop_mode();
 		bool set_desktop_mode(modeline *mode, int flags);
 		bool restore_desktop_mode();

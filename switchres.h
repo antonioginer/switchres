@@ -59,8 +59,6 @@ typedef struct config_settings
 	char   lcd_range[256];
 	bool   monitor_rotates_cw;
 	int    monitor_count;
-	bool   lock_system_modes;
-	bool   refresh_dont_care;
 } config_settings;
 
 
@@ -76,6 +74,7 @@ public:
 	};
 
 	config_settings cs;
+	display_settings ds;
 	generator_settings gs;
 	game_info game;
 	modeline best_mode = {};

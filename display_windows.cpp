@@ -21,8 +21,10 @@ const auto log_error = printf;
 //  windows_display::init
 //============================================================
 
-bool windows_display::init(const char *screen_option)
+bool windows_display::init(display_settings *ds)
 {
+	m_lock_unsupported_modes = ds->lock_unsupported_modes;
+
 	DISPLAY_DEVICEA lpDisplayDevice[DISPLAY_MAX];
 	int idev = 0;
 	int found = -1;
@@ -35,8 +37,8 @@ bool windows_display::init(const char *screen_option)
 		if (EnumDisplayDevicesA(NULL, idev, &lpDisplayDevice[idev], 0) == FALSE)
 			break;
 
-		if ((!strcmp(screen_option, "auto") && (lpDisplayDevice[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
-			|| !strcmp(screen_option, lpDisplayDevice[idev].DeviceName))
+		if ((!strcmp(ds->screen, "auto") && (lpDisplayDevice[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
+			|| !strcmp(ds->screen, lpDisplayDevice[idev].DeviceName))
 			found = idev;
 
 		idev++;
@@ -202,6 +204,7 @@ int windows_display::get_available_video_modes()
 			}
 			else
 			{
+				m->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 				log_verbose("system mode\n");
 			}
 			k++;

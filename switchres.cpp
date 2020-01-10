@@ -48,8 +48,10 @@ switchres_manager::switchres_manager()
 	sprintf(cs.lcd_range, "auto");
 	cs.monitor_rotates_cw = false;
 	cs.monitor_count = 1;
-	cs.lock_system_modes = true;
-	cs.refresh_dont_care = false;
+
+	sprintf(ds.screen, "auto");
+	ds.lock_system_modes = true;
+	ds.refresh_dont_care = false;
 
 	// Set modeline generator default options
 	gs.modeline_generation = true;
@@ -171,10 +173,10 @@ bool switchres_manager::get_video_mode()
 		if (!gs.modeline_generation)
 			mode->type &= ~XYV_EDITABLE;
 
-		if (cs.refresh_dont_care)
+		if (ds.refresh_dont_care)
 			mode->type |= V_FREQ_EDITABLE;
 		
-		if (cs.lock_system_modes && (mode->type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode->type & MODE_DESKTOP) && !(mode->type & MODE_USER_DEF))
+		if (ds.lock_system_modes && (mode->type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode->type & MODE_DESKTOP) && !(mode->type & MODE_USER_DEF))
 			mode->type |= MODE_DISABLED;
 
 		log_verbose("\nSwitchRes: %s%4d%sx%s%4d%s_%s%d=%.6fHz%s%s\n",
