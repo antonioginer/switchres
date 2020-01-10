@@ -257,14 +257,14 @@ int main(int argc, char **argv)
 	}
 
 	switchres.init();
-	switchres.display.init("auto");
-	switchres.display.get_desktop_mode();
-	switchres.display.get_available_video_modes();
+	switchres.display()->init("auto");
+	switchres.display()->get_desktop_mode();
+	switchres.display()->get_available_video_modes();
 
 	if (resolution_flag)
 	{
 		// Create dummy mode entry
-		modeline *mode = &switchres.display.video_modes[1];
+		modeline *mode = &switchres.display()->video_modes[1];
 		mode->width = switchres.game.width;
 		mode->height = switchres.game.height;
 		mode->refresh = switchres.game.refresh;

@@ -1,6 +1,6 @@
 /**************************************************************
 
-   display.cpp - Display manager
+   display_windows.cpp - Display manager for Windows
 
    ---------------------------------------------------------
 
@@ -12,37 +12,16 @@
  **************************************************************/
 
 #include <stdio.h>
-#include <windows.h>
-#include "modeline.h"
-#include "custom_video.h"
-#include "display.h"
+#include "display_windows.h"
 
 const auto log_verbose = printf;
 const auto log_error = printf;
 
 //============================================================
-//  PARAMETERS
+//  windows_display::init
 //============================================================
 
-// display modes
-#define DM_INTERLACED 0x00000002
-#define DISPLAY_MAX 16
-
-//============================================================
-//  LOCAL VARIABLES
-//============================================================
-
-static char m_device_name[32];
-static char m_device_id[128];
-static char m_device_key[128];
-static DEVMODEA desktop_devmode;
-
-
-//============================================================
-//  display_manager::init
-//============================================================
-
-int display_manager::init(const char *screen_option)
+bool windows_display::init(const char *screen_option)
 {
 	DISPLAY_DEVICEA lpDisplayDevice[DISPLAY_MAX];
 	int idev = 0;
@@ -91,7 +70,7 @@ int display_manager::init(const char *screen_option)
 	else
 	{
 		log_verbose("SwitchRes: Failed obtaining default video registry key\n");
-		return -1;
+		return false;
 	}
 
 	log_verbose("SwitchRes: Device key: %s\n", m_device_key);
@@ -104,35 +83,35 @@ int display_manager::init(const char *screen_option)
 	video->init();
 
 
-	return 0;
+	return true;
 }
 
 
 //============================================================
-//  display_manager::get_desktop_mode
+//  windows_display::get_desktop_mode
 //============================================================
 
-int display_manager::get_desktop_mode()
+bool windows_display::get_desktop_mode()
 {
-	memset(&desktop_devmode, 0, sizeof(DEVMODEA));
-	desktop_devmode.dmSize = sizeof(DEVMODEA);
+	memset(&m_devmode, 0, sizeof(DEVMODEA));
+	m_devmode.dmSize = sizeof(DEVMODEA);
 
-	if (EnumDisplaySettingsExA(!strcmp(m_device_name, "auto")?NULL:m_device_name, ENUM_CURRENT_SETTINGS, &desktop_devmode, 0))
+	if (EnumDisplaySettingsExA(!strcmp(m_device_name, "auto")?NULL:m_device_name, ENUM_CURRENT_SETTINGS, &m_devmode, 0))
 	{
-		desktop_mode.width = desktop_devmode.dmDisplayOrientation == DMDO_DEFAULT || desktop_devmode.dmDisplayOrientation == DMDO_180? desktop_devmode.dmPelsWidth:desktop_devmode.dmPelsHeight;
-		desktop_mode.height = desktop_devmode.dmDisplayOrientation == DMDO_DEFAULT || desktop_devmode.dmDisplayOrientation == DMDO_180? desktop_devmode.dmPelsHeight:desktop_devmode.dmPelsWidth;
-		desktop_mode.refresh = desktop_devmode.dmDisplayFrequency;
-		desktop_mode.interlace = (desktop_devmode.dmDisplayFlags & DM_INTERLACED)?1:0;
+		desktop_mode.width = m_devmode.dmDisplayOrientation == DMDO_DEFAULT || m_devmode.dmDisplayOrientation == DMDO_180? m_devmode.dmPelsWidth:m_devmode.dmPelsHeight;
+		desktop_mode.height = m_devmode.dmDisplayOrientation == DMDO_DEFAULT || m_devmode.dmDisplayOrientation == DMDO_180? m_devmode.dmPelsHeight:m_devmode.dmPelsWidth;
+		desktop_mode.refresh = m_devmode.dmDisplayFrequency;
+		desktop_mode.interlace = (m_devmode.dmDisplayFlags & DM_INTERLACED)?1:0;
 		return true;
 	}
 	return false;
 }
 
 //============================================================
-//  display_manager::set_desktop_mode
+//  windows_display::set_desktop_mode
 //============================================================
 
-int display_manager::set_desktop_mode(modeline *mode, int flags)
+bool windows_display::set_desktop_mode(modeline *mode, int flags)
 {
 	modeline *backup_mode = video->get_backup_mode();
 	modeline *mode_to_check_interlace = backup_mode->hactive? backup_mode : mode;
@@ -158,22 +137,22 @@ int display_manager::set_desktop_mode(modeline *mode, int flags)
 }
 
 //============================================================
-//  display_manager::restore_desktop_mode
+//  windows_display::restore_desktop_mode
 //============================================================
 
-int display_manager::restore_desktop_mode()
+bool windows_display::restore_desktop_mode()
 {
-	if (ChangeDisplaySettingsExA(m_device_name, &desktop_devmode, NULL, 0, 0) == DISP_CHANGE_SUCCESSFUL)
+	if (ChangeDisplaySettingsExA(m_device_name, &m_devmode, NULL, 0, 0) == DISP_CHANGE_SUCCESSFUL)
 		return true;
 
 	return false;
 }
 
 //============================================================
-//  display_manager::get_available_video_modes
+//  windows_display::get_available_video_modes
 //============================================================
 
-int display_manager::get_available_video_modes()
+int windows_display::get_available_video_modes()
 {
 	int iModeNum = 0, i = 0, j = 0, k = 1;
 	DEVMODEA lpDevMode;
@@ -234,3 +213,4 @@ int display_manager::get_available_video_modes()
 	log_verbose("SwitchRes: Found %d custom of %d active video modes\n", j, k);
 	return k;
 }
+
