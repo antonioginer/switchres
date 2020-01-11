@@ -50,6 +50,7 @@ switchres_manager::switchres_manager()
 	cs.monitor_count = 1;
 
 	sprintf(ds.screen, "auto");
+	ds.lock_unsupported_modes = true;
 	ds.lock_system_modes = true;
 	ds.refresh_dont_care = false;
 
