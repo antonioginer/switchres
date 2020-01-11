@@ -37,19 +37,20 @@ public:
 		if (video) delete video;
 	};
 
+	display_manager *make();
+	virtual bool init(display_settings *ds) { return false; }
+
+	bool add_mode(modeline *mode);
+	bool del_mode(modeline *mode);
+	bool update_mode(modeline *mode);
+	bool set_mode(modeline *mode);
+
 	modeline video_modes[MAX_MODELINES] = {};
-	modeline desktop_mode;
+	modeline desktop_mode = {};
 
 	custom_video *factory = 0;
 	custom_video *video = 0;
-
-	display_manager *make();
-	virtual bool init(display_settings *ds) { return false; }
-	virtual bool get_desktop_mode() { return false; }
-	virtual bool set_desktop_mode(modeline *mode, int flags) { return false; }
-	virtual bool restore_desktop_mode() { return false; }
-	virtual int get_available_video_modes() { return 0; }
-
+	
 	bool m_lock_unsupported_modes;
 	bool m_desktop_rotated;
 

@@ -28,12 +28,13 @@ class windows_display : public display_manager
 	public:
 		windows_display() {};
 		bool init(display_settings *ds);
+
+	private:
 		bool get_desktop_mode();
 		bool set_desktop_mode(modeline *mode, int flags);
 		bool restore_desktop_mode();
 		int get_available_video_modes();
 
-	private:
 		char m_device_name[32];
 		char m_device_id[128];
 		char m_device_key[128];
