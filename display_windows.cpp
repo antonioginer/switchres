@@ -84,6 +84,9 @@ bool windows_display::init(display_settings *ds)
 	video = factory->make(m_device_name, m_device_id, &user_mode, video_modes, 0, m_device_key);
 	if (video) video->init();
 
+	// Build our display's mode list
+	get_desktop_mode();
+	get_available_video_modes();
 
 	return true;
 }
