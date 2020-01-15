@@ -1,6 +1,6 @@
 /**************************************************************
 
-   display.cpp - Display manager
+   display_linux.cpp - Display manager for Linux
 
    ---------------------------------------------------------
 
@@ -11,31 +11,17 @@
 
  **************************************************************/
 
-#include "display.h"
-#if defined(_WIN32)
-#include "display_windows.h"
-#elif defined(__linux__)
+#include <stdio.h>
 #include "display_linux.h"
-#endif
+
+const auto log_verbose = printf;
+const auto log_error = printf;
 
 //============================================================
-//  display_manager::make
+//  windows_display::init
 //============================================================
 
-display_manager *display_manager::make()
+bool linux_display::init(display_settings *ds)
 {
-
-#if defined(_WIN32)
-	m_display_manager = new windows_display();
-#elif defined(__linux__)
-	m_display_manager = new linux_display();
-#endif
-
-	if (m_display_manager)
-	{
-		return m_display_manager;
-	}
-
-	return nullptr;
+	return true;
 }
-
