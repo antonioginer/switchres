@@ -14,7 +14,17 @@
 #ifndef __DISPLAY_H__
 #define __DISPLAY_H__
 
+#include "modeline.h"
 #include "custom_video.h"
+
+typedef struct display_settings
+{
+	char   screen[32];
+	bool   lock_unsupported_modes;
+	bool   lock_system_modes;
+	bool   refresh_dont_care;
+} display_settings;
+
 
 class display_manager
 {
@@ -27,21 +37,26 @@ public:
 		if (video) delete video;
 	};
 
+	display_manager *make();
+	virtual bool init(display_settings *ds) { return false; }
+
+	bool add_mode(modeline *mode);
+	bool del_mode(modeline *mode);
+	bool update_mode(modeline *mode);
+	bool set_mode(modeline *mode);
+
 	modeline video_modes[MAX_MODELINES] = {};
-	modeline desktop_mode;
+	modeline desktop_mode = {};
 
 	custom_video *factory = 0;
 	custom_video *video = 0;
-
-	int init(const char *screen_option);
-	int get_desktop_mode();
-	int set_desktop_mode(modeline *mode, int flags);
-	int restore_desktop_mode();
-	int get_available_video_modes();
-
-private:
+	
 	bool m_lock_unsupported_modes;
 	bool m_desktop_rotated;
+
+private:
+	display_manager *m_display_manager = 0;
+
 };
 
 #endif
