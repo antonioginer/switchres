@@ -59,8 +59,6 @@ typedef struct config_settings
 	char   lcd_range[256];
 	bool   monitor_rotates_cw;
 	int    monitor_count;
-	bool   lock_system_modes;
-	bool   refresh_dont_care;
 } config_settings;
 
 
@@ -69,23 +67,28 @@ class switchres_manager
 public:
 
 	switchres_manager();
-	~switchres_manager();
+	~switchres_manager()
+	{
+		if (m_display_factory) delete m_display_factory;
+		if (m_display) delete m_display;
+	};
 
 	config_settings cs;
+	display_settings ds;
 	generator_settings gs;
 	game_info game;
-	modeline best_mode;
-	modeline user_mode;
+	modeline best_mode = {};
+	modeline user_mode = {};
 	monitor_range range[MAX_RANGES];
-
-	display_manager display;
 
 	void init();
 	int get_monitor_specs();
 	bool get_video_mode();
-
+	display_manager *display() { return m_display; }
 
 private:
+	display_manager *m_display_factory = 0;
+	display_manager *m_display = 0;
 };
 
 

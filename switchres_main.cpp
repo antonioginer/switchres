@@ -116,14 +116,19 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 				case s2i("lcd_range"):
 					sprintf(switchres.cs.lcd_range, value.c_str());
 					break;
-				/*case s2i("lock_unsupported_modes"):
-					switchres.cs.lock_unsupported_modes = atoi(value.c_str());
-					break;*/
+
+				// Display options
+				case s2i("screen"):
+					sprintf(switchres.ds.screen, value.c_str());
+					break;
+				case s2i("lock_unsupported_modes"):
+					switchres.ds.lock_unsupported_modes = atoi(value.c_str());
+					break;
 				case s2i("lock_system_modes"):
-					switchres.cs.lock_system_modes = atoi(value.c_str());
+					switchres.ds.lock_system_modes = atoi(value.c_str());
 					break;
 				case s2i("refresh_dont_care"):
-					switchres.cs.refresh_dont_care = atoi(value.c_str());
+					switchres.ds.refresh_dont_care = atoi(value.c_str());
 					break;
 
 				// Modeline generation options
@@ -186,11 +191,12 @@ int main(int argc, char **argv)
 			{"monitor",     required_argument, 0, 'm'},
 			{"orientation", required_argument, 0, 'o'},
 			{"resolution",  required_argument, 0, 'r'},
+			{"screen",      required_argument, 0, 's'},
 			{0, 0, 0, 0}
 		};
 
 		int option_index = 0;
-		c = getopt_long(argc, argv, "vhm:o:r:", long_options, &option_index);
+		c = getopt_long(argc, argv, "vhm:o:r:s:", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -220,6 +226,10 @@ int main(int argc, char **argv)
 					break;
 				}
 				resolution_flag = true;
+				break;
+
+			case 's':
+				sprintf(switchres.ds.screen, optarg);
 				break;
 
 			default:
@@ -257,14 +267,12 @@ int main(int argc, char **argv)
 	}
 
 	switchres.init();
-	switchres.display.init("auto");
-	switchres.display.get_desktop_mode();
-	switchres.display.get_available_video_modes();
+	switchres.display()->init(&switchres.ds);
 
 	if (resolution_flag)
 	{
 		// Create dummy mode entry
-		modeline *mode = &switchres.display.video_modes[1];
+		modeline *mode = &switchres.display()->video_modes[1];
 		mode->width = switchres.game.width;
 		mode->height = switchres.game.height;
 		mode->refresh = switchres.game.refresh;

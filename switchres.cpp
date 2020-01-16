@@ -48,8 +48,11 @@ switchres_manager::switchres_manager()
 	sprintf(cs.lcd_range, "auto");
 	cs.monitor_rotates_cw = false;
 	cs.monitor_count = 1;
-	cs.lock_system_modes = true;
-	cs.refresh_dont_care = false;
+
+	sprintf(ds.screen, "auto");
+	ds.lock_unsupported_modes = true;
+	ds.lock_system_modes = true;
+	ds.refresh_dont_care = false;
 
 	// Set modeline generator default options
 	gs.modeline_generation = true;
@@ -63,10 +66,6 @@ switchres_manager::switchres_manager()
 	gs.monitor_aspect = STANDARD_CRT_ASPECT;
 	gs.refresh_tolerance = 2.0f;
 	gs.super_width = 2560;
-}
-
-switchres_manager::~switchres_manager()
-{
 }
 
 //============================================================
@@ -93,6 +92,9 @@ void switchres_manager::init()
 	}
 	else
 		get_monitor_specs();
+
+	m_display_factory = new display_manager();
+	m_display = m_display_factory->make();
 }
 
 
@@ -103,7 +105,7 @@ void switchres_manager::init()
 int switchres_manager::get_monitor_specs()
 {
 	char default_monitor[] = "generic_15";
-
+	
 	memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 
 	if (!strcmp(cs.monitor, "custom"))
@@ -163,7 +165,7 @@ bool switchres_manager::get_video_mode()
 	{
 		i = 1;
 		table_size = MAX_MODELINES;
-		mode = &display.video_modes[i];
+		mode = &m_display->video_modes[i];
 	}
 
 	while (mode->width && i < table_size)
@@ -172,10 +174,10 @@ bool switchres_manager::get_video_mode()
 		if (!gs.modeline_generation)
 			mode->type &= ~XYV_EDITABLE;
 
-		if (cs.refresh_dont_care)
+		if (ds.refresh_dont_care)
 			mode->type |= V_FREQ_EDITABLE;
 		
-		if (cs.lock_system_modes && (mode->type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode->type & MODE_DESKTOP) && !(mode->type & MODE_USER_DEF))
+		if (ds.lock_system_modes && (mode->type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode->type & MODE_DESKTOP) && !(mode->type & MODE_USER_DEF))
 			mode->type |= MODE_DISABLED;
 
 		log_verbose("\nSwitchRes: %s%4d%sx%s%4d%s_%s%d=%.6fHz%s%s\n",

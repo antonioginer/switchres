@@ -212,7 +212,10 @@ bool adl_timing::enum_displays(HINSTANCE h_dll)
 		memcpy(&lpAdapter[i].m_display_name, &lpAdapterInfo[i].strDisplayName, ADL_MAX_PATH);
 		lpAdapter[i].m_num_of_displays = 0;
 		lpAdapter[i].m_display_list = 0;
-		ADL_Display_DisplayInfo_Get(lpAdapter[i].m_index, &lpAdapter[i].m_num_of_displays, &lpAdapter[i].m_display_list, 1);
+
+		// Only get display info from target adapter (this api is very slow!)
+		if (!strcmp(lpAdapter[i].m_display_name, m_display_name))
+			ADL_Display_DisplayInfo_Get(lpAdapter[i].m_index, &lpAdapter[i].m_num_of_displays, &lpAdapter[i].m_display_list, 1);
 	}
 	return true;
 }
@@ -309,7 +312,6 @@ bool adl_timing::get_timing(modeline *m)
 		}
 	}
 	not_found:
-	m->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 	return false;
 }
 
