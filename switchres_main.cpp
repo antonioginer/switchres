@@ -272,13 +272,9 @@ int main(int argc, char **argv)
 	if (resolution_flag)
 	{
 		// Create dummy mode entry
-		modeline *mode = &switchres.display()->video_modes[1];
-		mode->width = switchres.game.width;
-		mode->height = switchres.game.height;
-		mode->refresh = switchres.game.refresh;
-		mode->vfreq = mode->refresh;
-		mode->hactive = mode->vactive = 1;
-		mode->type = XYV_EDITABLE;
+		modeline mode = {};
+		mode.type = XYV_EDITABLE;
+		switchres.display()->video_modes.push_back(mode);
 		switchres.get_video_mode();
 	}
 

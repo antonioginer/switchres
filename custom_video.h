@@ -31,7 +31,7 @@ public:
 	custom_video();
 	~custom_video();
 
-	custom_video *make(char *device_name, char *device_id, modeline *user_mode, modeline *mode_table, int method, char *s_param);
+	custom_video *make(char *device_name, char *device_id, modeline *user_mode, int method, char *s_param);
 	virtual const char *api_name() { return "empty"; }
 	virtual bool init();
 	virtual void close();
@@ -47,7 +47,6 @@ public:
 	int custom_method;
 	modeline m_user_mode = {};
 	modeline m_backup_mode = {};
-	modeline *m_mode_table;
 	char m_device_name[32];
 	char m_device_key[128];
 	char ps_timing[256];
