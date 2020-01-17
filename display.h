@@ -14,6 +14,7 @@
 #ifndef __DISPLAY_H__
 #define __DISPLAY_H__
 
+#include <vector>
 #include "modeline.h"
 #include "custom_video.h"
 
@@ -45,7 +46,7 @@ public:
 	bool update_mode(modeline *mode);
 	bool set_mode(modeline *mode);
 
-	modeline video_modes[MAX_MODELINES] = {};
+	std::vector<modeline> video_modes = {};
 	modeline desktop_mode = {};
 
 	custom_video *factory = 0;

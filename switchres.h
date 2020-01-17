@@ -76,7 +76,7 @@ public:
 	config_settings cs;
 	display_settings ds;
 	generator_settings gs;
-	game_info game;
+	game_info game = {};
 	modeline best_mode = {};
 	modeline user_mode = {};
 	monitor_range range[MAX_RANGES];

@@ -39,10 +39,8 @@ custom_video::~custom_video()
 //  custom_video::make
 //============================================================
 
-custom_video *custom_video::make(char *device_name, char *device_id, modeline *user_mode, modeline *mode_table, int method, char *s_param)
+custom_video *custom_video::make(char *device_name, char *device_id, modeline *user_mode, int method, char *s_param)
 {
-	m_mode_table = mode_table;
-
 	if (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)
 	{
 		m_custom_video = new pstrip_timing(device_name, user_mode, s_param);
@@ -263,12 +261,14 @@ bool custom_video::update_timing(modeline *mode)
 				int found = 0;
 				for (int i = 0; i <= MAX_MODELINES; i++)
 				{
+					/*
 					if (m_mode_table[i].width == mode->width && m_mode_table[i].height == mode->height && m_mode_table[i].refresh == mode->refresh)
 					{
 						memcpy(&m_backup_mode, &m_mode_table[i], sizeof(modeline));
 						found = 1;
 						break;
 					}
+					*/
 				}
 				if (!found)
 				{

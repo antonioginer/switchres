@@ -81,7 +81,7 @@ bool windows_display::init(display_settings *ds)
 	modeline user_mode;
 	memset(&user_mode, 0, sizeof(modeline));
 	factory = new custom_video();
-	video = factory->make(m_device_name, m_device_id, &user_mode, video_modes, 0, m_device_key);
+	video = factory->make(m_device_name, m_device_id, &user_mode, 0, m_device_key);
 	if (video) video->init();
 
 	// Build our display's mode list
@@ -169,47 +169,44 @@ int windows_display::get_available_video_modes()
 
 	while (EnumDisplaySettingsExA(m_device_name, iModeNum, &lpDevMode, m_lock_unsupported_modes?0:EDS_RAWMODE) != 0)
 	{
-		if (k == MAX_MODELINES)
+		if (lpDevMode.dmBitsPerPel == 32 && lpDevMode.dmDisplayFixedOutput == DMDFO_DEFAULT)
 		{
-			log_verbose("SwitchRes: Warning, too many active modelines for storage %d\n", k);
-			break;
-		}
-		else if (lpDevMode.dmBitsPerPel == 32 && lpDevMode.dmDisplayFixedOutput == DMDFO_DEFAULT)
-		{
-			modeline *m = &video_modes[k];
-			memset(m, 0, sizeof(struct modeline));
-			m->interlace = (lpDevMode.dmDisplayFlags & DM_INTERLACED)?1:0;
-			m->width = lpDevMode.dmDisplayOrientation == DMDO_DEFAULT || lpDevMode.dmDisplayOrientation == DMDO_180? lpDevMode.dmPelsWidth:lpDevMode.dmPelsHeight;
-			m->height = lpDevMode.dmDisplayOrientation == DMDO_DEFAULT || lpDevMode.dmDisplayOrientation == DMDO_180? lpDevMode.dmPelsHeight:lpDevMode.dmPelsWidth;
-			m->refresh = lpDevMode.dmDisplayFrequency;
-			m->hactive = m->width;
-			m->vactive = m->height;
-			m->vfreq = m->refresh;
-			m->type |= lpDevMode.dmDisplayOrientation == DMDO_90 || lpDevMode.dmDisplayOrientation == DMDO_270? MODE_ROTATED : MODE_OK;
+			modeline m;
+			memset(&m, 0, sizeof(struct modeline));
+			m.interlace = (lpDevMode.dmDisplayFlags & DM_INTERLACED)?1:0;
+			m.width = lpDevMode.dmDisplayOrientation == DMDO_DEFAULT || lpDevMode.dmDisplayOrientation == DMDO_180? lpDevMode.dmPelsWidth:lpDevMode.dmPelsHeight;
+			m.height = lpDevMode.dmDisplayOrientation == DMDO_DEFAULT || lpDevMode.dmDisplayOrientation == DMDO_180? lpDevMode.dmPelsHeight:lpDevMode.dmPelsWidth;
+			m.refresh = lpDevMode.dmDisplayFrequency;
+			m.hactive = m.width;
+			m.vactive = m.height;
+			m.vfreq = m.refresh;
+			m.type |= lpDevMode.dmDisplayOrientation == DMDO_90 || lpDevMode.dmDisplayOrientation == DMDO_270? MODE_ROTATED : MODE_OK;
 
-			for (i = 0; i < k; i++) if (video_modes[i].width == m->width && video_modes[i].height == m->height && video_modes[i].refresh == m->refresh) goto found;
+			for (auto mode : video_modes) if (mode.width == m.width && mode.height == m.height && mode.refresh == m.refresh) goto found;
 
-			if (m->width == desktop_mode.width && m->height == desktop_mode.height && m->refresh == desktop_mode.refresh)
+			if (m.width == desktop_mode.width && m.height == desktop_mode.height && m.refresh == desktop_mode.refresh)
 			{
-				m->type |= MODE_DESKTOP;
-				if (m->type & MODE_ROTATED) m_desktop_rotated = true;
+				m.type |= MODE_DESKTOP;
+				if (m.type & MODE_ROTATED) m_desktop_rotated = true;
 			}
 
-			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s %s: ", k, m->width, m->height, m->refresh, m->type & MODE_DESKTOP?"*":"",  m->type & MODE_ROTATED?"rot":"");
+			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s %s: ", k, m.width, m.height, m.refresh, m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
 
-			if (video && video->get_timing(m))
+			if (video && video->get_timing(&m))
 			{
 				j++;
-				if (m->type & MODE_DESKTOP) memcpy(&desktop_mode, m, sizeof(modeline));
+				if (m.type & MODE_DESKTOP) memcpy(&desktop_mode, &m, sizeof(modeline));
 
 				char modeline_txt[256];
-				log_verbose("%s timing %s\n", video->api_name(), modeline_print(m, modeline_txt, MS_FULL));
+				log_verbose("%s timing %s\n", video->api_name(), modeline_print(&m, modeline_txt, MS_FULL));
 			}
 			else
 			{
-				m->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
+				m.type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 				log_verbose("system mode\n");
 			}
+
+			video_modes.push_back(m);
 			k++;
 		}
 		found:

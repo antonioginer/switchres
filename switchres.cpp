@@ -137,9 +137,8 @@ int switchres_manager::get_monitor_specs()
 
 bool switchres_manager::get_video_mode()
 {
-	modeline *mode;
-	modeline source_mode, *s_mode = &source_mode;
-	modeline target_mode, *t_mode = &target_mode;
+	modeline s_mode;
+	modeline t_mode;
 	char modeline[256]={'\x00'};
 	char result[256]={'\x00'};
 	int i = 0, j = 0, table_size = 0;
@@ -150,62 +149,48 @@ bool switchres_manager::get_video_mode()
 						SWITCHRES_VERSION, game.name, game.width, game.height, game.refresh,
 						gs.rotation?"rotated":"normal");
 
-	memset(&best_mode, 0, sizeof(struct modeline));
+	best_mode = {};
 	best_mode.result.weight |= R_OUT_OF_RANGE;
-	s_mode->hactive = game.vector?1:normalize(game.width, 8);
-	s_mode->vactive = game.vector?1:game.height;
-	s_mode->vfreq = game.refresh;
+	s_mode.hactive = game.vector?1:normalize(game.width, 8);
+	s_mode.vactive = game.vector?1:game.height;
+	s_mode.vfreq = game.refresh;
 
-	if (user_mode.hactive)
-	{
-		table_size = 1;
-		mode = &user_mode;
-	}
-	else
-	{
-		i = 1;
-		table_size = MAX_MODELINES;
-		mode = &m_display->video_modes[i];
-	}
-
-	while (mode->width && i < table_size)
+	for (auto mode : m_display->video_modes)
 	{
 		// apply options to mode type
 		if (!gs.modeline_generation)
-			mode->type &= ~XYV_EDITABLE;
+			mode.type &= ~XYV_EDITABLE;
 
 		if (ds.refresh_dont_care)
-			mode->type |= V_FREQ_EDITABLE;
+			mode.type |= V_FREQ_EDITABLE;
 		
-		if (ds.lock_system_modes && (mode->type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode->type & MODE_DESKTOP) && !(mode->type & MODE_USER_DEF))
-			mode->type |= MODE_DISABLED;
+		if (ds.lock_system_modes && (mode.type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode.type & MODE_DESKTOP) && !(mode.type & MODE_USER_DEF))
+			mode.type |= MODE_DISABLED;
 
 		log_verbose("\nSwitchRes: %s%4d%sx%s%4d%s_%s%d=%.6fHz%s%s\n",
-			mode->type & X_RES_EDITABLE?"(":"[", mode->width, mode->type & X_RES_EDITABLE?")":"]",
-			mode->type & Y_RES_EDITABLE?"(":"[", mode->height, mode->type & Y_RES_EDITABLE?")":"]",
-			mode->type & V_FREQ_EDITABLE?"(":"[", mode->refresh, mode->vfreq, mode->type & V_FREQ_EDITABLE?")":"]",
-			mode->type & MODE_DISABLED?" - locked":"");
+			mode.type & X_RES_EDITABLE?"(":"[", mode.width, mode.type & X_RES_EDITABLE?")":"]",
+			mode.type & Y_RES_EDITABLE?"(":"[", mode.height, mode.type & Y_RES_EDITABLE?")":"]",
+			mode.type & V_FREQ_EDITABLE?"(":"[", mode.refresh, mode.vfreq, mode.type & V_FREQ_EDITABLE?")":"]",
+			mode.type & MODE_DISABLED?" - locked":"");
 
 		// now get the mode if allowed
-		if (!(mode->type & MODE_DISABLED))
+		if (!(mode.type & MODE_DISABLED))
 		{
 			for (j = 0 ; j < MAX_RANGES ; j++)
 			{
 				if (range[j].hfreq_min)
 				{
-					memcpy(t_mode, mode, sizeof(struct modeline));
-					modeline_create(s_mode, t_mode, &range[j], &gs);
-					t_mode->range = j;
+					t_mode = mode;
+					modeline_create(&s_mode, &t_mode, &range[j], &gs);
+					t_mode.range = j;
 
-					log_verbose("%s\n", modeline_result(t_mode, result));
+					log_verbose("%s\n", modeline_result(&t_mode, result));
 
-					if (modeline_compare(t_mode, &best_mode))
-						memcpy(&best_mode, t_mode, sizeof(struct modeline));
+					if (modeline_compare(&t_mode, &best_mode))
+						best_mode = t_mode;
 				}
 			}
 		}
-		mode++;
-		i++;
 	}
 
 	if (best_mode.result.weight & R_OUT_OF_RANGE)
