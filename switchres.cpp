@@ -74,7 +74,7 @@ switchres_manager::switchres_manager()
 
 void switchres_manager::init()
 {
-	log_verbose("SwitchRes: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
+	log_verbose("Switchres: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
 		SWITCHRES_VERSION, cs.monitor, cs.orientation, gs.modeline_generation?"enabled":"disabled");
 
 	// Get user defined modeline
@@ -93,6 +93,7 @@ void switchres_manager::init()
 	else
 		get_monitor_specs();
 
+	// Create our display manager
 	m_display_factory = new display_manager();
 	m_display = m_display_factory->make();
 }
@@ -135,27 +136,31 @@ int switchres_manager::get_monitor_specs()
 //  switchres_manager::get_video_mode
 //============================================================
 
-bool switchres_manager::get_video_mode()
+modeline *switchres_manager::get_video_mode()
 {
-	modeline s_mode;
-	modeline t_mode;
-	char modeline[256]={'\x00'};
+	modeline s_mode = {};
+	modeline t_mode = {};
+	modeline best_mode = {};
 	char result[256]={'\x00'};
-	int i = 0, j = 0, table_size = 0;
 
 	gs.rotation = effective_orientation();
 
-	log_verbose("SwitchRes: v%s:[%s] Calculating best video mode for %dx%d@%.6f orientation: %s\n",
+	log_verbose("Switchres: v%s:[%s] Calculating best video mode for %dx%d@%.6f orientation: %s\n",
 						SWITCHRES_VERSION, game.name, game.width, game.height, game.refresh,
 						gs.rotation?"rotated":"normal");
 
-	best_mode = {};
 	best_mode.result.weight |= R_OUT_OF_RANGE;
 	s_mode.hactive = game.vector?1:normalize(game.width, 8);
 	s_mode.vactive = game.vector?1:game.height;
 	s_mode.vfreq = game.refresh;
 
-	for (auto mode : m_display->video_modes)
+	// Create a dummy mode entry
+	modeline new_mode = {};
+	new_mode.type = XYV_EDITABLE | MODE_NEW;
+	m_display->video_modes.push_back(new_mode);
+
+	// Run through our mode list and find the most suitable mode
+	for (auto &mode : m_display->video_modes)
 	{
 		// apply options to mode type
 		if (!gs.modeline_generation)
@@ -167,7 +172,7 @@ bool switchres_manager::get_video_mode()
 		if (ds.lock_system_modes && (mode.type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode.type & MODE_DESKTOP) && !(mode.type & MODE_USER_DEF))
 			mode.type |= MODE_DISABLED;
 
-		log_verbose("\nSwitchRes: %s%4d%sx%s%4d%s_%s%d=%.6fHz%s%s\n",
+		log_verbose("\nSwitchres: %s%4d%sx%s%4d%s_%s%d=%.6fHz%s%s\n",
 			mode.type & X_RES_EDITABLE?"(":"[", mode.width, mode.type & X_RES_EDITABLE?")":"]",
 			mode.type & Y_RES_EDITABLE?"(":"[", mode.height, mode.type & Y_RES_EDITABLE?")":"]",
 			mode.type & V_FREQ_EDITABLE?"(":"[", mode.refresh, mode.vfreq, mode.type & V_FREQ_EDITABLE?")":"]",
@@ -176,36 +181,68 @@ bool switchres_manager::get_video_mode()
 		// now get the mode if allowed
 		if (!(mode.type & MODE_DISABLED))
 		{
-			for (j = 0 ; j < MAX_RANGES ; j++)
+			for (int i = 0 ; i < MAX_RANGES ; i++)
 			{
-				if (range[j].hfreq_min)
+				if (range[i].hfreq_min)
 				{
 					t_mode = mode;
-					modeline_create(&s_mode, &t_mode, &range[j], &gs);
-					t_mode.range = j;
+					modeline_create(&s_mode, &t_mode, &range[i], &gs);
+					t_mode.range = i;
 
 					log_verbose("%s\n", modeline_result(&t_mode, result));
 
 					if (modeline_compare(&t_mode, &best_mode))
+					{
 						best_mode = t_mode;
+						m_best_mode = &mode;
+					}
 				}
 			}
 		}
 	}
 
-	if (best_mode.result.weight & R_OUT_OF_RANGE)
+	// Check if a new mode was created
+	if (m_best_mode == &m_display->video_modes.back())
 	{
-		log_error("SwitchRes: could not find a video mode that meets your specs\n");
-		return false;
+		log_verbose ("New mode was added!\n");
+	}
+	// otherwise remove our dummy entry
+	else
+	{
+		m_display->video_modes.pop_back();
 	}
 
-	log_info("\nSwitchRes: [%s] (%d) %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", game.name, game.screens, game.orientation?"vertical":"horizontal",
+	// If we didn't find a suitable mode, exit now
+	if (best_mode.result.weight & R_OUT_OF_RANGE)
+	{
+		m_best_mode = 0;
+		log_error("Switchres: could not find a video mode that meets your specs\n");
+		return nullptr;
+	}
+
+	log_info("\nSwitchres: [%s] (%d) %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", game.name, game.screens, game.orientation?"vertical":"horizontal",
 		game.width, game.height, game.refresh, best_mode.hactive, best_mode.vactive, best_mode.vfreq);
 
 	log_verbose("%s\n", modeline_result(&best_mode, result));
+
+	// Copy the new modeline to our mode list
 	if (gs.modeline_generation)
-		log_verbose("SwitchRes: Modeline %s\n", modeline_print(&best_mode, modeline, MS_FULL));
+	{
+		if (best_mode.type & MODE_NEW)
+		{
+			best_mode.width = best_mode.hactive;
+			best_mode.height = best_mode.vactive;
+			best_mode.refresh = int(best_mode.vfreq);
+			best_mode.type &= ~(X_RES_EDITABLE | Y_RES_EDITABLE);
+		}
+		else
+			best_mode.type |= MODE_UPDATED;
 
-	return true;
+		*m_best_mode = best_mode;
+
+		char modeline[256]={'\x00'};
+		log_verbose("Switchres: Modeline %s\n", modeline_print(&best_mode, modeline, MS_FULL));
+	}
+
+	return m_best_mode;
 }
-

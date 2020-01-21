@@ -4,7 +4,7 @@
 
    ---------------------------------------------------------
 
-   SwitchRes   Modeline generation engine for emulation
+   Switchres   Modeline generation engine for emulation
 
    License     GPL-2.0+
    Copyright   2010-2019 - Chris Kennedy, Antonio Giner
@@ -47,7 +47,7 @@ int monitor_fill_range(monitor_range *range, const char *specs_line)
 			&new_range.interlaced_lines_min, &new_range.interlaced_lines_max);
 
 		if (e != 16) {
-			log_error("SwitchRes: Error trying to fill monitor range with\n  %s\n", specs_line);
+			log_error("Switchres: Error trying to fill monitor range with\n  %s\n", specs_line);
 			return -1;
 		}
 
@@ -58,7 +58,7 @@ int monitor_fill_range(monitor_range *range, const char *specs_line)
 
 		if (monitor_evaluate_range(&new_range))
 		{
-			log_error("SwitchRes: Error in monitor range (ignoring): %s\n", specs_line);
+			log_error("Switchres: Error in monitor range (ignoring): %s\n", specs_line);
 			return -1;
 		}
 		else
@@ -80,16 +80,16 @@ int monitor_fill_lcd_range(monitor_range *range, const char *specs_line)
 	{
 		if (sscanf(specs_line, "%lf-%lf", &range->vfreq_min, &range->vfreq_max) == 2)
 		{
-			log_verbose("SwitchRes: LCD vfreq range set by user as %f-%f\n", range->vfreq_min, range->vfreq_max);
+			log_verbose("Switchres: LCD vfreq range set by user as %f-%f\n", range->vfreq_min, range->vfreq_max);
 			return true;
 		}
 		else
-			log_error("SwitchRes: Error trying to fill LCD range with\n  %s\n", specs_line);
+			log_error("Switchres: Error trying to fill LCD range with\n  %s\n", specs_line);
 	}
 	// Use default values
 	range->vfreq_min = 59;
 	range->vfreq_max = 61;
-	log_verbose("SwitchRes: Using default vfreq range for LCD %f-%f\n", range->vfreq_min, range->vfreq_max);
+	log_verbose("Switchres: Using default vfreq range for LCD %f-%f\n", range->vfreq_min, range->vfreq_max);
 
 	return 0;
 }
@@ -100,7 +100,7 @@ int monitor_fill_lcd_range(monitor_range *range, const char *specs_line)
 
 int monitor_show_range(monitor_range *range)
 {
-	log_verbose("SwitchRes: Monitor range %.2f-%.2f,%.2f-%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d,%d,%d,%d,%d,%d\n",
+	log_verbose("Switchres: Monitor range %.2f-%.2f,%.2f-%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d,%d,%d,%d,%d,%d\n",
 		range->hfreq_min, range->hfreq_max,
 		range->vfreq_min, range->vfreq_max,
 		range->hfront_porch, range->hsync_pulse, range->hback_porch,
@@ -286,7 +286,7 @@ int monitor_set_preset(char *type, monitor_range *range)
 		return monitor_fill_vesa_gtf(&range[0], type);
 	}
 
-	log_error("SwitchRes: Monitor type unknown: %s\n", type);
+	log_error("Switchres: Monitor type unknown: %s\n", type);
 	return 0;
 }
 
@@ -299,22 +299,22 @@ int monitor_evaluate_range(monitor_range *range)
 	// First we check that all frequency ranges are reasonable
 	if (range->hfreq_min < HFREQ_MIN || range->hfreq_min > HFREQ_MAX)
 	{
-		log_error("SwitchRes: hfreq_min %.2f out of range\n", range->hfreq_min);
+		log_error("Switchres: hfreq_min %.2f out of range\n", range->hfreq_min);
 		return 1;
 	}
 	if (range->hfreq_max < HFREQ_MIN || range->hfreq_max < range->hfreq_min || range->hfreq_max > HFREQ_MAX)
 	{
-		log_error("SwitchRes: hfreq_max %.2f out of range\n", range->hfreq_max);
+		log_error("Switchres: hfreq_max %.2f out of range\n", range->hfreq_max);
 		return 1;
 	}
 	if (range->vfreq_min < VFREQ_MIN || range->vfreq_min > VFREQ_MAX)
 	{
-		log_error("SwitchRes: vfreq_min %.2f out of range\n", range->vfreq_min);
+		log_error("Switchres: vfreq_min %.2f out of range\n", range->vfreq_min);
 		return 1;
 	}
 	if (range->vfreq_max < VFREQ_MIN || range->vfreq_max < range->vfreq_min || range->vfreq_max > VFREQ_MAX)
 	{
-		log_error("SwitchRes: vfreq_max %.2f out of range\n", range->vfreq_max);
+		log_error("Switchres: vfreq_max %.2f out of range\n", range->vfreq_max);
 		return 1;
 	}
 
@@ -323,17 +323,17 @@ int monitor_evaluate_range(monitor_range *range)
 
 	if (range->hfront_porch <= 0 || range->hfront_porch > line_time)
 	{
-		log_error("SwitchRes: hfront_porch %.3f out of range\n", range->hfront_porch);
+		log_error("Switchres: hfront_porch %.3f out of range\n", range->hfront_porch);
 		return 1;
 	}
 	if (range->hsync_pulse <= 0 || range->hsync_pulse > line_time)
 	{
-		log_error("SwitchRes: hsync_pulse %.3f out of range\n", range->hsync_pulse);
+		log_error("Switchres: hsync_pulse %.3f out of range\n", range->hsync_pulse);
 		return 1;
 	}
 	if (range->hback_porch <= 0 || range->hback_porch > line_time)
 	{
-		log_error("SwitchRes: hback_porch %.3f out of range\n", range->hback_porch);
+		log_error("Switchres: hback_porch %.3f out of range\n", range->hback_porch);
 		return 1;
 	}
 
@@ -342,29 +342,29 @@ int monitor_evaluate_range(monitor_range *range)
 
 	if (range->vfront_porch <= 0 || range->vfront_porch > frame_time)
 	{
-		log_error("SwitchRes: vfront_porch %.3f out of range\n", range->vfront_porch);
+		log_error("Switchres: vfront_porch %.3f out of range\n", range->vfront_porch);
 		return 1;
 	}
 	if (range->vsync_pulse <= 0 || range->vsync_pulse > frame_time)
 	{
-		log_error("SwitchRes: vsync_pulse %.3f out of range\n", range->vsync_pulse);
+		log_error("Switchres: vsync_pulse %.3f out of range\n", range->vsync_pulse);
 		return 1;
 	}
 	if (range->vback_porch <= 0 || range->vback_porch > frame_time)
 	{
-		log_error("SwitchRes: vback_porch %.3f out of range\n", range->vback_porch);
+		log_error("Switchres: vback_porch %.3f out of range\n", range->vback_porch);
 		return 1;
 	}
 
 	// Now we check sync polarities
 	if (range->hsync_polarity != 0 && range->hsync_polarity != 1)
 	{
-		log_error("SwitchRes: Hsync polarity can be only 0 or 1\n");
+		log_error("Switchres: Hsync polarity can be only 0 or 1\n");
 		return 1;
 	}
 	if (range->vsync_polarity != 0 && range->vsync_polarity != 1)
 	{
-		log_error("SwitchRes: Vsync polarity can be only 0 or 1\n");
+		log_error("Switchres: Vsync polarity can be only 0 or 1\n");
 		return 1;
 	}
 
@@ -372,22 +372,22 @@ int monitor_evaluate_range(monitor_range *range)
 	// Progressive range:
 	if (range->progressive_lines_min > 0 && range->progressive_lines_min < PROGRESSIVE_LINES_MIN)
 	{
-		log_error("SwitchRes: progressive_lines_min must be greater than %d\n", PROGRESSIVE_LINES_MIN);
+		log_error("Switchres: progressive_lines_min must be greater than %d\n", PROGRESSIVE_LINES_MIN);
 		return 1;
 	}
 	if ((range->progressive_lines_min + range->hfreq_max * range->vertical_blank) * range->vfreq_min > range->hfreq_max)
 	{
-		log_error("SwitchRes: progressive_lines_min %d out of range\n", range->progressive_lines_min);
+		log_error("Switchres: progressive_lines_min %d out of range\n", range->progressive_lines_min);
 		return 1;
 	}
 	if (range->progressive_lines_max < range->progressive_lines_min)
 	{
-		log_error("SwitchRes: progressive_lines_max must greater than progressive_lines_min\n");
+		log_error("Switchres: progressive_lines_max must greater than progressive_lines_min\n");
 		return 1;
 	}
 	if ((range->progressive_lines_max + range->hfreq_max * range->vertical_blank) * range->vfreq_min > range->hfreq_max)
 	{
-		log_error("SwitchRes: progressive_lines_max %d out of range\n", range->progressive_lines_max);
+		log_error("Switchres: progressive_lines_max %d out of range\n", range->progressive_lines_max);
 		return 1;
 	}
 
@@ -396,27 +396,27 @@ int monitor_evaluate_range(monitor_range *range)
 	{
 		if (range->interlaced_lines_min < range->progressive_lines_max)
 		{
-			log_error("SwitchRes: interlaced_lines_min must greater than progressive_lines_max\n");
+			log_error("Switchres: interlaced_lines_min must greater than progressive_lines_max\n");
 			return 1;
 		}
 		if (range->interlaced_lines_min < PROGRESSIVE_LINES_MIN * 2)
 		{
-			log_error("SwitchRes: interlaced_lines_min must be greater than %d\n", PROGRESSIVE_LINES_MIN * 2);
+			log_error("Switchres: interlaced_lines_min must be greater than %d\n", PROGRESSIVE_LINES_MIN * 2);
 			return 1;
 		}
 		if ((range->interlaced_lines_min / 2 + range->hfreq_max * range->vertical_blank) * range->vfreq_min > range->hfreq_max)
 		{
-			log_error("SwitchRes: interlaced_lines_min %d out of range\n", range->interlaced_lines_min);
+			log_error("Switchres: interlaced_lines_min %d out of range\n", range->interlaced_lines_min);
 			return 1;
 		}
 		if (range->interlaced_lines_max < range->interlaced_lines_min)
 		{
-			log_error("SwitchRes: interlaced_lines_max must greater than interlaced_lines_min\n");
+			log_error("Switchres: interlaced_lines_max must greater than interlaced_lines_min\n");
 			return 1;
 		}
 		if ((range->interlaced_lines_max / 2 + range->hfreq_max * range->vertical_blank) * range->vfreq_min > range->hfreq_max)
 		{
-			log_error("SwitchRes: interlaced_lines_max %d out of range\n", range->interlaced_lines_max);
+			log_error("Switchres: interlaced_lines_max %d out of range\n", range->interlaced_lines_max);
 			return 1;
 		}
 	}
@@ -424,7 +424,7 @@ int monitor_evaluate_range(monitor_range *range)
 	{
 		if (range->interlaced_lines_max != 0)
 		{
-			log_error("SwitchRes: interlaced_lines_max must be zero if interlaced_lines_min is not defined\n");
+			log_error("Switchres: interlaced_lines_max must be zero if interlaced_lines_min is not defined\n");
 			return 1;
 		}
 	}

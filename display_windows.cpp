@@ -47,7 +47,7 @@ bool windows_display::init(display_settings *ds)
 	{
 		strncpy(m_device_name, lpDisplayDevice[found].DeviceName, sizeof(m_device_name));
 		strncpy(m_device_id, lpDisplayDevice[found].DeviceID, sizeof(m_device_id));
-		log_verbose("SwitchRes: %s: %s (%s)\n", m_device_name, lpDisplayDevice[found].DeviceString, m_device_id);
+		log_verbose("Switchres: %s: %s (%s)\n", m_device_name, lpDisplayDevice[found].DeviceString, m_device_id);
 
 		char *pch;
 		int i;
@@ -71,11 +71,11 @@ bool windows_display::init(display_settings *ds)
 	}
 	else
 	{
-		log_verbose("SwitchRes: Failed obtaining default video registry key\n");
+		log_verbose("Switchres: Failed obtaining default video registry key\n");
 		return false;
 	}
 
-	log_verbose("SwitchRes: Device key: %s\n", m_device_key);
+	log_verbose("Switchres: Device key: %s\n", m_device_key);
 	
 	// Initialize custom video
 	modeline user_mode;
@@ -85,6 +85,7 @@ bool windows_display::init(display_settings *ds)
 	if (video) video->init();
 
 	// Build our display's mode list
+	video_modes.clear();
 	get_desktop_mode();
 	get_available_video_modes();
 
@@ -182,7 +183,7 @@ int windows_display::get_available_video_modes()
 			m.vfreq = m.refresh;
 			m.type |= lpDevMode.dmDisplayOrientation == DMDO_90 || lpDevMode.dmDisplayOrientation == DMDO_270? MODE_ROTATED : MODE_OK;
 
-			for (auto mode : video_modes) if (mode.width == m.width && mode.height == m.height && mode.refresh == m.refresh) goto found;
+			for (auto &mode : video_modes) if (mode.width == m.width && mode.height == m.height && mode.refresh == m.refresh) goto found;
 
 			if (m.width == desktop_mode.width && m.height == desktop_mode.height && m.refresh == desktop_mode.refresh)
 			{
@@ -213,7 +214,7 @@ int windows_display::get_available_video_modes()
 		iModeNum++;
 	}
 	k--;
-	log_verbose("SwitchRes: Found %d custom of %d active video modes\n", j, k);
+	log_verbose("Switchres: Found %d custom of %d active video modes\n", j, k);
 	return k;
 }
 

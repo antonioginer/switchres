@@ -77,18 +77,20 @@ public:
 	display_settings ds;
 	generator_settings gs;
 	game_info game = {};
-	modeline best_mode = {};
 	modeline user_mode = {};
 	monitor_range range[MAX_RANGES];
 
 	void init();
-	int get_monitor_specs();
-	bool get_video_mode();
+	modeline *get_video_mode();
+	modeline *best_mode() { return m_best_mode; }
 	display_manager *display() { return m_display; }
 
 private:
 	display_manager *m_display_factory = 0;
 	display_manager *m_display = 0;
+	modeline *m_best_mode = 0;
+
+	int get_monitor_specs();
 };
 
 

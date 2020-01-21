@@ -179,6 +179,7 @@ int main(int argc, char **argv)
 	bool version_flag = false;
 	bool help_flag = false;
 	bool resolution_flag = false;
+	bool calculate_flag = false;
 	int c;
 
 	while (1)
@@ -188,6 +189,7 @@ int main(int argc, char **argv)
 			{"verbose",     no_argument,       &verbose_flag, '1'},
 			{"version",     no_argument,       0, 'v'},
 			{"help",        no_argument,       0, 'h'},
+			{"calc",        no_argument,       0, 'c'},
 			{"monitor",     required_argument, 0, 'm'},
 			{"orientation", required_argument, 0, 'o'},
 			{"resolution",  required_argument, 0, 'r'},
@@ -196,7 +198,7 @@ int main(int argc, char **argv)
 		};
 
 		int option_index = 0;
-		c = getopt_long(argc, argv, "vhm:o:r:s:", long_options, &option_index);
+		c = getopt_long(argc, argv, "vhcm:o:r:s:", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -209,6 +211,10 @@ int main(int argc, char **argv)
 
 			case 'h':
 				help_flag = true;
+				break;
+
+			case 'c':
+				calculate_flag = true;
 				break;
 
 			case 'm':
@@ -267,14 +273,12 @@ int main(int argc, char **argv)
 	}
 
 	switchres.init();
-	switchres.display()->init(&switchres.ds);
+	
+	if (!calculate_flag)
+		switchres.display()->init(&switchres.ds);
 
 	if (resolution_flag)
 	{
-		// Create dummy mode entry
-		modeline mode = {};
-		mode.type = XYV_EDITABLE;
-		switchres.display()->video_modes.push_back(mode);
 		switchres.get_video_mode();
 	}
 
@@ -315,10 +319,12 @@ int show_usage()
 	{
 		"Usage: switchres <width> <height> <refresh> [options]\n"
 		"Options:\n"
+		"  -c, --calc                        Calculate modeline only\n"
 		"  -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)\n"
 		"  -o, --orientation <orientation>   Monitor orientation (horizontal, vertical, rotate_r, rotate_l)\n"
 		"  -r, --resolution <width>x<height>@<refresh>\n"
 		"                                    Force a specific resolution\n"
+		"  -s, --screen <OS_display_name>    Configure target screen\n"
 	};
 
 	printf("%s", usage);
