@@ -25,7 +25,7 @@ DYNAMIC_LIB_EXT = so
 # Windows
 else ifneq (,$(findstring NT,$(PLATFORM)))
 SRC += display_windows.cpp custom_video.cpp custom_video_ati_family.cpp custom_video_ati.cpp custom_video_adl.cpp custom_video_pstrip.cpp 
-CFLAGS = -O3 -static -static-libgcc -static-libstdc++ 
+CPPFLAGS += -static -static-libgcc -static-libstdc++
 LIBS = 
 REMOVE = del /f
 STATIC_LIB_EXT = lib
