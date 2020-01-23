@@ -13,9 +13,7 @@
 
 #include <stdio.h>
 #include "display_windows.h"
-
-const auto log_verbose = printf;
-const auto log_error = printf;
+#include "log.h"
 
 //============================================================
 //  windows_display::init
@@ -45,8 +43,8 @@ bool windows_display::init(display_settings *ds)
 	}
 	if (found != -1)
 	{
-		strncpy(m_device_name, lpDisplayDevice[found].DeviceName, sizeof(m_device_name));
-		strncpy(m_device_id, lpDisplayDevice[found].DeviceID, sizeof(m_device_id));
+		strncpy(m_device_name, lpDisplayDevice[found].DeviceName, sizeof(m_device_name) -1);
+		strncpy(m_device_id, lpDisplayDevice[found].DeviceID, sizeof(m_device_id) -1);
 		log_verbose("Switchres: %s: %s (%s)\n", m_device_name, lpDisplayDevice[found].DeviceString, m_device_id);
 
 		char *pch;
@@ -160,7 +158,7 @@ bool windows_display::restore_desktop_mode()
 
 int windows_display::get_available_video_modes()
 {
-	int iModeNum = 0, i = 0, j = 0, k = 1;
+	int iModeNum = 0, j = 0, k = 1;
 	DEVMODEA lpDevMode;
 
 	memset(&lpDevMode, 0, sizeof(DEVMODEA));

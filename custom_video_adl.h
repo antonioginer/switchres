@@ -139,6 +139,7 @@ class adl_timing : public custom_video
 {
 	public:
 		adl_timing(char *display_name, char *device_key);
+		~adl_timing() {};
 		virtual const char *api_name() { return "ATI ADL"; }
 		virtual bool init();
 		virtual void close();
@@ -148,7 +149,7 @@ class adl_timing : public custom_video
 	private:
 		int open();
 		bool get_driver_version(char *device_key);
-		bool enum_displays(HINSTANCE h_dll);
+		bool enum_displays();
 		bool get_device_mapping_from_display_name(int *adapter_index, int *display_index);
 		bool display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m);
 

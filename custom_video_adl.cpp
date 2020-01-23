@@ -16,10 +16,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "custom_video_adl.h"
-
-const auto log_verbose = printf;
-const auto log_info = printf;
-const auto log_error = printf;
+#include "log.h"
 
 
 //============================================================
@@ -68,44 +65,44 @@ bool adl_timing::init()
 		return false;
 	}
 
-	ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET)GetProcAddress(hDLL,"ADL_Adapter_NumberOfAdapters_Get");
+	ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET) (void *) GetProcAddress(hDLL,"ADL_Adapter_NumberOfAdapters_Get");
 	if (ADL_Adapter_NumberOfAdapters_Get == NULL)
 	{
 		log_verbose("ERROR: ADL_Adapter_NumberOfAdapters_Get not available!");
 		return false;
 	}
-	ADL_Adapter_AdapterInfo_Get = (ADL_ADAPTER_ADAPTERINFO_GET)GetProcAddress(hDLL,"ADL_Adapter_AdapterInfo_Get");
+	ADL_Adapter_AdapterInfo_Get = (ADL_ADAPTER_ADAPTERINFO_GET) (void *) GetProcAddress(hDLL,"ADL_Adapter_AdapterInfo_Get");
 	if (ADL_Adapter_AdapterInfo_Get == NULL)
 	{
 		log_verbose("ERROR: ADL_Adapter_AdapterInfo_Get not available!");
 		return false;
 	}
-	ADL_Display_DisplayInfo_Get = (ADL_DISPLAY_DISPLAYINFO_GET)GetProcAddress(hDLL,"ADL_Display_DisplayInfo_Get");
+	ADL_Display_DisplayInfo_Get = (ADL_DISPLAY_DISPLAYINFO_GET) (void *) GetProcAddress(hDLL,"ADL_Display_DisplayInfo_Get");
 	if (ADL_Display_DisplayInfo_Get == NULL)
 	{
 		log_verbose("ERROR: ADL_Display_DisplayInfo_Get not available!");
 		return false;
 	}
-	ADL_Display_ModeTimingOverride_Get = (ADL_DISPLAY_MODETIMINGOVERRIDE_GET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverride_Get");
+	ADL_Display_ModeTimingOverride_Get = (ADL_DISPLAY_MODETIMINGOVERRIDE_GET) (void *) GetProcAddress(hDLL,"ADL_Display_ModeTimingOverride_Get");
 	if (ADL_Display_ModeTimingOverride_Get == NULL)
 	{
 		log_verbose("ERROR: ADL_Display_ModeTimingOverride_Get not available!");
 		return false;
 	}
-	ADL_Display_ModeTimingOverride_Set = (ADL_DISPLAY_MODETIMINGOVERRIDE_SET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverride_Set");
+	ADL_Display_ModeTimingOverride_Set = (ADL_DISPLAY_MODETIMINGOVERRIDE_SET) (void *) GetProcAddress(hDLL,"ADL_Display_ModeTimingOverride_Set");
 	if (ADL_Display_ModeTimingOverride_Set == NULL)
 	{
 		log_verbose("ERROR: ADL_Display_ModeTimingOverride_Set not available!");
 		return false;
 	}
-	ADL_Display_ModeTimingOverrideList_Get = (ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverrideList_Get");
+	ADL_Display_ModeTimingOverrideList_Get = (ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET) (void *) GetProcAddress(hDLL,"ADL_Display_ModeTimingOverrideList_Get");
 	if (ADL_Display_ModeTimingOverrideList_Get == NULL)
 	{
 		log_verbose("ERROR: ADL_Display_ModeTimingOverrideList_Get not available!");
 		return false;
 	}
 
-	if (!enum_displays(hDLL))
+	if (!enum_displays())
 	{
 		log_error("ADL error enumerating displays.\n");
 		return false;
@@ -131,7 +128,7 @@ int adl_timing::open()
 
 	if (hDLL != NULL)
 	{
-		ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE)GetProcAddress(hDLL, "ADL_Main_Control_Create");
+		ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE) (void *) GetProcAddress(hDLL, "ADL_Main_Control_Create");
 		if (ADL_Main_Control_Create != NULL)
 				ADL_Err = ADL_Main_Control_Create(ADL_Main_Memory_Alloc, 1);
 	}
@@ -159,7 +156,7 @@ void adl_timing::close()
 	ADL_Main_Memory_Free((void **)&lpAdapterInfo);
 	ADL_Main_Memory_Free((void **)&lpAdapter);
 
-	ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY)GetProcAddress(hDLL, "ADL_Main_Control_Destroy");
+	ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY) (void *) GetProcAddress(hDLL, "ADL_Main_Control_Destroy");
 	if (ADL_Main_Control_Destroy != NULL)
 		ADL_Main_Control_Destroy();
 
@@ -195,7 +192,7 @@ bool adl_timing::get_driver_version(char *device_key)
 //  adl_timing::enum_displays
 //============================================================
 
-bool adl_timing::enum_displays(HINSTANCE h_dll)
+bool adl_timing::enum_displays()
 {
 	ADL_Adapter_NumberOfAdapters_Get(&iNumberAdapters);
 

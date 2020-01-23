@@ -161,6 +161,8 @@ static MonitorTiming timing_backup;
 
 pstrip_timing::pstrip_timing(char *device_name, modeline *user_mode, char *ps_timing)
 {
+	strcpy (m_device_name, device_name);
+	
 	if (ps_init(ps_monitor_index(m_device_name), &m_backup_mode))
 	{
 		m_backup_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
@@ -222,7 +224,7 @@ int ps_reset(int monitor_index)
 
 int ps_get_modeline(int monitor_index, modeline *modeline)
 {
-	MonitorTiming timing = {0};
+	MonitorTiming timing = {};
 
 	if (ps_get_monitor_timing(monitor_index, &timing))
 	{
@@ -238,7 +240,7 @@ int ps_get_modeline(int monitor_index, modeline *modeline)
 
 int ps_set_modeline(int monitor_index, modeline *modeline)
 {
-	MonitorTiming timing = {0};
+	MonitorTiming timing = {};
 
 	ps_modeline_to_pstiming(modeline, &timing);
 
@@ -337,7 +339,7 @@ int ps_set_monitor_timing_string(int monitor_index, char *in)
 
 int ps_set_refresh(int monitor_index, double vfreq)
 {
-	MonitorTiming timing = {0};
+	MonitorTiming timing = {};
 	int hht, vvt, new_vvt;
 	int desired_pClock;
 	int best_pClock;
@@ -404,7 +406,7 @@ int ps_create_resolution(int monitor_index, modeline *modeline)
 	LRESULT     lresult;
 	ATOM        atom;
 	char        out[256];
-	MonitorTiming timing = {0};
+	MonitorTiming timing = {};
 
 	if (!hPSWnd) return 0;
 

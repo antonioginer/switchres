@@ -18,6 +18,7 @@ class linux_display : public display_manager
 {
 	public:
 		linux_display() {};
+		~linux_display() {};
 		bool init(display_settings *ds);
 
 	private:

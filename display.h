@@ -32,14 +32,14 @@ class display_manager
 public:
 
 	display_manager() {};
-	~display_manager()
+	virtual ~display_manager()
 	{
 		if (factory) delete factory;
 		if (video) delete video;
 	};
 
 	display_manager *make();
-	virtual bool init(display_settings *ds) { return false; }
+	virtual bool init(display_settings *ds);
 
 	bool add_mode(modeline *mode);
 	bool del_mode(modeline *mode);

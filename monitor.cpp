@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "monitor.h"
+#include "log.h"
 
 //============================================================
 //  CONSTANTS
@@ -24,9 +25,6 @@
 #define VFREQ_MIN  40
 #define VFREQ_MAX  200
 #define PROGRESSIVE_LINES_MIN 128
-
-const auto log_verbose = printf;
-const auto log_error = printf;
 
 //============================================================
 //  monitor_fill_range

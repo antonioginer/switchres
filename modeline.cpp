@@ -14,12 +14,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "modeline.h"
+#include "log.h"
 
 #define max(a,b)({ __typeof__ (a) _a = (a);__typeof__ (b) _b = (b);_a > _b ? _a : _b; })
 #define min(a,b)({ __typeof__ (a) _a = (a);__typeof__ (b) _b = (b);_a < _b ? _a : _b; })
 
-const auto log_verbose = printf;
-const auto log_error = printf;
 
 //============================================================
 //  PROTOTYPES

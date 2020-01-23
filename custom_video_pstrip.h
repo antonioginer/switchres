@@ -66,4 +66,5 @@ class pstrip_timing : public custom_video
 {
 	public:
 		pstrip_timing(char *device_name, modeline *user_mode, char *ps_timing);
+		~pstrip_timing() {};
 };

@@ -11,6 +11,7 @@
 
  **************************************************************/
 
+#include <stdio.h>
 #include "display.h"
 #if defined(_WIN32)
 #include "display_windows.h"
@@ -39,3 +40,14 @@ display_manager *display_manager::make()
 	return nullptr;
 }
 
+//============================================================
+//  display_manager::init
+//============================================================
+
+bool display_manager::init(display_settings *ds)
+{
+	// Initialize display settings
+	sprintf(ds->screen, "ram");
+
+	return true;
+}

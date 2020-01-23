@@ -20,12 +20,9 @@
 #include "custom_video_ati.h"
 #include "custom_video_adl.h"
 #include "custom_video_pstrip.h"
+#include "log.h"
 
 extern bool ati_is_legacy(int vendor, int device);
-
-const auto log_verbose = printf;
-const auto log_info = printf;
-const auto log_error = printf;
 
 custom_video::custom_video()
 {

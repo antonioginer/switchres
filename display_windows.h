@@ -27,6 +27,7 @@ class windows_display : public display_manager
 {
 	public:
 		windows_display() {};
+		~windows_display() {};
 		bool init(display_settings *ds);
 
 	private:
