@@ -14,13 +14,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "switchres.h"
+#include "log.h"
 
 #define CUSTOM_VIDEO_TIMING_SYSTEM      0x00000010
 
-
-const auto log_verbose = printf;
-const auto log_error = printf;
-const auto log_info = printf;
 
 bool effective_orientation() { return false; }
 
