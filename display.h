@@ -40,6 +40,7 @@ public:
 
 	display_manager *make();
 	virtual bool init(display_settings *ds);
+	int caps();
 
 	bool add_mode(modeline *mode);
 	bool del_mode(modeline *mode);

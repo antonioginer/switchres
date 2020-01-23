@@ -279,7 +279,20 @@ int main(int argc, char **argv)
 
 	if (resolution_flag)
 	{
-		switchres.get_video_mode();
+		modeline *mode = switchres.get_video_mode();
+		if (mode)
+		{
+/*
+			if (mode->type & MODE_UPDATED)
+			{
+				switchres.display()->update_mode(mode);
+			}
+			else if (mode->type & MODE_NEW)
+			{
+				switchres.display()->add_mode(mode);
+			}
+*/
+		}
 	}
 
 	return (0);

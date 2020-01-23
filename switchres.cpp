@@ -151,10 +151,13 @@ modeline *switchres_manager::get_video_mode()
 	s_mode.vactive = game.vector?1:game.height;
 	s_mode.vfreq = game.refresh;
 
-	// Create a dummy mode entry
-	modeline new_mode = {};
-	new_mode.type = XYV_EDITABLE | MODE_NEW;
-	m_display->video_modes.push_back(new_mode);
+	// Create a dummy mode entry if allowed
+	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && gs.modeline_generation)
+	{
+		modeline new_mode = {};
+		new_mode.type = XYV_EDITABLE | MODE_NEW;
+		m_display->video_modes.push_back(new_mode);
+	}
 
 	// Run through our mode list and find the most suitable mode
 	for (auto &mode : m_display->video_modes)
@@ -199,14 +202,17 @@ modeline *switchres_manager::get_video_mode()
 	}
 
 	// Check if a new mode was created
-	if (m_best_mode == &m_display->video_modes.back())
+	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && gs.modeline_generation)
 	{
-		log_verbose ("New mode was added!\n");
-	}
-	// otherwise remove our dummy entry
-	else
-	{
-		m_display->video_modes.pop_back();
+		if (m_best_mode->type & MODE_NEW)
+		{
+			log_verbose ("New mode was added!\n");
+		}
+		// otherwise remove our dummy entry
+		else
+		{
+			m_display->video_modes.pop_back();
+		}
 	}
 
 	// If we didn't find a suitable mode, exit now

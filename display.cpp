@@ -51,3 +51,15 @@ bool display_manager::init(display_settings *ds)
 
 	return true;
 }
+
+//============================================================
+//  display_manager::caps
+//============================================================
+
+int display_manager::caps()
+{
+	if (video)
+		return video->caps();
+	else
+		return CUSTOM_VIDEO_CAPS_ADD;
+}

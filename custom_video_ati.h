@@ -23,8 +23,9 @@ class ati_timing : public custom_video
 	public:
 		ati_timing(char *device_name, char *device_key);
 		~ati_timing() {};
-		virtual const char *api_name() { return "ATI Legacy"; }
+		const char *api_name() { return "ATI Legacy"; }
 		bool init();
+		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE; }
 
 		bool get_timing(modeline *mode);
 		bool set_timing(modeline *mode);
