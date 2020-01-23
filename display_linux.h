@@ -29,6 +29,6 @@ class linux_display : public display_manager
 		char m_device_name[32];
 		char m_device_id[128];
 		char m_device_key[128];
-		DEVMODEA m_devmode;
+		//DEVMODEA m_devmode;
 };
 
