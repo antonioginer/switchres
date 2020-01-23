@@ -140,11 +140,12 @@ class adl_timing : public custom_video
 	public:
 		adl_timing(char *display_name, char *device_key);
 		~adl_timing() {};
-		virtual const char *api_name() { return "ATI ADL"; }
-		virtual bool init();
-		virtual void close();
-		virtual bool get_timing(modeline *m);
-		virtual bool set_timing(modeline *m, int update_mode);
+		const char *api_name() { return "ATI ADL"; }
+		bool init();
+		void close();
+		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_ADD; }
+		bool get_timing(modeline *m);
+		bool set_timing(modeline *m, int update_mode);
 
 	private:
 		int open();

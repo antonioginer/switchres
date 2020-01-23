@@ -24,6 +24,10 @@
 #define CUSTOM_VIDEO_TIMING_ATI_LEGACY  0x00000080
 #define CUSTOM_VIDEO_TIMING_ATI_ADL     0x00000100
 
+// Custom video caps
+#define CUSTOM_VIDEO_CAPS_UPDATE      0x001
+#define CUSTOM_VIDEO_CAPS_ADD         0x002
+
 // Modeline commands
 #define MODELINE_DELETE      0x001
 #define MODELINE_CREATE      0x002
@@ -42,6 +46,7 @@ public:
 	virtual const char *api_name() { return "empty"; }
 	virtual bool init();
 	virtual void close();
+	virtual int caps() { return 0; }
 	virtual bool get_timing(modeline *mode);
 	virtual bool set_timing(modeline *mode);
 	bool restore_timing();
