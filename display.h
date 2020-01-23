@@ -32,7 +32,7 @@ class display_manager
 public:
 
 	display_manager() {};
-	~display_manager()
+	virtual ~display_manager()
 	{
 		if (factory) delete factory;
 		if (video) delete video;

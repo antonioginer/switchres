@@ -107,7 +107,7 @@ typedef struct generator_settings
 	int    refresh;
 	int    interlace;
 	int    doublescan;
-	int    pclock_min;
+	uint64_t    pclock_min;
 	bool   rotation;
 	float  monitor_aspect;
 	float  refresh_tolerance;
