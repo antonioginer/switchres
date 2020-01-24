@@ -10,7 +10,7 @@
                Some reworked patches from SailorSat's CabMAME
 
    License     GPL-2.0+
-   Copyright   2010-2017 - Chris Kennedy, Antonio Giner, Alexandre W
+   Copyright   2010-2017 - Chris Kennedy, Antonio Giner, Alexandre Wodarczyk
 
  **************************************************************/
 
