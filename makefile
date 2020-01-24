@@ -17,7 +17,7 @@ CPPFLAGS = -O3 -Wall -Wextra
 ifeq  ($(PLATFORM),Linux)
 SRC += display_linux.cpp
 CPPFLAGS += -fPIC
-LIBS =
+LIBS = -lXrandr -lX11
 REMOVE = rm -f 
 STATIC_LIB_EXT = a
 DYNAMIC_LIB_EXT = so
