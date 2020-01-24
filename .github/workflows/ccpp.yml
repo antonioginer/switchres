@@ -1,12 +1,14 @@
 name: Switchres CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   linux-build-standalone:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: install dependencies
+      run: sudo apt-get install libxrandr-dev
     - name: make
       run: make
     - name: Upload artifact
@@ -19,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: install dependencies
+      run: sudo apt-get install libxrandr-dev
     - name: make
       run: make libswitchres
     - name: Prepare artifacts
