@@ -58,8 +58,6 @@ public:
 	modeline m_user_mode = {};
 	modeline m_backup_mode = {};
 
-	char ps_timing[256];
-
 private:
 	char m_device_name[32];
 	char m_device_key[128];

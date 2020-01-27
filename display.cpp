@@ -89,5 +89,16 @@ bool display_manager::update_mode(modeline *mode)
 		return false;
 	}
 
+	log_mode(mode);
 	return true;
+}
+
+//============================================================
+//  display_manager::log_mode
+//============================================================
+
+void display_manager::log_mode(modeline *mode)
+{
+	char modeline_txt[256];
+	log_verbose("%s timing %s\n", video->api_name(), modeline_print(mode, modeline_txt, MS_FULL));
 }

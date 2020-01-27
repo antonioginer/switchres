@@ -190,9 +190,7 @@ int windows_display::get_available_video_modes()
 			{
 				j++;
 				if (m.type & MODE_DESKTOP) memcpy(&desktop_mode, &m, sizeof(modeline));
-
-				char modeline_txt[256];
-				log_verbose("%s timing %s\n", video->api_name(), modeline_print(&m, modeline_txt, MS_FULL));
+				log_mode(&m);
 			}
 			else
 			{

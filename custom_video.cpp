@@ -116,39 +116,6 @@ void custom_video::close()
 
 bool custom_video::get_timing(modeline *mode)
 {
-	char modeline_txt[256]={'\x00'};
-
-	switch (m_custom_method)
-	{
-/*
-		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
-			if (ati_get_modeline(mode))
-			{
-				log_verbose("ATI legacy timing %s\n", modeline_print(mode, modeline_txt, MS_FULL));
-				mode->type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY | (!(mode->type & MODE_DESKTOP)? V_FREQ_EDITABLE | (mode->width == DUMMY_WIDTH? X_RES_EDITABLE:0):0);
-				return true;
-			}
-			break;
-		
-		case CUSTOM_VIDEO_TIMING_ATI_ADL:
-			if (adl_get_modeline(m_device_name, mode))
-			{
-				log_verbose("ATI ADL timing %s\n", modeline_print(mode, modeline_txt, MS_FULL));
-				mode->type |= CUSTOM_VIDEO_TIMING_ATI_ADL | (!(mode->type & MODE_DESKTOP)? V_FREQ_EDITABLE :0);
-				return true;
-			}
-			break;
-*/
-		case CUSTOM_VIDEO_TIMING_POWERSTRIP:
-			if ((mode->type & MODE_DESKTOP) && ps_get_modeline(ps_monitor_index(m_device_name), mode))
-				log_verbose("Powerstrip timing %s\n", modeline_print(mode, modeline_txt, MS_FULL));
-			else
-				log_verbose("Not current mode\n");
-
-			mode->type |= CUSTOM_VIDEO_TIMING_POWERSTRIP | V_FREQ_EDITABLE;
-			return true;
-	}
-	
 	log_verbose("system mode\n");
 	mode->type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 	return false;
@@ -160,43 +127,6 @@ bool custom_video::get_timing(modeline *mode)
 
 bool custom_video::set_timing(modeline *mode)
 {
-	char modeline_txt[256]={'\x00'};
-	
-	switch (m_custom_method)
-	{
-/*
-		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
-			if (ati_set_modeline(mode))
-			{
-				log_verbose("ATI legacy timing %s\n", modeline_print(mode, modeline_txt, MS_FULL));
-				return true;
-			}
-			break;
-		
-		case CUSTOM_VIDEO_TIMING_ATI_ADL:
-			if (adl_set_modeline(m_device_name, mode, mode->interlace != m_backup_mode.interlace? MODELINE_UPDATE_LIST : MODELINE_UPDATE))
-			{
-				log_verbose("ATI ADL timing %s\n", modeline_print(mode, modeline_txt, MS_FULL));
-				return true;
-			}
-			break;
-*/
-		case CUSTOM_VIDEO_TIMING_POWERSTRIP:
-			// In case -ps_timing is provided, pass it as raw string
-			if (m_user_mode.type & CUSTOM_VIDEO_TIMING_POWERSTRIP)
-				ps_set_monitor_timing_string(ps_monitor_index(m_device_name), (char*)ps_timing);
-			// Otherwise pass it as modeline
-			else
-				ps_set_modeline(ps_monitor_index(m_device_name), mode);
-			
-			log_verbose("Powerstrip timing %s\n", modeline_print(mode, modeline_txt, MS_FULL));
-			Sleep(100);
-			return true;
-			break;
-
-		default:
-			break;
-	}
 	return false;
 }
 /*

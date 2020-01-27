@@ -34,8 +34,8 @@ public:
 	display_manager() {};
 	virtual ~display_manager()
 	{
-		if (factory) delete factory;
 		if (video) delete video;
+		if (factory) delete factory;
 	};
 
 	display_manager *make();
@@ -46,6 +46,7 @@ public:
 	bool del_mode(modeline *mode);
 	bool update_mode(modeline *mode);
 	bool set_mode(modeline *mode);
+	void log_mode(modeline *mode);
 
 	std::vector<modeline> video_modes = {};
 	modeline desktop_mode = {};

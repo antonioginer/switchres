@@ -187,6 +187,41 @@ pstrip_timing::pstrip_timing(char *device_name, modeline *user_mode, char *ps_ti
 }
 
 //============================================================
+//  pstrip_timing::get_timing
+//============================================================
+
+bool pstrip_timing::get_timing(modeline *mode)
+{
+	if ((mode->type & MODE_DESKTOP) && ps_get_modeline(ps_monitor_index(m_device_name), mode))
+	{
+		mode->type |= CUSTOM_VIDEO_TIMING_POWERSTRIP | V_FREQ_EDITABLE;
+		return true;
+	}
+	else
+	{
+		mode->type |= V_FREQ_EDITABLE;
+		return false;
+	}
+}
+
+//============================================================
+//  pstrip_timing::set_timing
+//============================================================
+
+bool pstrip_timing::set_timing(modeline *mode)
+{
+	// In case -ps_timing is provided, pass it as raw string
+	if (m_user_mode.type & CUSTOM_VIDEO_TIMING_POWERSTRIP)
+		ps_set_monitor_timing_string(ps_monitor_index(m_device_name), (char*)ps_timing);
+	// Otherwise pass it as modeline
+	else
+		ps_set_modeline(ps_monitor_index(m_device_name), mode);
+	
+	Sleep(100);
+	return true;
+}
+
+//============================================================
 //  ps_init
 //============================================================
 
