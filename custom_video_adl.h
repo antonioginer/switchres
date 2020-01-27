@@ -144,6 +144,10 @@ class adl_timing : public custom_video
 		bool init();
 		void close();
 		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_ADD; }
+
+		bool add_mode(modeline *mode);
+		bool update_mode(modeline *mode);
+
 		bool get_timing(modeline *m);
 		bool set_timing(modeline *m, int update_mode);
 
