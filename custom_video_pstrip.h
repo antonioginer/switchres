@@ -67,5 +67,13 @@ class pstrip_timing : public custom_video
 	public:
 		pstrip_timing(char *device_name, modeline *user_mode, char *ps_timing);
 		~pstrip_timing() {};
+		const char *api_name() { return "PowerStrip"; }
 		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE; }
+
+		bool get_timing(modeline *mode);
+		bool set_timing(modeline *m);
+
+	private:
+		char m_device_name[32];
+		char ps_timing[256];
 };
