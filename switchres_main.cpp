@@ -282,7 +282,6 @@ int main(int argc, char **argv)
 		modeline *mode = switchres.get_video_mode();
 		if (mode)
 		{
-/*
 			if (mode->type & MODE_UPDATED)
 			{
 				switchres.display()->update_mode(mode);
@@ -291,7 +290,6 @@ int main(int argc, char **argv)
 			{
 				switchres.display()->add_mode(mode);
 			}
-*/
 		}
 	}
 

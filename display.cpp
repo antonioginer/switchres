@@ -18,6 +18,7 @@
 #elif defined(__linux__)
 #include "display_linux.h"
 #endif
+#include "log.h"
 
 //============================================================
 //  display_manager::make
@@ -62,4 +63,31 @@ int display_manager::caps()
 		return video->caps();
 	else
 		return CUSTOM_VIDEO_CAPS_ADD;
+}
+
+//============================================================
+//  display_manager::add_mode
+//============================================================
+
+bool display_manager::add_mode(modeline *mode)
+{
+	return video->add_mode(mode);
+}
+
+//============================================================
+//  display_manager::update_mode
+//============================================================
+
+bool display_manager::update_mode(modeline *mode)
+{
+	// Apply new timings
+	log_verbose("Switchres: updating  ");
+
+	if (!video->update_mode(mode))
+	{
+		log_verbose(": error updating video timings\n");	
+		return false;
+	}
+
+	return true;
 }

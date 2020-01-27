@@ -47,23 +47,26 @@ public:
 	virtual bool init();
 	virtual void close();
 	virtual int caps() { return 0; }
+	
+	virtual bool add_mode(modeline *mode);
+	virtual bool update_mode(modeline *mode);
+
 	virtual bool get_timing(modeline *mode);
 	virtual bool set_timing(modeline *mode);
-	bool restore_timing();
-	void refresh_timing();
-	bool update_timing(modeline *mode);
-	int parse_pci_id(char *device_id, int *vendor, int *device);
-	modeline *get_backup_mode();
 
-	custom_video *m_custom_video = 0;
-	int custom_method;
+
 	modeline m_user_mode = {};
 	modeline m_backup_mode = {};
-	char m_device_name[32];
-	char m_device_key[128];
+
 	char ps_timing[256];
 
 private:
+	char m_device_name[32];
+	char m_device_key[128];
+	
+	custom_video *m_custom_video = 0;
+	int m_custom_method;
+
 };
 
 #endif

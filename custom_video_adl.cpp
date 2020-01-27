@@ -359,3 +359,27 @@ bool adl_timing::set_timing(modeline *m, int update_mode)
 
 	return true;
 }
+
+//============================================================
+//  adl_timing::add_mode
+//============================================================
+
+bool adl_timing::add_mode(modeline *mode)
+{
+	if (!set_timing(mode, MODELINE_UPDATE_LIST))
+		return false;
+	
+	return true;
+}
+
+//============================================================
+//  adl_timing::update_mode
+//============================================================
+
+bool adl_timing::update_mode(modeline *mode)
+{
+	if (!set_timing(mode, MODELINE_UPDATE))
+		return false;
+
+	return true;
+}

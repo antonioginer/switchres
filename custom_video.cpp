@@ -43,14 +43,14 @@ custom_video *custom_video::make(char *device_name, char *device_id, modeline *u
 		m_custom_video = new pstrip_timing(device_name, user_mode, s_param);
 		if (m_custom_video)
 		{
-			custom_method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
+			m_custom_method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
 			return m_custom_video;
 		}
 	}
 	else
 	{
 		int vendor, device;
-		parse_pci_id(device_id, &vendor, &device);
+		sscanf(device_id, "PCI\\VEN_%x&DEV_%x", &vendor, &device);
 
 		if (vendor == 0x1002) // ATI/AMD
 		{
@@ -59,7 +59,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, modeline *u
 				m_custom_video = new ati_timing(device_name, s_param);
 				if (m_custom_video)
 				{
-					custom_method = CUSTOM_VIDEO_TIMING_ATI_LEGACY;
+					m_custom_method = CUSTOM_VIDEO_TIMING_ATI_LEGACY;
 					return m_custom_video;
 				}
 			}
@@ -68,7 +68,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, modeline *u
 				m_custom_video = new adl_timing(device_name, s_param);
 				if (m_custom_video)
 				{
-					custom_method = CUSTOM_VIDEO_TIMING_ATI_ADL;
+					m_custom_method = CUSTOM_VIDEO_TIMING_ATI_ADL;
 					return m_custom_video;
 				}
 			}
@@ -118,7 +118,7 @@ bool custom_video::get_timing(modeline *mode)
 {
 	char modeline_txt[256]={'\x00'};
 
-	switch (custom_method)
+	switch (m_custom_method)
 	{
 /*
 		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
@@ -162,7 +162,7 @@ bool custom_video::set_timing(modeline *mode)
 {
 	char modeline_txt[256]={'\x00'};
 	
-	switch (custom_method)
+	switch (m_custom_method)
 	{
 /*
 		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
@@ -199,7 +199,7 @@ bool custom_video::set_timing(modeline *mode)
 	}
 	return false;
 }
-
+/*
 //============================================================
 //  custom_video::restore_timing
 //============================================================
@@ -237,7 +237,7 @@ void custom_video::refresh_timing()
 //  custom_video_update_timing
 //============================================================
 
-bool custom_video::update_timing(modeline *mode)
+bool custom_video::update_mode(modeline *mode)
 {
 	switch (custom_method)
 	{
@@ -258,14 +258,12 @@ bool custom_video::update_timing(modeline *mode)
 				int found = 0;
 				for (int i = 0; i <= MAX_MODELINES; i++)
 				{
-					/*
 					if (m_mode_table[i].width == mode->width && m_mode_table[i].height == mode->height && m_mode_table[i].refresh == mode->refresh)
 					{
 						memcpy(&m_backup_mode, &m_mode_table[i], sizeof(modeline));
 						found = 1;
 						break;
 					}
-					*/
 				}
 				if (!found)
 				{
@@ -299,21 +297,22 @@ error:
 	log_verbose(": error updating video timings\n");
 	return false;
 }
+*/
 
 //============================================================
-//  custom_video::parse_pci_id
+//  custom_video::update_mode
 //============================================================
 
-int custom_video::parse_pci_id(char *device_id, int *vendor, int *device)
+bool custom_video::add_mode(modeline *mode)
 {
-	return sscanf(device_id, "PCI\\VEN_%x&DEV_%x", vendor, device);
+	return false;
 }
 
 //============================================================
-//  custom_get_backup_mode
+//  custom_video::update_mode
 //============================================================
 
-modeline *custom_video::get_backup_mode()
+bool custom_video::update_mode(modeline *mode)
 {
-	return &m_backup_mode;
+	return false;
 }

@@ -117,20 +117,15 @@ bool windows_display::get_desktop_mode()
 
 bool windows_display::set_desktop_mode(modeline *mode, int flags)
 {
-	modeline *backup_mode = video->get_backup_mode();
-	modeline *mode_to_check_interlace = backup_mode->hactive? backup_mode : mode;
-	DEVMODEA lpDevMode;
-
-	get_desktop_mode();
-
 	if (mode)
 	{
+		DEVMODEA lpDevMode;
 		memset(&lpDevMode, 0, sizeof(DEVMODEA));
 		lpDevMode.dmSize = sizeof(DEVMODEA);
 		lpDevMode.dmPelsWidth = mode->type & MODE_ROTATED? mode->height : mode->width;
 		lpDevMode.dmPelsHeight = mode->type & MODE_ROTATED? mode->width : mode->height;
 		lpDevMode.dmDisplayFrequency = (int)mode->refresh;
-		lpDevMode.dmDisplayFlags = mode_to_check_interlace->interlace?DM_INTERLACED:0;
+		lpDevMode.dmDisplayFlags = mode->interlace? DM_INTERLACED : 0;
 		lpDevMode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY | DM_DISPLAYFLAGS;
 
 		if (ChangeDisplaySettingsExA(m_device_name, &lpDevMode, NULL, flags, 0) == DISP_CHANGE_SUCCESSFUL)

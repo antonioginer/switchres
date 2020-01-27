@@ -27,6 +27,8 @@ class ati_timing : public custom_video
 		bool init();
 		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE; }
 
+		bool update_mode(modeline *mode);
+
 		bool get_timing(modeline *mode);
 		bool set_timing(modeline *mode);
 		

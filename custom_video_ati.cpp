@@ -165,6 +165,21 @@ bool ati_timing::set_timing(modeline *mode)
 }
 
 //============================================================
+//  ati_timing::update_mode
+//============================================================
+
+bool ati_timing::update_mode(modeline *mode)
+{
+	if (!set_timing(mode))
+		return false;
+
+	// ATI needs a call to EnumDisplaySettings to refresh timings
+	refresh_timings();
+
+	return true;
+}
+
+//============================================================
 //  ati_refresh_timings
 //============================================================
 
