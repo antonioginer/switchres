@@ -176,7 +176,7 @@ int windows_display::get_available_video_modes()
 			m.vfreq = m.refresh;
 			m.type |= lpDevMode.dmDisplayOrientation == DMDO_90 || lpDevMode.dmDisplayOrientation == DMDO_270? MODE_ROTATED : MODE_OK;
 
-			for (auto &mode : video_modes) if (mode.width == m.width && mode.height == m.height && mode.refresh == m.refresh) goto found;
+			for (auto &mode : video_modes) if (mode.width == m.width && mode.height == m.height && mode.refresh == m.refresh && m.interlace == mode.interlace) goto found;
 
 			if (m.width == desktop_mode.width && m.height == desktop_mode.height && m.refresh == desktop_mode.refresh)
 			{
@@ -184,7 +184,7 @@ int windows_display::get_available_video_modes()
 				if (m.type & MODE_ROTATED) m_desktop_rotated = true;
 			}
 
-			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s %s: ", k, m.width, m.height, m.refresh, m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
+			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s%s %s: ", k, m.width, m.height, m.refresh, m.interlace?"i":"p", m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
 
 			if (video && video->get_timing(&m))
 			{

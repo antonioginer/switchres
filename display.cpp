@@ -71,7 +71,17 @@ int display_manager::caps()
 
 bool display_manager::add_mode(modeline *mode)
 {
-	return video->add_mode(mode);
+	// Add new mode
+	log_verbose("Switchres: adding ");
+
+	if (!video->add_mode(mode))
+	{
+		log_verbose(": error adding video mode\n");
+		return false;		
+	}
+
+	log_mode(mode);
+	return true;
 }
 
 //============================================================
@@ -81,11 +91,11 @@ bool display_manager::add_mode(modeline *mode)
 bool display_manager::update_mode(modeline *mode)
 {
 	// Apply new timings
-	log_verbose("Switchres: updating  ");
+	log_verbose("Switchres: updating ");
 
 	if (!video->update_mode(mode))
 	{
-		log_verbose(": error updating video timings\n");	
+		log_verbose(": error updating video timings\n");
 		return false;
 	}
 
