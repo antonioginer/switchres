@@ -102,6 +102,13 @@ bool adl_timing::init()
 		return false;
 	}
 
+	ADL_Flush_Driver_Data = (ADL_FLUSH_DRIVER_DATA) (void *) GetProcAddress(hDLL,"ADL_Flush_Driver_Data");
+	if (ADL_Flush_Driver_Data == NULL)
+	{
+		log_verbose("ERROR: ADL_Flush_Driver_Data not available!");
+		return false;
+	}
+
 	if (!enum_displays())
 	{
 		log_error("ADL error enumerating displays.\n");
@@ -320,7 +327,7 @@ bool adl_timing::set_timing(modeline *m, int update_mode)
 {
 	int adapter_index = 0;
 	int display_index = 0;
-	ADLDisplayModeInfo mode_info;
+	ADLDisplayModeInfo mode_info = {};
 	ADLDetailedTiming *dt;
 	modeline m_temp;
 
@@ -353,6 +360,8 @@ bool adl_timing::set_timing(modeline *m, int update_mode)
 	if (!get_device_mapping_from_display_name(&adapter_index, &display_index)) return false;
 	if (ADL_Display_ModeTimingOverride_Set(adapter_index, display_index, &mode_info, (update_mode & MODELINE_UPDATE_LIST)? 1 : 0) != ADL_OK) return false;
 
+	//ADL_Flush_Driver_Data(display_index);
+
 	// read modeline to trigger timing refresh on modded drivers
 	memcpy(&m_temp, m, sizeof(modeline));
 	if (update_mode & MODELINE_UPDATE) get_timing(&m_temp);
@@ -367,7 +376,9 @@ bool adl_timing::set_timing(modeline *m, int update_mode)
 bool adl_timing::add_mode(modeline *mode)
 {
 	if (!set_timing(mode, MODELINE_UPDATE_LIST))
+	{
 		return false;
+	}
 	
 	return true;
 }
@@ -379,7 +390,9 @@ bool adl_timing::add_mode(modeline *mode)
 bool adl_timing::update_mode(modeline *mode)
 {
 	if (!set_timing(mode, MODELINE_UPDATE))
+	{
 		return false;
+	}
 
 	return true;
 }

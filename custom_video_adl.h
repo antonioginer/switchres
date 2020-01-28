@@ -133,6 +133,7 @@ typedef int (*ADL_DISPLAY_DISPLAYINFO_GET) (int, int *, ADLDisplayInfo **, int);
 typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_GET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayMode *lpModeIn, ADLDisplayModeInfo *lpModeInfoOut);
 typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_SET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayModeInfo *lpMode, int iForceUpdate);
 typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET) (int iAdapterIndex, int iDisplayIndex, int iMaxNumOfOverrides, ADLDisplayModeInfo *lpModeInfoList, int *lpNumOfOverrides);
+typedef int (*ADL_FLUSH_DRIVER_DATA) (int iAdapterIndex);
 
 
 class adl_timing : public custom_video
@@ -140,7 +141,7 @@ class adl_timing : public custom_video
 	public:
 		adl_timing(char *display_name, char *device_key);
 		~adl_timing() {};
-		const char *api_name() { return "ATI ADL"; }
+		const char *api_name() { return "AMD ADL"; }
 		bool init();
 		void close();
 		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_ADD; }
@@ -167,6 +168,7 @@ class adl_timing : public custom_video
 		ADL_DISPLAY_MODETIMINGOVERRIDE_GET      ADL_Display_ModeTimingOverride_Get;
 		ADL_DISPLAY_MODETIMINGOVERRIDE_SET      ADL_Display_ModeTimingOverride_Set;
 		ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET  ADL_Display_ModeTimingOverrideList_Get;
+		ADL_FLUSH_DRIVER_DATA                   ADL_Flush_Driver_Data;
 
 		HINSTANCE hDLL;
 		LPAdapterInfo lpAdapterInfo = NULL;
