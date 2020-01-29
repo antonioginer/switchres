@@ -149,6 +149,8 @@ class adl_timing : public custom_video
 		bool add_mode(modeline *mode);
 		bool update_mode(modeline *mode);
 
+		bool get_timing_list();
+		bool get_timing_from_cache(modeline *m);
 		bool get_timing(modeline *m);
 		bool set_timing(modeline *m, int update_mode);
 
@@ -156,11 +158,14 @@ class adl_timing : public custom_video
 		int open();
 		bool get_driver_version(char *device_key);
 		bool enum_displays();
-		bool get_device_mapping_from_display_name(int *adapter_index, int *display_index);
+		bool get_device_mapping_from_display_name();
 		bool display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m);
 
 		char m_display_name[32];
 		char m_device_key[128];
+
+		int m_adapter_index = 0;
+		int m_display_index = 0;
 
 		ADL_ADAPTER_NUMBEROFADAPTERS_GET        ADL_Adapter_NumberOfAdapters_Get;
 		ADL_ADAPTER_ADAPTERINFO_GET             ADL_Adapter_AdapterInfo_Get;
@@ -176,6 +181,9 @@ class adl_timing : public custom_video
 		int iNumberAdapters;
 		int cat_version;
 		int sub_version;
+
+		ADLDisplayModeInfo adl_mode[MAX_MODELINES];
+		int m_num_of_adl_modes = 0;
 
 		int invert_pol(bool on_read) { return ((cat_version <= 12) || (cat_version >= 15 && on_read)); }
 		int interlace_factor(bool interlace, bool on_read) { return interlace && ((cat_version <= 12) || (cat_version >= 15 && on_read))? 2 : 1; }
