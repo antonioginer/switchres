@@ -115,7 +115,21 @@ bool adl_timing::init()
 		return false;
 	}
 
-	get_driver_version(m_device_key);
+	if (!get_device_mapping_from_display_name())
+	{
+		log_error("ADL error mapping display.\n");
+		return false;
+	}
+
+	if (!get_driver_version(m_device_key))
+	{
+		log_error("ADL driver version unknown!.\n");
+	}
+
+	if (!get_timing_list())
+	{
+		log_error("ADL error getting list of timing overrides.\n");
+	}
 
 	log_verbose("ADL functions retrieved successfully.\n");
 	return true;
@@ -228,7 +242,7 @@ bool adl_timing::enum_displays()
 //  adl_timing::get_device_mapping_from_display_name
 //============================================================
 
-bool adl_timing::get_device_mapping_from_display_name(int *adapter_index, int *display_index)
+bool adl_timing::get_device_mapping_from_display_name()
 {
 	for (int i = 0; i <= iNumberAdapters -1; i++)
 	{
@@ -241,8 +255,8 @@ bool adl_timing::get_device_mapping_from_display_name(int *adapter_index, int *d
 			{
 				if (lpAdapter[i].m_index == display_list[j].displayID.iDisplayLogicalAdapterIndex)
 				{
-					*adapter_index = lpAdapter[i].m_index;
-					*display_index = display_list[j].displayID.iDisplayLogicalIndex;
+					m_adapter_index = lpAdapter[i].m_index;
+					m_display_index = display_list[j].displayID.iDisplayLogicalIndex;
 					return true;
 				}
 			}
@@ -287,13 +301,49 @@ bool adl_timing::display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline
 }
 
 //============================================================
+//  adl_timing::get_timing_list
+//============================================================
+
+bool adl_timing::get_timing_list()
+{
+	if (ADL_Display_ModeTimingOverrideList_Get(m_adapter_index, m_display_index, MAX_MODELINES, adl_mode, &m_num_of_adl_modes) != ADL_OK) return false;
+
+	return true;
+}
+
+//============================================================
+//  adl_timing::get_timing_from_cache
+//============================================================
+
+bool adl_timing::get_timing_from_cache(modeline *m)
+{
+	ADLDisplayModeInfo *mode = 0;
+
+	for (int i = 0; i < m_num_of_adl_modes; i++)
+	{
+		mode = &adl_mode[i];
+		if (mode->iPelsWidth == m->width && mode->iPelsHeight == m->height && mode->iRefreshRate == m->refresh)
+		{
+			if ((m->interlace) && !(mode->sDetailedTiming.sTimingFlags & ADL_DL_TIMINGFLAG_INTERLACED))
+				continue;
+			goto found;
+		}
+	}
+
+	return false;
+
+	found:
+	if (display_mode_info_to_modeline(mode, m))	return true;
+
+	return false;
+}
+
+//============================================================
 //  adl_timing::get_timing
 //============================================================
 
 bool adl_timing::get_timing(modeline *m)
 {
-	int adapter_index = 0;
-	int display_index = 0;
 	ADLDisplayMode mode_in;
 	ADLDisplayModeInfo mode_info_out;
 	modeline m_temp = *m;
@@ -304,8 +354,7 @@ bool adl_timing::get_timing(modeline *m)
 	mode_in.iBitsPerPel       = 32;
 	mode_in.iDisplayFrequency = m->refresh * interlace_factor(m->interlace, 1);
 
-	if (!get_device_mapping_from_display_name(&adapter_index, &display_index)) return false;
-	if (ADL_Display_ModeTimingOverride_Get(adapter_index, display_index, &mode_in, &mode_info_out) != ADL_OK) goto not_found;
+	if (ADL_Display_ModeTimingOverride_Get(m_adapter_index, m_display_index, &mode_in, &mode_info_out) != ADL_OK) goto not_found;
 	if (display_mode_info_to_modeline(&mode_info_out, &m_temp))
 	{
 		if (m_temp.interlace == m->interlace)
@@ -315,7 +364,16 @@ bool adl_timing::get_timing(modeline *m)
 			return true;
 		}
 	}
+
 	not_found:
+
+	// Try to get timing from our cache (interlaced modes are not properly retrieved by ADL_Display_ModeTimingOverride_Get)
+	if (get_timing_from_cache(m))
+	{
+		m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL | (!(m->type & MODE_DESKTOP)? V_FREQ_EDITABLE :0);
+		return true;
+	}
+
 	return false;
 }
 
@@ -325,8 +383,6 @@ bool adl_timing::get_timing(modeline *m)
 
 bool adl_timing::set_timing(modeline *m, int update_mode)
 {
-	int adapter_index = 0;
-	int display_index = 0;
 	ADLDisplayModeInfo mode_info = {};
 	ADLDetailedTiming *dt;
 	modeline m_temp;
@@ -357,8 +413,7 @@ bool adl_timing::set_timing(modeline *m, int update_mode)
 	dt->sVOverscanBottom = 0;
 	dt->sVOverscanTop    = 0;
 
-	if (!get_device_mapping_from_display_name(&adapter_index, &display_index)) return false;
-	if (ADL_Display_ModeTimingOverride_Set(adapter_index, display_index, &mode_info, (update_mode & MODELINE_UPDATE_LIST)? 1 : 0) != ADL_OK) return false;
+	if (ADL_Display_ModeTimingOverride_Set(m_adapter_index, m_display_index, &mode_info, (update_mode & MODELINE_UPDATE_LIST)? 1 : 0) != ADL_OK) return false;
 
 	//ADL_Flush_Driver_Data(display_index);
 
