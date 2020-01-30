@@ -89,11 +89,11 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 
 	// ··· Vertical resolution ···
 	// try to fit active lines in the progressive range first
-	if (range->progressive_lines_min && (!t_mode->interlace || (t_mode->type & V_FREQ_EDITABLE)))
+	if (range->progressive_lines_min && (!t_mode->interlace || (t_mode->type & SCAN_EDITABLE)))
 		y_scale = scale_into_range(yres, range->progressive_lines_min, range->progressive_lines_max);
 
 	// if not possible, try to fit in the interlaced range, if any
-	if (!y_scale && range->interlaced_lines_min && cs->interlace && (t_mode->interlace || (t_mode->type & V_FREQ_EDITABLE)))
+	if (!y_scale && range->interlaced_lines_min && cs->interlace && (t_mode->interlace || (t_mode->type & SCAN_EDITABLE)))
 	{
 		y_scale = scale_into_range(yres, range->interlaced_lines_min, range->interlaced_lines_max);
 		interlace = 2;

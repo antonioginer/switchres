@@ -155,7 +155,7 @@ modeline *switchres_manager::get_video_mode()
 	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && gs.modeline_generation)
 	{
 		modeline new_mode = {};
-		new_mode.type = XYV_EDITABLE | MODE_NEW;
+		new_mode.type = XYV_EDITABLE | SCAN_EDITABLE | MODE_NEW;
 		m_display->video_modes.push_back(new_mode);
 	}
 
@@ -164,7 +164,7 @@ modeline *switchres_manager::get_video_mode()
 	{
 		// apply options to mode type
 		if (!gs.modeline_generation)
-			mode.type &= ~XYV_EDITABLE;
+			mode.type &= ~(XYV_EDITABLE | SCAN_EDITABLE);
 
 		if (ds.refresh_dont_care)
 			mode.type |= V_FREQ_EDITABLE;

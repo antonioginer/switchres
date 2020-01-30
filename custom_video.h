@@ -25,8 +25,10 @@
 #define CUSTOM_VIDEO_TIMING_ATI_ADL     0x00000100
 
 // Custom video caps
-#define CUSTOM_VIDEO_CAPS_UPDATE      0x001
-#define CUSTOM_VIDEO_CAPS_ADD         0x002
+#define CUSTOM_VIDEO_CAPS_UPDATE            0x001
+#define CUSTOM_VIDEO_CAPS_ADD               0x002
+#define CUSTOM_VIDEO_CAPS_DESKTOP_EDITABLE  0x004
+#define CUSTOM_VIDEO_CAPS_SCAN_EDITABLE     0x008
 
 // Modeline commands
 #define MODELINE_DELETE      0x001
