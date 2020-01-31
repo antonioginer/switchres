@@ -40,7 +40,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, modeline *u
 {
 	if (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)
 	{
-		m_custom_video = new pstrip_timing(device_name, user_mode, s_param);
+		m_custom_video = new pstrip_timing(device_name, s_param);
 		if (m_custom_video)
 		{
 			m_custom_method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
