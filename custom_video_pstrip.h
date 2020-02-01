@@ -51,6 +51,8 @@ class pstrip_timing : public custom_video
 		bool init();
 		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE; }
 
+		bool update_mode(modeline *mode);
+
 		bool get_timing(modeline *mode);
 		bool set_timing(modeline *m);
 
@@ -75,8 +77,6 @@ class pstrip_timing : public custom_video
 		char m_ps_timing[256];
 		int m_monitor_index = 0;
 		modeline m_user_mode = {};
-
+		MonitorTiming m_timing_backup;
 		HWND hPSWnd;
-		MonitorTiming timing_backup;
-
 };
