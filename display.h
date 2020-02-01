@@ -21,9 +21,11 @@
 typedef struct display_settings
 {
 	char   screen[32];
+	char   api[32];
 	bool   lock_unsupported_modes;
 	bool   lock_system_modes;
 	bool   refresh_dont_care;
+	char   ps_timing[256];
 } display_settings;
 
 

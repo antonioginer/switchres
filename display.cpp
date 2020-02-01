@@ -71,6 +71,10 @@ int display_manager::caps()
 
 bool display_manager::add_mode(modeline *mode)
 {
+	// Only add modes when we have a custom video api available
+	if (!(mode->type & CUSTOM_VIDEO_TIMING_MASK))
+		return false;
+
 	// Add new mode
 	log_verbose("Switchres: adding ");
 

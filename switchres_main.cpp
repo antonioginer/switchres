@@ -121,6 +121,9 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 				case s2i("screen"):
 					sprintf(switchres.ds.screen, value.c_str());
 					break;
+				case s2i("api"):
+					sprintf(switchres.ds.api, value.c_str());
+					break;
 				case s2i("lock_unsupported_modes"):
 					switchres.ds.lock_unsupported_modes = atoi(value.c_str());
 					break;
@@ -129,6 +132,9 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 					break;
 				case s2i("refresh_dont_care"):
 					switchres.ds.refresh_dont_care = atoi(value.c_str());
+					break;
+				case s2i("ps_timing"):
+					sprintf(switchres.ds.ps_timing, value.c_str());
 					break;
 
 				// Modeline generation options
