@@ -248,7 +248,7 @@ bool pstrip_timing::set_timing(modeline *mode)
 
 int pstrip_timing::ps_reset()
 {
-	return ps_set_monitor_timing(&timing_backup);
+	return ps_set_monitor_timing(&m_timing_backup);
 }
 
 //============================================================
@@ -377,7 +377,7 @@ int pstrip_timing::ps_set_refresh(double vfreq)
 	int desired_pClock;
 	int best_pClock;
 
-	memcpy(&timing, &timing_backup, sizeof(MonitorTiming));
+	memcpy(&timing, &m_timing_backup, sizeof(MonitorTiming));
 
 	hht = timing.HorizontalActivePixels
 		+ timing.HorizontalFrontPorch
@@ -589,4 +589,18 @@ int pstrip_timing::ps_monitor_index (const char *display_name)
 		monitor_index --;
 
 	return monitor_index;
+}
+
+//============================================================
+//  pstrip_timing::update_mode
+//============================================================
+
+bool pstrip_timing::update_mode(modeline *mode)
+{
+	if (!set_timing(mode))
+	{
+		return false;
+	}
+
+	return true;
 }
