@@ -18,6 +18,7 @@
 #include "modeline.h"
 
 #define CUSTOM_VIDEO_TIMING_MASK        0x00000ff0
+#define CUSTOM_VIDEO_TIMING_AUTO        0x00000000
 #define CUSTOM_VIDEO_TIMING_SYSTEM      0x00000010
 #define CUSTOM_VIDEO_TIMING_XRANDR      0x00000020
 #define CUSTOM_VIDEO_TIMING_POWERSTRIP  0x00000040
@@ -44,7 +45,7 @@ public:
 	custom_video();
 	virtual ~custom_video();
 
-	custom_video *make(char *device_name, char *device_id, modeline *user_mode, int method, char *s_param);
+	custom_video *make(char *device_name, char *device_id, int method, char *s_param);
 	virtual const char *api_name() { return "empty"; }
 	virtual bool init();
 	virtual void close();

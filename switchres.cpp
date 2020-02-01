@@ -201,19 +201,9 @@ modeline *switchres_manager::get_video_mode()
 		}
 	}
 
-	// Check if a new mode was created
-	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && gs.modeline_generation)
-	{
-		if (m_best_mode->type & MODE_NEW)
-		{
-			log_verbose ("New mode was added!\n");
-		}
-		// otherwise remove our dummy entry
-		else
-		{
-			m_display->video_modes.pop_back();
-		}
-	}
+	// If we didn't need to create a new mode, remove our dummy entry
+	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && gs.modeline_generation && !(m_best_mode->type & MODE_NEW))
+		m_display->video_modes.pop_back();
 
 	// If we didn't find a suitable mode, exit now
 	if (best_mode.result.weight & R_OUT_OF_RANGE)

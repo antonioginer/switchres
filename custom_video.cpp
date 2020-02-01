@@ -36,7 +36,7 @@ custom_video::~custom_video()
 //  custom_video::make
 //============================================================
 
-custom_video *custom_video::make(char *device_name, char *device_id, modeline *user_mode, int method, char *s_param)
+custom_video *custom_video::make(char *device_name, char *device_id, int method, char *s_param)
 {
 	if (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)
 	{

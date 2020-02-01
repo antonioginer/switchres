@@ -76,10 +76,15 @@ bool windows_display::init(display_settings *ds)
 	log_verbose("Switchres: Device key: %s\n", m_device_key);
 	
 	// Initialize custom video
-	modeline user_mode;
-	memset(&user_mode, 0, sizeof(modeline));
+	int method = CUSTOM_VIDEO_TIMING_AUTO;
+
+	if(!strcmp(ds->api, "powerstrip"))
+		method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
+
+	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&ds->ps_timing : m_device_key;
+
 	factory = new custom_video();
-	video = factory->make(m_device_name, m_device_id, &user_mode, 0, m_device_key);
+	video = factory->make(m_device_name, m_device_id, method, s_param);
 	if (video) video->init();
 
 	// Build our display's mode list
