@@ -228,7 +228,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 
 	// ··· Modeline generation ···
 	// compute new modeline if we are allowed to
-	if (cs->modeline_generation && (t_mode->type & V_FREQ_EDITABLE))
+	if (t_mode->type & V_FREQ_EDITABLE)
 	{
 		float margin = 0;
 		float vblank_lines = 0;

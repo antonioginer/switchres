@@ -80,35 +80,11 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 	return nullptr;
 }
 
-
 //============================================================
 //  custom_video::init
 //============================================================
 
 bool custom_video::init() { return false; }
-
-//============================================================
-//  custom_video::close
-//============================================================
-
-void custom_video::close() {}
-/*
-void custom_video::close()
-{
-	switch (custom_method)
-	{
-		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
-			break;
-		
-		case CUSTOM_VIDEO_TIMING_ATI_ADL:
-			adl_close();
-			break;
-
-		case CUSTOM_VIDEO_TIMING_POWERSTRIP:
-			break;
-	}
-}
-*/
 
 //============================================================
 //  custom_video::get_timing
@@ -129,111 +105,21 @@ bool custom_video::set_timing(modeline *mode)
 {
 	return false;
 }
-/*
-//============================================================
-//  custom_video::restore_timing
-//============================================================
-
-bool custom_video::restore_timing()
-{
-	if (!m_backup_mode.hactive)
-		return false;
-
-	// Restore backup mode
-	return update_timing(0);
-}
 
 //============================================================
-//  custom_video_refresh_timing
-//============================================================
-
-void custom_video::refresh_timing()
-{
-	switch (custom_method)
-	{
-		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
-//			ati_refresh_timings();
-			break;
-		
-		case CUSTOM_VIDEO_TIMING_ATI_ADL:
-			break;
-
-		case CUSTOM_VIDEO_TIMING_POWERSTRIP:
-			break;
-	}
-}
-
-//============================================================
-//  custom_video_update_timing
-//============================================================
-
-bool custom_video::update_mode(modeline *mode)
-{
-	switch (custom_method)
-	{
-		case CUSTOM_VIDEO_TIMING_ATI_LEGACY:
-		case CUSTOM_VIDEO_TIMING_ATI_ADL:
-
-			// Restore old video timing
-			if (m_backup_mode.hactive)
-			{
-				log_verbose("Switchres: restoring ");
-				set_timing(&m_backup_mode);
-			}
-
-			// Update with new video timing
-			if (mode)
-			{
-				// Backup current timing
-				int found = 0;
-				for (int i = 0; i <= MAX_MODELINES; i++)
-				{
-					if (m_mode_table[i].width == mode->width && m_mode_table[i].height == mode->height && m_mode_table[i].refresh == mode->refresh)
-					{
-						memcpy(&m_backup_mode, &m_mode_table[i], sizeof(modeline));
-						found = 1;
-						break;
-					}
-				}
-				if (!found)
-				{
-					log_verbose("Switchres: mode not found in mode_table\n");
-					return false;
-				}
-				log_verbose("Switchres: saving    ");
-				get_timing(&m_backup_mode);
-
-				// Apply new timing now
-				log_verbose("Switchres: updating  ");
-				if (!set_timing(mode)) goto error;
-			}
-			refresh_timing();
-			break;
-
-		case CUSTOM_VIDEO_TIMING_POWERSTRIP:
-			// We only backup/restore the desktop mode with Powerstrip
-			if (!mode)
-				ps_reset(ps_monitor_index(m_device_name));
-			else
-			{
-				log_verbose("Switchres: updating  ");
-				set_timing(mode);
-			}
-			break;
-	}
-	return true;
-
-error:
-	log_verbose(": error updating video timings\n");
-	return false;
-}
-*/
-
-//============================================================
-//  custom_video::update_mode
+//  custom_video::add_mode
 //============================================================
 
 bool custom_video::add_mode(modeline *mode)
+{
+	return false;
+}
+
+//============================================================
+//  custom_video::delete_mode
+//============================================================
+
+bool custom_video::delete_mode(modeline *mode)
 {
 	return false;
 }

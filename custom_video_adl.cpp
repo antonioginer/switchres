@@ -49,6 +49,15 @@ adl_timing::adl_timing(char *display_name, char *device_key)
 }
 
 //============================================================
+//  adl_timing::~adl_timing
+//============================================================
+
+adl_timing::~adl_timing()
+{
+	close();
+}
+
+//============================================================
 //  adl_timing::init
 //============================================================
 
@@ -436,6 +445,20 @@ bool adl_timing::add_mode(modeline *mode)
 	}
 
 	mode->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
+	return true;
+}
+
+//============================================================
+//  adl_timing::delete_mode
+//============================================================
+
+bool adl_timing::delete_mode(modeline *mode)
+{
+	if (!set_timing(mode, MODELINE_DELETE | MODELINE_UPDATE_LIST))
+	{
+		return false;
+	}
+
 	return true;
 }
 

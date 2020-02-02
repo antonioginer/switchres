@@ -21,7 +21,9 @@
 
 bool windows_display::init(display_settings *ds)
 {
-	m_lock_unsupported_modes = ds->lock_unsupported_modes;
+	// Initialize display settings
+	m_ds = ds;
+
 
 	DISPLAY_DEVICEA lpDisplayDevice[DISPLAY_MAX];
 	int idev = 0;
@@ -83,14 +85,16 @@ bool windows_display::init(display_settings *ds)
 
 	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&ds->ps_timing : m_device_key;
 
-	factory = new custom_video();
-	video = factory->make(m_device_name, m_device_id, method, s_param);
-	if (video) video->init();
+	m_factory = new custom_video();
+	m_video = m_factory->make(m_device_name, m_device_id, method, s_param);
+	if (m_video) m_video->init();
 
 	// Build our display's mode list
 	video_modes.clear();
+	backup_modes.clear();
 	get_desktop_mode();
 	get_available_video_modes();
+	filter_modes();
 
 	return true;
 }
@@ -158,7 +162,7 @@ bool windows_display::restore_desktop_mode()
 
 int windows_display::get_available_video_modes()
 {
-	int iModeNum = 0, j = 0, k = 1;
+	int iModeNum = 0, j = 0, k = 0;
 	DEVMODEA lpDevMode;
 
 	memset(&lpDevMode, 0, sizeof(DEVMODEA));
@@ -166,7 +170,7 @@ int windows_display::get_available_video_modes()
 
 	log_verbose("Switchres: Searching for custom video modes...\n");
 
-	while (EnumDisplaySettingsExA(m_device_name, iModeNum, &lpDevMode, m_lock_unsupported_modes?0:EDS_RAWMODE) != 0)
+	while (EnumDisplaySettingsExA(m_device_name, iModeNum, &lpDevMode, m_ds->lock_unsupported_modes?0:EDS_RAWMODE) != 0)
 	{
 		if (lpDevMode.dmBitsPerPel == 32 && lpDevMode.dmDisplayFixedOutput == DMDFO_DEFAULT)
 		{
@@ -191,7 +195,7 @@ int windows_display::get_available_video_modes()
 
 			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s%s %s: ", k, m.width, m.height, m.refresh, m.interlace?"i":"p", m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
 
-			if (video && video->get_timing(&m))
+			if (m_video && m_video->get_timing(&m))
 			{
 				j++;
 				if (m.type & MODE_DESKTOP) memcpy(&desktop_mode, &m, sizeof(modeline));
@@ -204,6 +208,7 @@ int windows_display::get_available_video_modes()
 			}
 
 			video_modes.push_back(m);
+			backup_modes.push_back(m);
 			k++;
 		}
 		found:

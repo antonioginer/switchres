@@ -13,10 +13,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "custom_video_ati.h"
-
-const auto log_verbose = printf;
-const auto log_info = printf;
-const auto log_error = printf;
+#include "log.h"
 
 
 //============================================================

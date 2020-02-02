@@ -102,7 +102,6 @@ typedef struct modeline
 
 typedef struct generator_settings
 {
-	bool   modeline_generation;
 	int    width;
 	int    height;
 	int    refresh;
