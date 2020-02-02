@@ -434,7 +434,8 @@ bool adl_timing::add_mode(modeline *mode)
 	{
 		return false;
 	}
-	
+
+	mode->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
 	return true;
 }
 
@@ -449,5 +450,6 @@ bool adl_timing::update_mode(modeline *mode)
 		return false;
 	}
 
+	mode->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
 	return true;
 }

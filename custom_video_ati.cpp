@@ -173,6 +173,8 @@ bool ati_timing::update_mode(modeline *mode)
 	if (!set_timing(mode))
 		return false;
 
+	mode->type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY;
+
 	// ATI needs a call to EnumDisplaySettings to refresh timings
 	refresh_timings();
 
