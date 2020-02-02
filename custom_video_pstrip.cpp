@@ -154,6 +154,15 @@ pstrip_timing::pstrip_timing(char *device_name, char *ps_timing)
 }
 
 //============================================================
+//  pstrip_timing::~pstrip_timing()
+//============================================================
+
+pstrip_timing::~pstrip_timing()
+{
+	ps_reset();
+}
+
+//============================================================
 //  pstrip_timing::init
 //============================================================
 
@@ -166,6 +175,9 @@ bool pstrip_timing::init()
 	if (hPSWnd)
 	{
 		log_verbose("PStrip: PowerStrip found!\n");
+
+		// Save current settings
+		ps_get_monitor_timing(&m_timing_backup);
 
 		// If we have a -ps_timing string defined, use it as user defined modeline
 		if (strcmp(m_ps_timing, "auto"))
