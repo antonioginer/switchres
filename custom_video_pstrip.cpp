@@ -602,5 +602,6 @@ bool pstrip_timing::update_mode(modeline *mode)
 		return false;
 	}
 
+	mode->type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
 	return true;
 }

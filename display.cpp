@@ -71,20 +71,16 @@ int display_manager::caps()
 
 bool display_manager::add_mode(modeline *mode)
 {
-	// Only add modes when we have a custom video api available
-	if (!(mode->type & CUSTOM_VIDEO_TIMING_MASK))
-		return false;
-
 	// Add new mode
-	log_verbose("Switchres: adding ");
-
 	if (!video->add_mode(mode))
 	{
-		log_verbose(": error adding video mode\n");
+		log_verbose("Switchres: error adding video mode\n");
 		return false;		
 	}
 
+	log_verbose("Switchres: added ");
 	log_mode(mode);
+
 	return true;
 }
 
@@ -95,14 +91,13 @@ bool display_manager::add_mode(modeline *mode)
 bool display_manager::update_mode(modeline *mode)
 {
 	// Apply new timings
-	log_verbose("Switchres: updating ");
-
 	if (!video->update_mode(mode))
 	{
-		log_verbose(": error updating video timings\n");
+		log_verbose("Switchres: error updating video timings\n");
 		return false;
 	}
 
+	log_verbose("Switchres: updated ");
 	log_mode(mode);
 	return true;
 }
