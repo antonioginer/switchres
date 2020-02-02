@@ -185,14 +185,26 @@ bool display_manager::filter_modes()
 	for (auto &mode : video_modes)
 	{
 		// apply options to mode type
-		if (!m_ds->modeline_generation)
-			mode.type &= ~(XYV_EDITABLE | SCAN_EDITABLE);
-
 		if (m_ds->refresh_dont_care)
 			mode.type |= V_FREQ_EDITABLE;
 
-		if (m_ds->lock_system_modes && (mode.type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode.type & MODE_DESKTOP) && !(mode.type & MODE_USER_DEF))
+		if ((caps() & CUSTOM_VIDEO_CAPS_UPDATE))
+			mode.type |= V_FREQ_EDITABLE | (mode.width == DUMMY_WIDTH? X_RES_EDITABLE:0);
+
+		if (caps() & CUSTOM_VIDEO_CAPS_SCAN_EDITABLE)
+			mode.type |= SCAN_EDITABLE;
+
+		if (!m_ds->modeline_generation)
+			mode.type &= ~(XYV_EDITABLE | SCAN_EDITABLE);
+
+		if ((mode.type & MODE_DESKTOP) && !(caps() & CUSTOM_VIDEO_CAPS_DESKTOP_EDITABLE))
+			mode.type &= ~V_FREQ_EDITABLE;
+
+		if (m_ds->lock_system_modes && (mode.type & CUSTOM_VIDEO_TIMING_SYSTEM))
 			mode.type |= MODE_DISABLED;
+
+		if ((mode.type & MODE_DESKTOP) || (mode.type & MODE_USER_DEF))
+			mode.type &= ~MODE_DISABLED;
 	}
 
 	return true;

@@ -369,7 +369,7 @@ bool adl_timing::get_timing(modeline *m)
 		if (m_temp.interlace == m->interlace)
 		{
 			memcpy(m, &m_temp, sizeof(modeline));
-			m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL | (!(m->type & MODE_DESKTOP)? V_FREQ_EDITABLE :0);
+			m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
 			return true;
 		}
 	}
@@ -379,7 +379,7 @@ bool adl_timing::get_timing(modeline *m)
 	// Try to get timing from our cache (interlaced modes are not properly retrieved by ADL_Display_ModeTimingOverride_Get)
 	if (get_timing_from_cache(m))
 	{
-		m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL | (!(m->type & MODE_DESKTOP)? V_FREQ_EDITABLE :0);
+		m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
 		return true;
 	}
 

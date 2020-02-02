@@ -49,7 +49,7 @@ class pstrip_timing : public custom_video
 		~pstrip_timing() {};
 		const char *api_name() { return "PowerStrip"; }
 		bool init();
-		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE; }
+		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_SCAN_EDITABLE | CUSTOM_VIDEO_CAPS_DESKTOP_EDITABLE; }
 
 		bool update_mode(modeline *mode);
 
