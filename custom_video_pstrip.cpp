@@ -216,7 +216,7 @@ bool pstrip_timing::get_timing(modeline *mode)
 		{
 			*mode = m_temp;
 		}
-		mode->type |= CUSTOM_VIDEO_TIMING_POWERSTRIP | V_FREQ_EDITABLE;
+		mode->type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
 		return true;
 	}
 
