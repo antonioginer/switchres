@@ -22,6 +22,7 @@ typedef struct display_settings
 {
 	char   screen[32];
 	char   api[32];
+	bool   modeline_generation;
 	bool   lock_unsupported_modes;
 	bool   lock_system_modes;
 	bool   refresh_dont_care;
@@ -36,32 +37,41 @@ public:
 	display_manager() {};
 	virtual ~display_manager()
 	{
-		if (video) delete video;
-		if (factory) delete factory;
+		restore_modes();
+		if (m_video) delete m_video;
+		if (m_factory) delete m_factory;
 	};
 
 	display_manager *make();
 	virtual bool init(display_settings *ds);
 	int caps();
 
+	// options
+	display_settings *m_ds = 0;
+	bool m_desktop_rotated;
+
+	// custom video backend
+	custom_video *m_factory = 0;
+	custom_video *m_video = 0;
+
+	// mode setting interface
 	bool add_mode(modeline *mode);
-	bool del_mode(modeline *mode);
+	bool delete_mode(modeline *mode);
 	bool update_mode(modeline *mode);
 	bool set_mode(modeline *mode);
 	void log_mode(modeline *mode);
 
-	std::vector<modeline> video_modes = {};
-	modeline desktop_mode = {};
+	// mode list handling
+	bool filter_modes();
+	bool restore_modes();
 
-	custom_video *factory = 0;
-	custom_video *video = 0;
-	
-	bool m_lock_unsupported_modes;
-	bool m_desktop_rotated;
+	// mode list
+	std::vector<modeline> video_modes = {};
+	std::vector<modeline> backup_modes = {};
+	modeline desktop_mode = {};
 
 private:
 	display_manager *m_display_manager = 0;
-
 };
 
 #endif

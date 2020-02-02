@@ -124,6 +124,9 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 				case s2i("api"):
 					sprintf(switchres.ds.api, value.c_str());
 					break;
+				case s2i("modeline_generation"):
+					switchres.ds.modeline_generation = atoi(value.c_str());
+					break;
 				case s2i("lock_unsupported_modes"):
 					switchres.ds.lock_unsupported_modes = atoi(value.c_str());
 					break;
@@ -138,9 +141,6 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 					break;
 
 				// Modeline generation options
-				case s2i("modeline_generation"):
-					switchres.gs.modeline_generation = atoi(value.c_str());
-					break;
 				case s2i("interlace"):
 					switchres.gs.interlace = atoi(value.c_str());
 					break;

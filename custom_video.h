@@ -48,10 +48,10 @@ public:
 	custom_video *make(char *device_name, char *device_id, int method, char *s_param);
 	virtual const char *api_name() { return "empty"; }
 	virtual bool init();
-	virtual void close();
 	virtual int caps() { return 0; }
 	
 	virtual bool add_mode(modeline *mode);
+	virtual bool delete_mode(modeline *mode);
 	virtual bool update_mode(modeline *mode);
 
 	virtual bool get_timing(modeline *mode);

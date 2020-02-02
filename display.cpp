@@ -50,6 +50,8 @@ bool display_manager::init(display_settings *ds)
 	// Initialize display settings
 	sprintf(ds->screen, "ram");
 
+	m_ds = ds;
+
 	return true;
 }
 
@@ -59,8 +61,8 @@ bool display_manager::init(display_settings *ds)
 
 int display_manager::caps()
 {
-	if (video)
-		return video->caps();
+	if (m_video)
+		return m_video->caps();
 	else
 		return CUSTOM_VIDEO_CAPS_ADD;
 }
@@ -72,9 +74,10 @@ int display_manager::caps()
 bool display_manager::add_mode(modeline *mode)
 {
 	// Add new mode
-	if (!video->add_mode(mode))
+	if (!m_video->add_mode(mode))
 	{
-		log_verbose("Switchres: error adding video mode\n");
+		log_verbose("Switchres: error adding mode ");
+		log_mode(mode);
 		return false;		
 	}
 
@@ -85,15 +88,34 @@ bool display_manager::add_mode(modeline *mode)
 }
 
 //============================================================
+//  display_manager::delete_mode
+//============================================================
+
+bool display_manager::delete_mode(modeline *mode)
+{
+	if (!m_video->delete_mode(mode))
+	{
+		log_verbose("Switchres: error deleting mode ");
+		log_mode(mode);
+		return false;
+	}
+
+	log_verbose("Switchres: deleted ");
+	log_mode(mode);
+	return true;
+}
+
+//============================================================
 //  display_manager::update_mode
 //============================================================
 
 bool display_manager::update_mode(modeline *mode)
 {
 	// Apply new timings
-	if (!video->update_mode(mode))
+	if (!m_video->update_mode(mode))
 	{
-		log_verbose("Switchres: error updating video timings\n");
+		log_verbose("Switchres: error updating mode ");
+		log_mode(mode);
 		return false;
 	}
 
@@ -109,5 +131,69 @@ bool display_manager::update_mode(modeline *mode)
 void display_manager::log_mode(modeline *mode)
 {
 	char modeline_txt[256];
-	log_verbose("%s timing %s\n", video->api_name(), modeline_print(mode, modeline_txt, MS_FULL));
+	log_verbose("%s timing %s\n", m_video->api_name(), modeline_print(mode, modeline_txt, MS_FULL));
+}
+
+//============================================================
+//  display_manager::restore_modes
+//============================================================
+
+bool display_manager::restore_modes()
+{
+	bool error = false;
+
+	// First, delete all modes we've added
+	while (video_modes.size() > backup_modes.size())
+	{
+		delete_mode(&video_modes.back());
+		video_modes.pop_back();
+	}
+
+	// Now restore all modes which timings have been modified
+	for (unsigned i = video_modes.size(); i-- > 0; )
+	{
+		// Reset work fields
+		video_modes[i].type = backup_modes[i].type = 0;
+		video_modes[i].range = backup_modes[i].range = 0;
+
+		if (memcmp(&video_modes[i], &backup_modes[i], sizeof(modeline) - sizeof(mode_result)) != 0)
+		{
+			video_modes[i] = backup_modes[i];
+			if (!m_video->update_mode(&video_modes[i]))
+			{
+				log_verbose("Switchres: error restoring mode ");
+				log_mode(&video_modes[i]);
+				error = true;
+			}
+			else
+			{
+				log_verbose("Switchres: restored ");
+				log_mode(&video_modes[i]);
+			}
+		}
+	}
+
+	return !error;
+}
+
+//============================================================
+//  display_manager::filter_modes
+//============================================================
+
+bool display_manager::filter_modes()
+{
+	for (auto &mode : video_modes)
+	{
+		// apply options to mode type
+		if (!m_ds->modeline_generation)
+			mode.type &= ~(XYV_EDITABLE | SCAN_EDITABLE);
+
+		if (m_ds->refresh_dont_care)
+			mode.type |= V_FREQ_EDITABLE;
+
+		if (m_ds->lock_system_modes && (mode.type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode.type & MODE_DESKTOP) && !(mode.type & MODE_USER_DEF))
+			mode.type |= MODE_DISABLED;
+	}
+
+	return true;
 }

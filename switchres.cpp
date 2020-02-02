@@ -47,12 +47,12 @@ switchres_manager::switchres_manager()
 	cs.monitor_count = 1;
 
 	sprintf(ds.screen, "auto");
+	ds.modeline_generation = true;
 	ds.lock_unsupported_modes = true;
 	ds.lock_system_modes = true;
 	ds.refresh_dont_care = false;
 
 	// Set modeline generator default options
-	gs.modeline_generation = true;
 	gs.width = 0;
 	gs.height = 0;
 	gs.refresh = 0;
@@ -72,10 +72,10 @@ switchres_manager::switchres_manager()
 void switchres_manager::init()
 {
 	log_verbose("Switchres: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
-		SWITCHRES_VERSION, cs.monitor, cs.orientation, gs.modeline_generation?"enabled":"disabled");
+		SWITCHRES_VERSION, cs.monitor, cs.orientation, ds.modeline_generation?"enabled":"disabled");
 
 	// Get user defined modeline
-	if (gs.modeline_generation)
+	if (ds.modeline_generation)
 	{
 		modeline_parse(cs.modeline, &user_mode);
 		user_mode.type |= MODE_USER_DEF;
@@ -152,7 +152,7 @@ modeline *switchres_manager::get_video_mode()
 	s_mode.vfreq = game.refresh;
 
 	// Create a dummy mode entry if allowed
-	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && gs.modeline_generation)
+	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && ds.modeline_generation)
 	{
 		modeline new_mode = {};
 		new_mode.type = XYV_EDITABLE | SCAN_EDITABLE | MODE_NEW;
@@ -162,16 +162,6 @@ modeline *switchres_manager::get_video_mode()
 	// Run through our mode list and find the most suitable mode
 	for (auto &mode : m_display->video_modes)
 	{
-		// apply options to mode type
-		if (!gs.modeline_generation)
-			mode.type &= ~(XYV_EDITABLE | SCAN_EDITABLE);
-
-		if (ds.refresh_dont_care)
-			mode.type |= V_FREQ_EDITABLE;
-		
-		if (ds.lock_system_modes && (mode.type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode.type & MODE_DESKTOP) && !(mode.type & MODE_USER_DEF))
-			mode.type |= MODE_DISABLED;
-
 		log_verbose("\nSwitchres: %s%4d%sx%s%4d%s_%s%d=%.6fHz%s%s\n",
 			mode.type & X_RES_EDITABLE?"(":"[", mode.width, mode.type & X_RES_EDITABLE?")":"]",
 			mode.type & Y_RES_EDITABLE?"(":"[", mode.height, mode.type & Y_RES_EDITABLE?")":"]",
@@ -202,7 +192,7 @@ modeline *switchres_manager::get_video_mode()
 	}
 
 	// If we didn't need to create a new mode, remove our dummy entry
-	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && gs.modeline_generation && !(m_best_mode->type & MODE_NEW))
+	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && ds.modeline_generation && !(m_best_mode->type & MODE_NEW))
 		m_display->video_modes.pop_back();
 
 	// If we didn't find a suitable mode, exit now
@@ -219,7 +209,7 @@ modeline *switchres_manager::get_video_mode()
 	log_verbose("%s\n", modeline_result(&best_mode, result));
 
 	// Copy the new modeline to our mode list
-	if (gs.modeline_generation)
+	if (ds.modeline_generation)
 	{
 		if (best_mode.type & MODE_NEW)
 		{
