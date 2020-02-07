@@ -11,6 +11,7 @@
 
  **************************************************************/
 
+#include <windows.h>
 #include "custom_video.h"
 
 #define CRTC_DOUBLE_SCAN                    0x0001

@@ -11,6 +11,7 @@
 
  **************************************************************/
 
+#include <windows.h>
 #include "custom_video.h"
 
 //	Constants and structures ported from AMD ADL SDK files
