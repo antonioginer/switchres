@@ -213,7 +213,7 @@ bool display_manager::filter_modes()
 			mode.type |= MODE_DISABLED;
 
 		// Lock all modes that don't match the user's -resolution rules
-		if (m_user_mode.width != 0 || m_user_mode.height != 0 || m_user_mode.refresh == 0)
+		if (m_user_mode.width != 0 || m_user_mode.height != 0 || m_user_mode.refresh == !0)
 		{
 			if (!( (mode.width == m_user_mode.width || (mode.type & X_RES_EDITABLE) || m_user_mode.width == 0)
 				&& (mode.height == m_user_mode.height || (mode.type & Y_RES_EDITABLE) || m_user_mode.height == 0)
