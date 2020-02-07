@@ -209,7 +209,7 @@ modeline *switchres_manager::get_video_mode(int width, int height, float refresh
 	}
 
 	// If we didn't need to create a new mode, remove our dummy entry
-	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && ds.modeline_generation && !(m_best_mode->type & MODE_NEW))
+	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && ds.modeline_generation && !(best_mode.type & MODE_NEW))
 		m_display->video_modes.pop_back();
 
 	// If we didn't find a suitable mode, exit now
