@@ -17,7 +17,6 @@
 #include <vector>
 #include "modeline.h"
 #include "custom_video.h"
-#include "log.h"
 
 typedef struct display_settings
 {
