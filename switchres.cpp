@@ -151,6 +151,7 @@ modeline *switchres_manager::get_video_mode(int width, int height, float refresh
 	s_mode.hactive = normalize(width, 8);
 	s_mode.vactive = height;
 	s_mode.vfreq = refresh;
+	gs.rotation = rotated;
 
 	// Create a dummy mode entry if allowed
 	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && ds.modeline_generation)
