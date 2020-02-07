@@ -2,7 +2,7 @@ PLATFORM := $(shell uname)
 
 MAIN = switchres_main
 TARGET_LIB = libswitchres
-SRC = monitor.cpp modeline.cpp switchres.cpp display.cpp
+SRC = monitor.cpp modeline.cpp switchres.cpp display.cpp custom_video.cpp
 OBJS = $(SRC:.cpp=.o)
 
 CROSS_COMPILE ?=
@@ -24,7 +24,7 @@ DYNAMIC_LIB_EXT = so
 
 # Windows
 else ifneq (,$(findstring NT,$(PLATFORM)))
-SRC += display_windows.cpp custom_video.cpp custom_video_ati_family.cpp custom_video_ati.cpp custom_video_adl.cpp custom_video_pstrip.cpp 
+SRC += display_windows.cpp custom_video_ati_family.cpp custom_video_ati.cpp custom_video_adl.cpp custom_video_pstrip.cpp
 CPPFLAGS += -static -static-libgcc -static-libstdc++
 LIBS = 
 REMOVE = del /f

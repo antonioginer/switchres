@@ -11,16 +11,18 @@
 
  **************************************************************/
 
-// standard windows headers
-#include <windows.h>
+
 
 #include <stdio.h>
-
 #include "custom_video.h"
+#include "log.h"
+
+#if defined(_WIN32)
 #include "custom_video_ati.h"
 #include "custom_video_adl.h"
 #include "custom_video_pstrip.h"
-#include "log.h"
+#endif
+
 
 extern bool ati_is_legacy(int vendor, int device);
 
@@ -30,6 +32,7 @@ extern bool ati_is_legacy(int vendor, int device);
 
 custom_video *custom_video::make(char *device_name, char *device_id, int method, char *s_param)
 {
+#if defined(_WIN32)
 	if (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)
 	{
 		m_custom_video = new pstrip_timing(device_name, s_param);
@@ -68,6 +71,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 		else
 			log_info("Video chipset is not compatible.\n");
 	}
+#endif
 
 	return this;
 }
