@@ -42,8 +42,15 @@ class custom_video
 {
 public:
 
-	custom_video();
-	virtual ~custom_video();
+	custom_video() {};
+	virtual ~custom_video()
+	{
+		if (m_custom_video)
+		{
+			delete m_custom_video;
+			m_custom_video = nullptr;
+		}
+	}
 
 	custom_video *make(char *device_name, char *device_id, int method, char *s_param);
 	virtual const char *api_name() { return "empty"; }

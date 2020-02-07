@@ -57,7 +57,6 @@ public:
 	~switchres_manager()
 	{
 		if (m_display_factory) delete m_display_factory;
-		if (m_display) delete m_display;
 	};
 
 	// getters

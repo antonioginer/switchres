@@ -61,8 +61,8 @@ bool display_manager::init(display_settings *ds)
 
 int display_manager::caps()
 {
-	if (m_video)
-		return m_video->caps();
+	if (video())
+		return video()->caps();
 	else
 		return CUSTOM_VIDEO_CAPS_ADD;
 }
@@ -73,8 +73,11 @@ int display_manager::caps()
 
 bool display_manager::add_mode(modeline *mode)
 {
+	if (video() == nullptr)
+		return false;
+
 	// Add new mode
-	if (!m_video->add_mode(mode))
+	if (!video()->add_mode(mode))
 	{
 		log_verbose("Switchres: error adding mode ");
 		log_mode(mode);
@@ -93,7 +96,10 @@ bool display_manager::add_mode(modeline *mode)
 
 bool display_manager::delete_mode(modeline *mode)
 {
-	if (!m_video->delete_mode(mode))
+	if (video() == nullptr)
+		return false;
+
+	if (!video()->delete_mode(mode))
 	{
 		log_verbose("Switchres: error deleting mode ");
 		log_mode(mode);
@@ -111,8 +117,11 @@ bool display_manager::delete_mode(modeline *mode)
 
 bool display_manager::update_mode(modeline *mode)
 {
+	if (video() == nullptr)
+		return false;
+
 	// Apply new timings
-	if (!m_video->update_mode(mode))
+	if (!video()->update_mode(mode))
 	{
 		log_verbose("Switchres: error updating mode ");
 		log_mode(mode);
@@ -131,7 +140,7 @@ bool display_manager::update_mode(modeline *mode)
 void display_manager::log_mode(modeline *mode)
 {
 	char modeline_txt[256];
-	log_verbose("%s timing %s\n", m_video->api_name(), modeline_print(mode, modeline_txt, MS_FULL));
+	log_verbose("%s timing %s\n", video()->api_name(), modeline_print(mode, modeline_txt, MS_FULL));
 }
 
 //============================================================
@@ -159,7 +168,7 @@ bool display_manager::restore_modes()
 		if (memcmp(&video_modes[i], &backup_modes[i], sizeof(modeline) - sizeof(mode_result)) != 0)
 		{
 			video_modes[i] = backup_modes[i];
-			if (!m_video->update_mode(&video_modes[i]))
+			if (!video()->update_mode(&video_modes[i]))
 			{
 				log_verbose("Switchres: error restoring mode ");
 				log_mode(&video_modes[i]);
