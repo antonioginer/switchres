@@ -46,6 +46,12 @@ public:
 	virtual bool init(display_settings *ds);
 	int caps();
 
+	// getters
+	modeline user_mode() const { return m_user_mode; }
+
+	// setters
+	void set_user_mode(modeline *mode) { m_user_mode = *mode; }
+
 	// options
 	display_settings *m_ds = 0;
 	bool m_desktop_rotated;
@@ -71,7 +77,9 @@ public:
 	modeline desktop_mode = {};
 
 private:
+
 	display_manager *m_display_manager = 0;
+	modeline m_user_mode = {};
 };
 
 #endif

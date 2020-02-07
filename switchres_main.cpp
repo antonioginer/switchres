@@ -148,12 +148,12 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 					switchres.gs.doublescan = atoi(value.c_str());
 					break;
 				case s2i("dotclock_min"):
-					float pclock_min;
-					sscanf(value.c_str(), "%f", &pclock_min);
+					double pclock_min;
+					sscanf(value.c_str(), "%lf", &pclock_min);
 					switchres.gs.pclock_min = pclock_min * 1000000;
 					break;
 				case s2i("sync_refresh_tolerance"):
-					sscanf(value.c_str(), "%f", &switchres.gs.refresh_tolerance);
+					sscanf(value.c_str(), "%lf", &switchres.gs.refresh_tolerance);
 					break;
 				case s2i("super_width"):
 					sscanf(value.c_str(), "%d", &switchres.gs.super_width);
@@ -181,10 +181,16 @@ int main(int argc, char **argv)
 
 	parse_config(switchres, "switchres.ini");
 
+	int width = 0;
+	int height = 0;
+	float refresh = 0.0;
+	modeline user_mode = {};
+
 	int verbose_flag = false;
 	bool version_flag = false;
 	bool help_flag = false;
 	bool resolution_flag = false;
+	bool user_mode_flag = false;
 	bool calculate_flag = false;
 	int c;
 
@@ -232,12 +238,12 @@ int main(int argc, char **argv)
 				break;
 
 			case 'r':
-				if ((sscanf(optarg, "%dx%d@%d", &switchres.gs.width, &switchres.gs.height, &switchres.gs.refresh) < 3))
+				if ((sscanf(optarg, "%dx%d@%d", &user_mode.width, &user_mode.height, &user_mode.refresh) < 3))
 				{
 					printf ("SwitchRes: illegal -resolution value: %s\n", optarg);
 					break;
 				}
-				resolution_flag = true;
+				user_mode_flag = true;
 				break;
 
 			case 's':
@@ -271,21 +277,23 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		switchres.game.width = atoi(argv[optind]);
-		switchres.game.height = atoi(argv[optind + 1]);
-		switchres.game.refresh = atof(argv[optind + 2]);
-		sprintf(switchres.game.name, "user");
+		width = atoi(argv[optind]);
+		height = atoi(argv[optind + 1]);
+		refresh = atof(argv[optind + 2]);
 		resolution_flag = true;
 	}
 
 	switchres.init();
+
+	if (user_mode_flag)
+		switchres.display()->set_user_mode(&user_mode);
 	
 	if (!calculate_flag)
 		switchres.display()->init(&switchres.ds);
 
 	if (resolution_flag)
 	{
-		modeline *mode = switchres.get_video_mode();
+		modeline *mode = switchres.get_video_mode(width, height, refresh, 0);
 		if (mode)
 		{
 			if (mode->type & MODE_UPDATED)

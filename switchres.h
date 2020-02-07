@@ -28,19 +28,6 @@
 //  TYPE DEFINITIONS
 //============================================================
 
-typedef struct game_info
-{
-	char   name[32];
-	int    width;
-	int    height;
-	float  refresh;
-	bool   orientation;
-	bool   vector;
-	bool   changeres;
-	int    screens;
-} game_info;
-
-
 typedef struct config_settings
 {
 	char   monitor[32];
@@ -73,17 +60,21 @@ public:
 		if (m_display) delete m_display;
 	};
 
+	// getters
+	modeline *best_mode() const { return m_best_mode; }
+	display_manager *display() const { return m_display; }
+
+	// setters
+	bool set_monitor_preset(char *preset);
+
+	void init();
+	modeline *get_video_mode(int width, int height, float refresh, bool rotated);
+
+
 	config_settings cs;
 	display_settings ds;
 	generator_settings gs;
-	game_info game = {};
-	modeline user_mode = {};
 	monitor_range range[MAX_RANGES];
-
-	void init();
-	modeline *get_video_mode();
-	modeline *best_mode() { return m_best_mode; }
-	display_manager *display() { return m_display; }
 
 private:
 	display_manager *m_display_factory = 0;
