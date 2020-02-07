@@ -57,17 +57,17 @@
 
 typedef struct mode_result
 {
-	int    weight;
-	int    x_scale;
-	int    y_scale;
-	int    v_scale;
-	float  x_diff;
-	float  y_diff;
-	float  v_diff;
-	float  x_ratio;
-	float  y_ratio;
-	float  v_ratio;
-	bool   rotated;
+	int     weight;
+	int     x_scale;
+	int     y_scale;
+	int     v_scale;
+	double  x_diff;
+	double  y_diff;
+	double  v_diff;
+	double  x_ratio;
+	double  y_ratio;
+	double  v_ratio;
+	bool    rotated;
 } mode_result;
 
 typedef struct modeline
@@ -102,16 +102,13 @@ typedef struct modeline
 
 typedef struct generator_settings
 {
-	int    width;
-	int    height;
-	int    refresh;
-	int    interlace;
-	int    doublescan;
-	uint64_t    pclock_min;
-	bool   rotation;
-	float  monitor_aspect;
-	float  refresh_tolerance;
-	int    super_width;
+	int      interlace;
+	int      doublescan;
+	uint64_t pclock_min;
+	bool     rotation;
+	double   monitor_aspect;
+	double   refresh_tolerance;
+	int      super_width;
 } generator_settings;
 
 //============================================================

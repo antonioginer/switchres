@@ -53,9 +53,6 @@ switchres_manager::switchres_manager()
 	ds.refresh_dont_care = false;
 
 	// Set modeline generator default options
-	gs.width = 0;
-	gs.height = 0;
-	gs.refresh = 0;
 	gs.interlace = true;
 	gs.doublescan = true;
 	gs.pclock_min = 0.0;
@@ -74,11 +71,19 @@ void switchres_manager::init()
 	log_verbose("Switchres: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
 		SWITCHRES_VERSION, cs.monitor, cs.orientation, ds.modeline_generation?"enabled":"disabled");
 
+	// Create our display manager
+	m_display_factory = new display_manager();
+	m_display = m_display_factory->make();
+
 	// Get user defined modeline
+	modeline user_mode = {};
 	if (ds.modeline_generation)
 	{
-		modeline_parse(cs.modeline, &user_mode);
-		user_mode.type |= MODE_USER_DEF;
+		if (modeline_parse(cs.modeline, &user_mode))
+		{
+			user_mode.type |= MODE_USER_DEF;
+			m_display->set_user_mode(&user_mode);
+		}
 	}
 
 	// Get monitor specs
@@ -89,10 +94,6 @@ void switchres_manager::init()
 	}
 	else
 		get_monitor_specs();
-
-	// Create our display manager
-	m_display_factory = new display_manager();
-	m_display = m_display_factory->make();
 }
 
 
@@ -133,29 +134,29 @@ int switchres_manager::get_monitor_specs()
 //  switchres_manager::get_video_mode
 //============================================================
 
-modeline *switchres_manager::get_video_mode()
+modeline *switchres_manager::get_video_mode(int width, int height, float refresh, bool rotated)
 {
 	modeline s_mode = {};
 	modeline t_mode = {};
 	modeline best_mode = {};
 	char result[256]={'\x00'};
 
-	gs.rotation = effective_orientation();
-
-	log_verbose("Switchres: v%s:[%s] Calculating best video mode for %dx%d@%.6f orientation: %s\n",
-						SWITCHRES_VERSION, game.name, game.width, game.height, game.refresh,
-						gs.rotation?"rotated":"normal");
+	log_verbose("Switchres: v%s: Calculating best video mode for %dx%d@%.6f orientation: %s\n",
+						SWITCHRES_VERSION, width, height, refresh, rotated?"rotated":"normal");
 
 	best_mode.result.weight |= R_OUT_OF_RANGE;
-	s_mode.hactive = game.vector?1:normalize(game.width, 8);
-	s_mode.vactive = game.vector?1:game.height;
-	s_mode.vfreq = game.refresh;
+//	s_mode.hactive = game.vector?1:normalize(game.width, 8);
+//	s_mode.vactive = game.vector?1:game.height;
+//	s_mode.vfreq = game.refresh;
+	s_mode.hactive = normalize(width, 8);
+	s_mode.vactive = height;
+	s_mode.vfreq = refresh;
 
 	// Create a dummy mode entry if allowed
 	if (m_display->caps() & CUSTOM_VIDEO_CAPS_ADD && ds.modeline_generation)
 	{
 		modeline new_mode = {};
-		new_mode.type = XYV_EDITABLE | SCAN_EDITABLE | MODE_NEW;
+		new_mode.type = XYV_EDITABLE | V_FREQ_EDITABLE | SCAN_EDITABLE | MODE_NEW;
 		m_display->video_modes.push_back(new_mode);
 	}
 
@@ -176,6 +177,22 @@ modeline *switchres_manager::get_video_mode()
 				if (range[i].hfreq_min)
 				{
 					t_mode = mode;
+					modeline user_mode = m_display->user_mode();
+
+					// init all editable fields with source or user values
+					if (t_mode.type & X_RES_EDITABLE)
+						t_mode.hactive = user_mode.width? user_mode.width : s_mode.hactive;
+
+					if (t_mode.type & Y_RES_EDITABLE)
+						t_mode.vactive = user_mode.height? user_mode.height : s_mode.vactive;
+
+					if (mode.type & V_FREQ_EDITABLE)
+						t_mode.vfreq = s_mode.vfreq;
+
+					// lock resolution fields if required
+					if (user_mode.width) t_mode.type &= ~X_RES_EDITABLE;
+					if (user_mode.height) t_mode.type &= ~Y_RES_EDITABLE;
+
 					modeline_create(&s_mode, &t_mode, &range[i], &gs);
 					t_mode.range = i;
 
@@ -203,8 +220,8 @@ modeline *switchres_manager::get_video_mode()
 		return nullptr;
 	}
 
-	log_info("\nSwitchres: [%s] (%d) %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", game.name, game.screens, game.orientation?"vertical":"horizontal",
-		game.width, game.height, game.refresh, best_mode.hactive, best_mode.vactive, best_mode.vfreq);
+	log_info("\nSwitchres: %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", rotated?"vertical":"horizontal",
+		width, height, refresh, best_mode.hactive, best_mode.vactive, best_mode.vfreq);
 
 	log_verbose("%s\n", modeline_result(&best_mode, result));
 
