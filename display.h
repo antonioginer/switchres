@@ -17,6 +17,7 @@
 #include <vector>
 #include "modeline.h"
 #include "custom_video.h"
+#include "log.h"
 
 typedef struct display_settings
 {
@@ -38,8 +39,8 @@ public:
 	virtual ~display_manager()
 	{
 		restore_modes();
-		if (m_video) delete m_video;
 		if (m_factory) delete m_factory;
+		if (m_display_manager) delete m_display_manager;
 	};
 
 	display_manager *make();
@@ -47,18 +48,18 @@ public:
 	int caps();
 
 	// getters
+	custom_video *factory() const { return m_factory; }
+	custom_video *video() const { return m_video; }
 	modeline user_mode() const { return m_user_mode; }
 
 	// setters
 	void set_user_mode(modeline *mode) { m_user_mode = *mode; }
+	void set_factory(custom_video *factory) { m_factory = factory; }
+	void set_custom_video(custom_video *video) { m_video = video; }
 
 	// options
 	display_settings *m_ds = 0;
 	bool m_desktop_rotated;
-
-	// custom video backend
-	custom_video *m_factory = 0;
-	custom_video *m_video = 0;
 
 	// mode setting interface
 	bool add_mode(modeline *mode);
@@ -77,8 +78,13 @@ public:
 	modeline desktop_mode = {};
 
 private:
-
+	// osd display manager
 	display_manager *m_display_manager = 0;
+
+	// custom video backend
+	custom_video *m_factory = 0;
+	custom_video *m_video = 0;
+
 	modeline m_user_mode = {};
 };
 

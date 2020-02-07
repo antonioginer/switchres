@@ -85,9 +85,9 @@ bool windows_display::init(display_settings *ds)
 
 	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&ds->ps_timing : m_device_key;
 
-	m_factory = new custom_video();
-	m_video = m_factory->make(m_device_name, m_device_id, method, s_param);
-	if (m_video) m_video->init();
+	set_factory(new custom_video);
+	set_custom_video(factory()->make(m_device_name, m_device_id, method, s_param));
+	if (video()) video()->init();
 
 	// Build our display's mode list
 	video_modes.clear();
@@ -195,7 +195,7 @@ int windows_display::get_available_video_modes()
 
 			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s%s %s: ", k, m.width, m.height, m.refresh, m.interlace?"i":"p", m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
 
-			if (m_video && m_video->get_timing(&m))
+			if (video() && video()->get_timing(&m))
 			{
 				j++;
 				if (m.type & MODE_DESKTOP) memcpy(&desktop_mode, &m, sizeof(modeline));

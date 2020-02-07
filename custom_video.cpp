@@ -24,14 +24,6 @@
 
 extern bool ati_is_legacy(int vendor, int device);
 
-custom_video::custom_video()
-{
-}
-
-custom_video::~custom_video()
-{
-}
-
 //============================================================
 //  custom_video::make
 //============================================================
@@ -77,7 +69,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 			log_info("Video chipset is not compatible.\n");
 	}
 
-	return nullptr;
+	return this;
 }
 
 //============================================================
