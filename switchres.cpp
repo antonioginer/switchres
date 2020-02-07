@@ -226,23 +226,23 @@ modeline *switchres_manager::get_video_mode(int width, int height, float refresh
 	log_verbose("%s\n", modeline_result(&best_mode, result));
 
 	// Copy the new modeline to our mode list
-	if (ds.modeline_generation)
+	if (ds.modeline_generation && (best_mode.type & V_FREQ_EDITABLE))
 	{
 		if (best_mode.type & MODE_NEW)
 		{
 			best_mode.width = best_mode.hactive;
 			best_mode.height = best_mode.vactive;
 			best_mode.refresh = int(best_mode.vfreq);
-			best_mode.type &= ~(X_RES_EDITABLE | Y_RES_EDITABLE);
+			// lock new mode
+			best_mode.type &= ~(X_RES_EDITABLE | Y_RES_EDITABLE | (m_display->caps() & CUSTOM_VIDEO_CAPS_UPDATE? 0 : V_FREQ_EDITABLE));
 		}
 		else
 			best_mode.type |= MODE_UPDATED;
-
-		*m_best_mode = best_mode;
 
 		char modeline[256]={'\x00'};
 		log_verbose("Switchres: Modeline %s\n", modeline_print(&best_mode, modeline, MS_FULL));
 	}
 
+	*m_best_mode = best_mode;
 	return m_best_mode;
 }
