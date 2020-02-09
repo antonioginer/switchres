@@ -21,6 +21,8 @@
 #include "custom_video_ati.h"
 #include "custom_video_adl.h"
 #include "custom_video_pstrip.h"
+#elif defined(__linux__)
+#include "custom_video_xrandr.h"
 #endif
 
 
@@ -70,6 +72,13 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 		}
 		else
 			log_info("Video chipset is not compatible.\n");
+	}
+#elif defined(__linux__)
+	m_custom_video = new xrandr_timing(device_name, s_param);
+	if (m_custom_video)
+	{
+		m_custom_method = CUSTOM_VIDEO_TIMING_XRANDR;
+		return m_custom_video;
 	}
 #endif
 
