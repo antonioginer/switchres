@@ -15,7 +15,7 @@ CPPFLAGS = -O3 -Wall -Wextra
 
 # Linux
 ifeq  ($(PLATFORM),Linux)
-SRC += display_linux.cpp
+SRC += display_linux.cpp custom_video_xrandr.cpp
 CPPFLAGS += -fPIC
 LIBS = -lXrandr -lX11
 REMOVE = rm -f 
