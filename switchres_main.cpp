@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <getopt.h>
 #include "switchres.h"
+#include "log.h"
 
 using namespace std;
 
@@ -178,6 +179,11 @@ int main(int argc, char **argv)
 {
 
 	switchres_manager switchres;
+
+	// Init logging
+	set_log_verbose((void*)printf);
+	set_log_info((void*)printf);
+	set_log_error((void*)printf);
 
 	parse_config(switchres, "switchres.ini");
 
