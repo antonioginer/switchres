@@ -21,8 +21,8 @@
 
 xrandr_timing::xrandr_timing(char *device_name, char *param)
 {
-	log_verbose("AWK : xrandr_timint init\n");
-
+	log_verbose("AWK: xrandr_timing init\n");
+	strncpy(m_device_name, device_name, sizeof(device_name) -1);	
 }
 
 //============================================================
@@ -89,7 +89,7 @@ bool xrandr_timing::init()
 				{
 					XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(dpy, res, output_info->crtc);
 					current_rotation = crtc_info->rotation;
-					//TODO if (!strcmp(cs->connector, "auto") || !strcmp(cs->connector,output_info->name))
+					if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name,output_info->name))
 					{
 						// connector name is kept but not necessary due to global gmoutput_primary varial, optimization can happen here
 						log_verbose("SwitchRes: Found output connector '%s'\n", output_info->name);
@@ -131,12 +131,12 @@ bool xrandr_timing::init()
 
 	// Get monitor aspect
 	//TODO aspect = strcmp(options.aspect(0), "auto")? options.aspect(0) : options.aspect();
-	if (strcmp(aspect, "auto"))
-	{
-		float num, den;
-		sscanf(aspect, "%f:%f", &num, &den);
-		//TODO cs->monitor_aspect = cs->desktop_rotated? den/num : num/den;
-	}
+	//TODO if (strcmp(aspect, "auto"))
+	//TODO {
+	//TODO 	float num, den;
+	//TODO 	sscanf(aspect, "%f:%f", &num, &den);
+	//TODO 	//TODO cs->monitor_aspect = cs->desktop_rotated? den/num : num/den;
+	//TODO }
 	/* TODO
 	else
 		cs->monitor_aspect = STANDARD_CRT_ASPECT;
@@ -204,6 +204,7 @@ bool xrandr_timing::init()
 	// Get game info
 	//get_game_info(machine);
 	*/
+	log_verbose("AWK: init completed\n");
 	return true;
 }
 
@@ -546,7 +547,7 @@ int xrandr_timing::del_custom_video_mode(modeline *mode)
 
 bool xrandr_timing::add_mode(modeline *mode)
 {
-        return false;
+	return add_custom_video_mode(mode);
 }
 
 //============================================================
@@ -555,7 +556,7 @@ bool xrandr_timing::add_mode(modeline *mode)
 
 bool xrandr_timing::delete_mode(modeline *mode)
 {
-        return false;
+	return del_custom_video_mode(mode);
 }
 
 //============================================================

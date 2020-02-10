@@ -22,9 +22,11 @@
 bool linux_display::init(display_settings *ds)
 {
 	log_verbose("AWK: display_linux init\n");
+
 	set_factory(new custom_video);
-	set_custom_video(factory()->make(m_device_name, NULL, NULL, NULL));
-	//if (video()) video()->init();
+	set_custom_video(factory()->make(ds->screen, NULL, NULL, NULL));
+	if (video()) video()->init();
+
 	return true;
 }
 
@@ -34,6 +36,7 @@ bool linux_display::init(display_settings *ds)
 
 bool linux_display::get_desktop_mode()
 {
+	log_verbose("AWK: display_linux get_desktop_mode\n");
 	return true;
 }
 
@@ -43,6 +46,8 @@ bool linux_display::get_desktop_mode()
 
 bool linux_display::set_desktop_mode(modeline *mode, int flags)
 {
+	log_verbose("AWK: display_linux set_desktop_mode\n");
+	//if (video()) video()->set_custom_video_mode(mode);
 	return true;
 }
 
@@ -52,6 +57,8 @@ bool linux_display::set_desktop_mode(modeline *mode, int flags)
 
 bool linux_display::restore_desktop_mode()
 {
+	log_verbose("AWK: display_linux restore_desktop_mode\n");
+	//if (video()) video()->modeline_reset();
 	return true;
 }
 
@@ -61,6 +68,7 @@ bool linux_display::restore_desktop_mode()
 
 int linux_display::get_available_video_modes()
 {
-	return 0;
+	log_verbose("AWK: display_linux get_available_video_mode\n");
+	return false;
 }
 

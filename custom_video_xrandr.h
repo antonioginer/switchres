@@ -24,7 +24,7 @@ class xrandr_timing : public custom_video
 		xrandr_timing(char *device_name, char *param);
 		~xrandr_timing() {};
 		const char *api_name() { return "XRANDR"; }
-		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_SCAN_EDITABLE | CUSTOM_VIDEO_CAPS_DESKTOP_EDITABLE; }
+		int caps() { return CUSTOM_VIDEO_CAPS_ADD; }
 		bool init();
 
                 bool add_mode(modeline *mode);
