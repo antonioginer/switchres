@@ -3,8 +3,8 @@
 void log_dummy(const char *format, ...) {}
 
 LOG_VERBOSE log_verbose = &log_dummy;
-LOG_ERROR log_info = &log_dummy;
-LOG_INFO log_error = &log_dummy;
+LOG_INFO log_info = &log_dummy;
+LOG_ERROR log_error = &log_dummy;
 
 void set_log_verbose(void *func_ptr)
 {
