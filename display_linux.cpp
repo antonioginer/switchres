@@ -16,6 +16,22 @@
 #include "log.h"
 
 //============================================================
+//  linux_display::linux_display
+//============================================================
+
+linux_display::linux_display()
+{
+}
+
+//============================================================
+//  linux_display::~linux_display
+//============================================================
+
+linux_display::~linux_display()
+{
+}
+
+//============================================================
 //  linux_display::init
 //============================================================
 
@@ -24,10 +40,91 @@ bool linux_display::init(display_settings *ds)
 	log_verbose("AWK: display_linux init\n");
 
 	set_factory(new custom_video);
-	set_custom_video(factory()->make(ds->screen, NULL, CUSTOM_VIDEO_TIMING_XRANDR, NULL));
+	set_custom_video(factory()->make(ds->screen, NULL, 0, NULL));
 	if (video()) video()->init();
+
+        // Build our display's mode list
+	video_modes.clear();
+	backup_modes.clear();
+
+	// It is not needed to do a get desktop mode separately. It is already handled by the the get_available_video_modes
+	//get_desktop_mode();
+	get_available_video_modes();
+
+	log_error("!!! ERROR, calling filter_modes() crashes under Linux\n");
+	filter_modes();  // <----- TODO, error, crash under Linux
 
 	return true;
 }
 
+//============================================================
+//  linux_display::get_desktop_mode
+//============================================================
 
+bool linux_display::get_desktop_mode()
+{
+	if (video() == NULL) 
+		return false;
+
+        return true;
+}
+
+
+//============================================================
+//  linux_display::set_desktop_mode
+//============================================================
+
+bool linux_display::set_desktop_mode(modeline *mode, int flags)
+{
+	if (!mode) 
+		return false;
+
+	if (video() == NULL) 
+		return false;
+
+        return video()->set_timing(mode);
+}
+
+//============================================================
+//  linux_display::restore_desktop_mode
+//============================================================
+
+bool linux_display::restore_desktop_mode()
+{
+	if (video() == NULL) 
+		return false;
+
+	modeline mode;
+	memset(&mode, 0, sizeof(struct modeline));
+	mode.type &= MODE_DESKTOP;
+
+        return video()->set_timing(&mode);
+}
+
+//============================================================
+//  linux_display::get_available_video_modes
+//============================================================
+
+int linux_display::get_available_video_modes()
+{
+	if (video() == NULL) 
+		return false;
+
+	for (;;) {
+		modeline mode;
+		memset(&mode, 0, sizeof(struct modeline));
+
+		video()->get_timing(&mode);
+		if ( mode.type & CUSTOM_VIDEO_TIMING_NULL )
+			break;
+		
+		if (mode.type & MODE_DESKTOP)
+			memcpy(&desktop_mode, &mode, sizeof(modeline));
+
+		video_modes.push_back(mode);
+		backup_modes.push_back(mode);
+	};
+
+
+	return true;
+}
