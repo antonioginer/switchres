@@ -33,14 +33,8 @@ class xrandr_timing : public custom_video
 		static int xerrors;
 	private:
 		bool modeline_reset();
+		bool modeline_list();
 		bool set_mode(modeline *mode);
-
-		int mode_count = 1;
-
-		bool get_desktop_mode();
-		bool set_desktop_mode(modeline *mode, int flags);
-		bool restore_desktop_mode();
-		int get_available_video_modes();
 
 		char m_device_name[32];
 		char m_param[128];
