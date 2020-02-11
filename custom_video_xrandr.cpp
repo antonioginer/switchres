@@ -35,25 +35,22 @@ static int error_handler(Display *dpy, XErrorEvent *err)
 
 xrandr_timing::xrandr_timing(char *device_name, char *param)
 {
-	// Get current resolution
-	int screen = -1;
-
 	log_verbose("XRANDR: creation (%s,%s)\n", device_name, param);
 	strncpy(m_device_name, device_name, sizeof(device_name) -1); // possible buffer aize overflow
 	if ( param != NULL ) {
 		strncpy(m_param, param, sizeof(param) -1);
 	}
 
-	// dpy is global to reduce open/close calls, resource is freed when modeline is reset
+	// dpy is global to reduce open/close calls, resource is freed when class is destroyed
 	dpy = XOpenDisplay(NULL);
 	int major_version, minor_version;
 	XRRQueryVersion(dpy, &major_version, &minor_version);
 	log_verbose("XRANDR: version %d.%d\n",major_version,minor_version);
 
 	// select current display and root window
-	// root is global to reduce open/close calls, resource is freed when modeline is reset
-	screen = DefaultScreen(dpy); // multiple screen ScreenCount (dpy)
-	root = RootWindow(dpy, screen);
+	// root is global to reduce open/close calls, resource is freed when class is destroyed
+	// multiple screen ScreenCount (dpy)
+	root = RootWindow(dpy, DefaultScreen(dpy));
 
 	video_modes_position = 0;
 }
@@ -138,10 +135,10 @@ bool xrandr_timing::init()
 }
 
 //============================================================
-//  xrandr_timing::modeline_reset
+//  xrandr_timing::restore_mode
 //============================================================
 
-bool xrandr_timing::reset_mode()
+bool xrandr_timing::restore_mode()
 {
 	// Restore desktop resolution
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
@@ -157,7 +154,7 @@ bool xrandr_timing::reset_mode()
 }
 
 //============================================================
-//  xrandr_timing::add_video_xrandr_mode
+//  xrandr_timing::add_mode
 //============================================================
 
 bool xrandr_timing::add_mode(modeline *mode)
@@ -212,7 +209,7 @@ bool xrandr_timing::add_mode(modeline *mode)
 }
 
 //============================================================
-//  xrandr_timing::set_video_xrandr_mode
+//  xrandr_timing::set_mode
 //============================================================
 
 bool xrandr_timing::set_mode(modeline *mode)
@@ -317,7 +314,7 @@ bool xrandr_timing::set_mode(modeline *mode)
 }
 
 //============================================================
-//  xrandr_timing::del_video_xrandr_mode
+//  xrandr_timing::delete_mode
 //============================================================
 
 bool xrandr_timing::delete_mode(modeline *mode)
@@ -364,7 +361,7 @@ bool xrandr_timing::delete_mode(modeline *mode)
 bool xrandr_timing::set_timing(modeline *mode)
 {
 	if ( mode->type & MODE_DESKTOP )
-		return reset_mode();
+		return restore_mode();
 
 	return set_mode(mode);
 }
@@ -382,12 +379,6 @@ bool xrandr_timing::get_timing(modeline *mode)
 		XRRModeInfo *xmode = &res->modes[video_modes_position++];
 
 		log_verbose("XRANDR: pos %d mode id 0x%04x name %s clock %6.6fMHz\n", video_modes_position, (int)xmode->id, xmode->name, (double)xmode->dotClock / 1000000.0);
-
-		//xmode.name       
-		//xmode.nameLength 
-
-//		modeline mode;
-//		memset(&mode, 0, sizeof(struct modeline));
 
 		mode->pclock  	= xmode->dotClock;
 		mode->hactive 	= xmode->width;
@@ -408,7 +399,6 @@ bool xrandr_timing::get_timing(modeline *mode)
 
 		mode->width	= xmode->width;
 		mode->height	= xmode->height;
-		//mode->refresh_label = ???
 		
 		mode->type |= CUSTOM_VIDEO_TIMING_XRANDR;
 

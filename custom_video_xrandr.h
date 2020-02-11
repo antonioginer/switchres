@@ -35,22 +35,13 @@ class xrandr_timing : public custom_video
 
 		static int xerrors;
 	private:
-		bool reset_mode();
+		bool restore_mode();
 		bool set_mode(modeline *mode);
 
 		int video_modes_position = 0;
 
 		char m_device_name[32];
 		char m_param[128];
-
-		#define XRANDR_ARGS ""
-		#define min(a,b)({ __typeof__ (a) _a = (a);__typeof__ (b) _b = (b);_a < _b ? _a : _b; })
-
-		#define XRANDR_TIMING      0x00000020
-
-		//============================================================
-		//  XRANDR
-		//============================================================
 
 		Display *dpy;
 		Window root;

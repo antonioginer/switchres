@@ -48,7 +48,7 @@ bool linux_display::init(display_settings *ds)
 	video_modes.clear();
 	backup_modes.clear();
 
-	// It is not needed to do a get desktop mode separately. It is already handled by the the get_available_video_modes
+	// It is not needed to call get_desktop_mode, it is already performed by the get_available_video_modes function
 	//get_desktop_mode();
 	get_available_video_modes();
 
@@ -124,7 +124,6 @@ int linux_display::get_available_video_modes()
 		video_modes.push_back(mode);
 		backup_modes.push_back(mode);
 	};
-
 
 	return true;
 }
