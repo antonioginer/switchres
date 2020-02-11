@@ -115,7 +115,7 @@ int linux_display::get_available_video_modes()
 		memset(&mode, 0, sizeof(struct modeline));
 
 		video()->get_timing(&mode);
-		if ( mode.type & CUSTOM_VIDEO_TIMING_NULL )
+		if ( mode.type == 0 )
 			break;
 		
 		if (mode.type & MODE_DESKTOP)

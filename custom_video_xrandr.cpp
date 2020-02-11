@@ -414,8 +414,6 @@ bool xrandr_timing::get_timing(modeline *mode)
 
 		if (gmoutput_mode == (int)xmode->id)
 			mode->type |= MODE_DESKTOP;
-	} else {
-		mode->type |= CUSTOM_VIDEO_TIMING_NULL;
 	}
 
 	XRRFreeScreenResources(res);
