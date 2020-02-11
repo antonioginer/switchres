@@ -64,7 +64,6 @@ public:
 	virtual bool get_timing(modeline *mode);
 	virtual bool set_timing(modeline *mode);
 
-
 	modeline m_user_mode = {};
 	modeline m_backup_mode = {};
 
