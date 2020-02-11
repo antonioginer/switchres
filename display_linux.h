@@ -21,9 +21,13 @@
 class linux_display : public display_manager
 {
 	public:
-		linux_display() {};
-		~linux_display() {};
+		linux_display();
+		~linux_display();
 		bool init(display_settings *ds);
 
 	private:
+                bool get_desktop_mode();
+                bool set_desktop_mode(modeline *mode, int flags);
+                bool restore_desktop_mode();
+                int get_available_video_modes();
 };
