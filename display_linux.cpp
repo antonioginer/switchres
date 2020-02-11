@@ -37,7 +37,8 @@ linux_display::~linux_display()
 
 bool linux_display::init(display_settings *ds)
 {
-	log_verbose("AWK: display_linux init\n");
+	//init the display manager
+	m_ds = ds;
 
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(ds->screen, NULL, 0, NULL));
@@ -51,8 +52,7 @@ bool linux_display::init(display_settings *ds)
 	//get_desktop_mode();
 	get_available_video_modes();
 
-	log_error("!!! ERROR, calling filter_modes() crashes under Linux\n");
-	filter_modes();  // <----- TODO, error, crash under Linux
+	filter_modes();
 
 	return true;
 }
