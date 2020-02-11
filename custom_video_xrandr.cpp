@@ -16,13 +16,30 @@
 #include "log.h"
 
 //============================================================
+//  error_handler 
+//  xorg error handler
+//============================================================
+
+int xrandr_timing::xerrors = 0;
+
+static int error_handler(Display *dpy, XErrorEvent *err)
+{
+	xrandr_timing::xerrors++;
+	log_error("Display is set %d error code %d total error %d\n",dpy!=NULL, err->error_code, xrandr_timing::xerrors);
+	return 0;
+}
+
+//============================================================
 //  xrandr_timing::xrandr_timing
 //============================================================
 
 xrandr_timing::xrandr_timing(char *device_name, char *param)
 {
-	log_verbose("AWK: xrandr_timing init\n");
-	strncpy(m_device_name, device_name, sizeof(device_name) -1);	
+	log_verbose("AWK: xrandr_timing creation (%s,%s)\n", device_name, param);
+	strncpy(m_device_name, device_name, sizeof(device_name) -1); // possible buffer aize overflow
+	if ( param != NULL ) {
+		strncpy(m_param, param, sizeof(param) -1);
+	}
 }
 
 //============================================================
@@ -31,27 +48,6 @@ xrandr_timing::xrandr_timing(char *device_name, char *param)
 
 bool xrandr_timing::init()
 {
-	//config_settings *cs = &machine.switchres.cs;
-	//game_info *game = &machine.switchres.game;
-	//modeline *mode_table = machine.switchres.video_modes;
-	//modeline *user_mode = &machine.switchres.user_mode;
-	//monitor_range *range = machine.switchres.range;
-	const char * aspect;
-	char resolution[32]={'\x00'};
-
-	//sdl_options &options = downcast<sdl_options &>(machine.options());
-
-	// Initialize structures and config settings
-	//memset(cs, 0, sizeof(struct config_settings));
-	//memset(game, 0, sizeof(struct game_info));
-
-	// Init Switchres common info
-	//init(machine);
-
-	// Complete config settings
-	//strcpy(resolution, options.resolution());
-	//cs->monitor_count = options.numscreens();
-
 	// Get current resolution
 	int screen = -1;
 
@@ -111,7 +107,7 @@ bool xrandr_timing::init()
 				if (current_rotation & 0xe) // screen rotation is left or right
 				{
 					log_verbose("Switchres: desktop rotation is %s\n",(current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
-					// TODO cs->desktop_rotated = 1;
+					// TODO set flag for desktop_rotated;
 				}
 			}
 		}
@@ -126,164 +122,30 @@ bool xrandr_timing::init()
 		return false;
 	}
 
-	// Get per window resolution
-	//TODO strcpy(resolution, strcmp(options.resolution(0), "auto")? options.resolution(0) : options.resolution());
+	/*
+	//modeline structure reference
+	XRRModeInfo xmode;
+	xmode.name       = name;
+	xmode.nameLength = strlen(name);
 
-	// Get monitor aspect
-	//TODO aspect = strcmp(options.aspect(0), "auto")? options.aspect(0) : options.aspect();
-	//TODO if (strcmp(aspect, "auto"))
-	//TODO {
-	//TODO 	float num, den;
-	//TODO 	sscanf(aspect, "%f:%f", &num, &den);
-	//TODO 	//TODO cs->monitor_aspect = cs->desktop_rotated? den/num : num/den;
-	//TODO }
-	/* TODO
-	else
-		cs->monitor_aspect = STANDARD_CRT_ASPECT;
-		*/
-
-	// Create dummy mode table
-	/* TODO
-	mode_table[1].width = mode_table[1].height = 1;
-	mode_table[1].refresh = 60;
-	mode_table[1].vfreq = mode_table[1].refresh;
-	mode_table[1].hactive = mode_table[1].vactive = 1;
-	mode_table[1].type = XYV_EDITABLE | XRANDR_TIMING | (cs->desktop_rotated? MODE_ROTATED : MODE_OK);
-
-	if (user_mode->hactive)
-	{
-		user_mode->width = user_mode->hactive;
-		user_mode->height = user_mode->vactive;
-		user_mode->refresh = int(user_mode->refresh);
-		user_mode->type = XRANDR_TIMING | MODE_USER_DEF | (cs->desktop_rotated? MODE_ROTATED : MODE_OK);
-	}
-
-	// Create automatic specs and force resolution for LCD monitors
-	if (!strcmp(cs->monitor, "lcd"))
-	{
-		modeline current;
-		memset(&current, 0, sizeof(struct modeline));
-
-		log_verbose("SwitchRes: Creating automatic specs for LCD based on VESA GTF\n");
-		current.width = width;
-		current.height = height;
-		current.refresh = 60;
-		modeline_vesa_gtf(&current);
-		modeline_to_monitor_range(range, &current);
-		monitor_show_range(range);
-
-		sprintf(resolution, "%dx%d@%d", current.width, current.height, current.refresh);
-	}
-	// Otherwise (non-LCD), convert the user defined modeline into a -resolution option
-	else if (user_mode->hactive)
-		sprintf(resolution, "%dx%d", user_mode->hactive, user_mode->vactive);
-
-	// Get resolution from ini
-	if (strcmp(resolution, "auto"))
-	{
-		log_verbose("SwitchRes: -resolution was set at command line or in .ini file as %s\n", resolution);
-
-		if ((sscanf(resolution, "%dx%d@%d", &cs->width, &cs->height, &cs->refresh) < 3) &&
-			((!strstr(resolution, "x") || (sscanf(resolution, "%dx%d", &cs->width, &cs->height) != 2))))
-				osd_printf_info("SwitchRes: illegal -resolution value: %s\n", resolution);
-		else
-		{
-			// Add the user's resolution to our table
-			if (!user_mode->hactive)
-			{
-				mode_table[1].width = mode_table[1].hactive = cs->width? cs->width : 1;
-				mode_table[1].height = mode_table[1].vactive = cs->height? cs->height : 1;
-				mode_table[1].refresh = cs->refresh? int(cs->refresh) : 60;
-				mode_table[1].vfreq = mode_table[1].refresh;
-				mode_table[1].type |= MODE_USER_DEF;
-				if (cs->width) mode_table[1].type &= ~X_RES_EDITABLE;
-				if (cs->height) mode_table[1].type &= ~Y_RES_EDITABLE;
-			}
-		}
-	}
-	// Get game info
-	//get_game_info(machine);
+			mode->pclock  = xmode.dotClock;
+			mode->hactive = xmode.width;
+			mode->hbegin  = xmode.hSyncStart;
+			mode->hend    = xmode.hSyncEnd;
+			mode->htotal  = xmode.hTotal;
+			mode->vactive = xmode.height;
+			mode->vbegin  = xmode.vSyncStart;
+			mode->vend    = xmode.vSyncEnd;
+			mode->vtotal  = xmode.vTotal;
+			mode->interlace = xmode.modeFlags & RR_Interlace;
+			mode->hsync     = ???
+			mode->vsync     = ???
+			mode->hfreq = mode->pclock / mode->htotal;
+			mode->vfreq = mode->hfreq / mode->vtotal * (mode->interlace?2:1);
+			mode->refresh_label = ???
+			mode->type |= CUSTOM_VIDEO_TIMING_XRANDR;
 	*/
 	log_verbose("AWK: init completed\n");
-	return true;
-}
-
-//============================================================
-//  xrandr_timing::modeline_setup
-//============================================================
-
-bool xrandr_timing::modeline_setup()
-{
-	//modeline *best_mode = &machine.switchres.best_mode;
-	//modeline *mode_table = machine.switchres.video_modes;
-	//sdl_options &options = downcast<sdl_options &>(machine.options());
-	//sdl_osd_interface &osd = downcast<sdl_osd_interface &>(machine.osd());
-	//std::string error_string;
-
-	log_verbose("\nSwitchRes: Entering modeline_setup\n");
-
-	// Find most suitable video mode and generate a modeline for it if we're allowed
-	//if (!get_video_mode(machine))
-	//{
-		//set_option_osd(machine, OSDOPTION_SWITCHRES, false);
-	//	return false;
-	//}
-
-	// Make the new modeline available to the system
-	//if (machine.options().modeline_generation())
-	{
-		// Lock mode before adding it to mode table
-		//TODO best_mode->type |= MODE_DISABLED;
-
-		// Check if the same mode had been created already
-		int i;
-		bool found = false;
-		for (i = 2; i <= mode_count; i++)
-			//TODO if (!memcmp(&mode_table[i], best_mode, sizeof(modeline) - sizeof(mode_result)))
-				found = true;
-
-		// Create the new mode and store it in our table
-		if (!found)
-		{
-			mode_count++;
-			//TODO memcpy(&mode_table[mode_count], best_mode, sizeof(modeline));
-	//TODO		add_video_xrandr_mode(best_mode);
-		}
-
-		// Switch to the new mode
-		//TODO set_video_xrandr_mode(best_mode);
-	}
-
-	// Set MAME common options
-	//set_options(machine);
-
-	// Black frame insertion / multithreading
-	//TODO bool black_frame_insertion = options.black_frame_insertion() && best_mode->result.v_scale > 1 && best_mode->vfreq > 100;
-	//set_option_osd(machine, OPTION_BLACK_FRAME_INSERTION, black_frame_insertion);
-
-	// Set MAME OSD specific options
-
-	// Vertical synchronization management (autosync)
-	// Disable -syncrefresh if our vfreq is scaled or out of syncrefresh_tolerance
-	//TODO bool sync_refresh_effective = black_frame_insertion || !((best_mode->result.weight & R_V_FREQ_OFF) || best_mode->result.v_scale > 1);
-	//set_option_osd(machine, OPTION_SYNCREFRESH, options.autosync()? sync_refresh_effective : options.sync_refresh());
-	//set_option_osd(machine, OSDOPTION_WAITVSYNC, options.sync_refresh()? options.sync_refresh() : options.wait_vsync());
-
-	// Set filter options
-	//set_option_osd(machine, OSDOPTION_FILTER, ((best_mode->result.weight & R_RES_STRETCH || best_mode->interlace)));
-
-	// Refresh video options
-	//osd.extract_video_config();
-
-	return true;
-}
-
-//============================================================
-//  xrandr_timing::modeline_remove
-//============================================================
-
-bool xrandr_timing::modeline_remove()
-{
 	return true;
 }
 
@@ -293,8 +155,6 @@ bool xrandr_timing::modeline_remove()
 
 bool xrandr_timing::modeline_reset()
 {
-	//modeline *mode_table = machine.switchres.video_modes;
-
 	// Restore desktop resolution
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
 	XRRScreenConfiguration *sc = XRRGetScreenInfo(dpy, root);
@@ -308,7 +168,7 @@ bool xrandr_timing::modeline_reset()
 	// Remove modelines
 	while (mode_count > 1)
 	{
-		//TODO del_video_xrandr_mode(&mode_table[mode_count]);
+		//TODO del_video_xrandr_mode(&m_user_mode[mode_count]);
 		mode_count--;
 	}
 
@@ -317,35 +177,10 @@ bool xrandr_timing::modeline_reset()
 }
 
 //============================================================
-//  xrandr_timing::resolution_change
-//============================================================
-
-bool xrandr_timing::resolution_change()
-{
-	//running_machine &machine = window->machine();
-	modeline *best_mode = 0; // TODO &machine.switchres.best_mode;
-	modeline previous_mode;
-
-	// If there's no pending change, just exit
-	//if (!check_resolution_change(machine))
-	//	return false;
-
-	// Get the new resolution
-	previous_mode = *best_mode;
-	//modeline_setup(machine);
-
-	// Only change resolution if the new one is actually different
-	if (memcmp(&previous_mode, best_mode, offsetof(modeline, result)))
-		return true;
-
-	return false;
-}
-
-//============================================================
 //  xrandr_timing::add_video_xrandr_mode
 //============================================================
 
-bool xrandr_timing::add_custom_video_mode(modeline *mode)
+bool xrandr_timing::add_mode(modeline *mode)
 {
 	if (!mode)
 		return false;
@@ -399,7 +234,7 @@ bool xrandr_timing::add_custom_video_mode(modeline *mode)
 //  xrandr_timing::set_video_xrandr_mode
 //============================================================
 
-bool xrandr_timing::set_custom_video_mode(modeline *mode)
+bool xrandr_timing::set_mode(modeline *mode)
 {
 	// Use xrandr to switch to new mode. SDL_SetVideoMode doesn't work when (new_width, new_height)==(old_width, old_height)
 	char name[48];
@@ -504,7 +339,7 @@ bool xrandr_timing::set_custom_video_mode(modeline *mode)
 //  xrandr_timing::del_video_xrandr_mode
 //============================================================
 
-int xrandr_timing::del_custom_video_mode(modeline *mode)
+bool xrandr_timing::delete_mode(modeline *mode)
 {
 	if (!mode)
 		return false;
@@ -541,47 +376,3 @@ int xrandr_timing::del_custom_video_mode(modeline *mode)
 	return true;
 }
 
-//============================================================
-//  xrandr_timing::add_mode
-//============================================================
-
-bool xrandr_timing::add_mode(modeline *mode)
-{
-	return add_custom_video_mode(mode);
-}
-
-//============================================================
-//  xrandr_timing::delete_mode
-//============================================================
-
-bool xrandr_timing::delete_mode(modeline *mode)
-{
-	return del_custom_video_mode(mode);
-}
-
-//============================================================
-//  xrandr_timing::get_timing
-//============================================================
-
-bool xrandr_timing::get_timing(modeline *mode)
-{
-        return false;
-}
-
-//============================================================
-//  xrandr_timing::set_timing
-//============================================================
-
-bool xrandr_timing::set_timing(modeline *mode)
-{
-        return false;
-}
-
-//============================================================
-//  xrandr_timing::update_mode
-//============================================================
-
-bool xrandr_timing::update_mode(modeline *mode)
-{
-        return false;
-}
