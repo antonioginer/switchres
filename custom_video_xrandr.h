@@ -33,37 +33,28 @@ class xrandr_timing : public custom_video
 		bool get_timing(modeline *mode);
 		bool set_timing(modeline *mode);
 
-		static int xerrors;
+		static int m_xerrors;
 	private:
-		bool reset_mode();
+		bool restore_mode();
+		bool detect_connector(int screen_pos);
 		bool set_mode(modeline *mode);
 
-		int video_modes_position = 0;
+		int m_video_modes_position = 0;
 
 		char m_device_name[32];
-		char m_param[128];
 
-		#define XRANDR_ARGS ""
-		#define min(a,b)({ __typeof__ (a) _a = (a);__typeof__ (b) _b = (b);_a < _b ? _a : _b; })
+		Display *m_dpy;
+		Window m_root;
 
-		#define XRANDR_TIMING      0x00000020
+		short m_original_rate;
+		Rotation m_original_rotation;
+		SizeID m_original_size_id;
+		int m_width = 0;
+		int m_height = 0;
 
-		//============================================================
-		//  XRANDR
-		//============================================================
-
-		Display *dpy;
-		Window root;
-
-		short original_rate;
-		Rotation original_rotation;
-		SizeID original_size_id;
-		int width = 0;
-		int height = 0;
-
-		int gmoutput_primary = 0;
-		int gmoutput_total = 0;
-		int gmoutput_mode = 0;
+		int m_output_primary = -1;
+		int m_output_mode = 0;
+		int m_crtc_flags = 0;
 
 		int (*old_error_handler)(Display *, XErrorEvent *);
 };
