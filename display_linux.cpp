@@ -48,7 +48,7 @@ bool linux_display::init(display_settings *ds)
 	video_modes.clear();
 	backup_modes.clear();
 
-	// It is not needed to do a get desktop mode separately. It is already handled by the the get_available_video_modes
+	// It is not needed to call get_desktop_mode, it is already performed by the get_available_video_modes function
 	//get_desktop_mode();
 	get_available_video_modes();
 
@@ -110,21 +110,26 @@ int linux_display::get_available_video_modes()
 	if (video() == NULL) 
 		return false;
 
+	// loop through all modes until NULL mode type is received
 	for (;;) {
 		modeline mode;
 		memset(&mode, 0, sizeof(struct modeline));
 
+		// get next mode
 		video()->get_timing(&mode);
 		if ( mode.type == 0 )
 			break;
 		
+		// set the desktop mode
 		if (mode.type & MODE_DESKTOP)
 			memcpy(&desktop_mode, &mode, sizeof(modeline));
 
 		video_modes.push_back(mode);
 		backup_modes.push_back(mode);
-	};
 
+		log_verbose("Switchres: [%3ld] %4dx%4d @%3d%s%s %s: ", video_modes.size(), mode.width, mode.height, mode.refresh, mode.interlace?"i":"p", mode.type & MODE_DESKTOP?"*":"",  mode.type & MODE_ROTATED?"rot":"");
+		log_mode(&mode);
+	};
 
 	return true;
 }
