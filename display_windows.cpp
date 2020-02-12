@@ -99,6 +99,16 @@ bool windows_display::init(display_settings *ds)
 	return true;
 }
 
+//============================================================
+//  windows_display::set_mode
+//============================================================
+
+bool windows_display::set_mode(modeline *mode)
+{
+	if (mode) return set_desktop_mode(mode, CDS_FULLSCREEN);
+
+	return false;
+}
 
 //============================================================
 //  windows_display::get_desktop_mode

@@ -198,6 +198,7 @@ int main(int argc, char **argv)
 	bool resolution_flag = false;
 	bool user_mode_flag = false;
 	bool calculate_flag = false;
+	bool test_flag = false;
 	int c;
 
 	while (1)
@@ -208,6 +209,7 @@ int main(int argc, char **argv)
 			{"version",     no_argument,       0, 'v'},
 			{"help",        no_argument,       0, 'h'},
 			{"calc",        no_argument,       0, 'c'},
+			{"test",        no_argument,       0, 't'},
 			{"monitor",     required_argument, 0, 'm'},
 			{"orientation", required_argument, 0, 'o'},
 			{"resolution",  required_argument, 0, 'r'},
@@ -216,7 +218,7 @@ int main(int argc, char **argv)
 		};
 
 		int option_index = 0;
-		c = getopt_long(argc, argv, "vhcm:o:r:s:", long_options, &option_index);
+		c = getopt_long(argc, argv, "vhctm:o:r:s:", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -233,6 +235,10 @@ int main(int argc, char **argv)
 
 			case 'c':
 				calculate_flag = true;
+				break;
+
+			case 't':
+				test_flag = true;
 				break;
 
 			case 'm':
@@ -310,6 +316,12 @@ int main(int argc, char **argv)
 			{
 				switchres.display()->add_mode(mode);
 			}
+			if (test_flag)
+			{
+				switchres.display()->set_mode(mode);
+				cin.get();
+			}
+
 		}
 	}
 

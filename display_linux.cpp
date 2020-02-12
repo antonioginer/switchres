@@ -58,6 +58,17 @@ bool linux_display::init(display_settings *ds)
 }
 
 //============================================================
+//  linux_display::set_mode
+//============================================================
+
+bool linux_display::set_mode(modeline *mode)
+{
+	if (mode) return set_desktop_mode(mode, 0);
+
+	return false;
+}
+
+//============================================================
 //  linux_display::get_desktop_mode
 //============================================================
 
