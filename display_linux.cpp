@@ -37,7 +37,7 @@ linux_display::~linux_display()
 
 bool linux_display::init(display_settings *ds)
 {
-	//init the display manager
+	// init the display manager
 	m_ds = ds;
 
 	set_factory(new custom_video);
@@ -49,7 +49,7 @@ bool linux_display::init(display_settings *ds)
 	backup_modes.clear();
 
 	// It is not needed to call get_desktop_mode, it is already performed by the get_available_video_modes function
-	//get_desktop_mode();
+	// get_desktop_mode();
 	get_available_video_modes();
 
 	filter_modes();
@@ -128,7 +128,7 @@ int linux_display::get_available_video_modes()
 
 		// get next mode
 		video()->get_timing(&mode);
-		if ( mode.type == 0 )
+		if (mode.type == 0)
 			break;
 		
 		// set the desktop mode
