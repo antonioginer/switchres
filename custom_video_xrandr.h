@@ -29,15 +29,19 @@ class xrandr_timing : public custom_video
 
                 bool add_mode(modeline *mode);
                 bool delete_mode(modeline *mode);
+                bool update_mode(modeline *mode);
 
 		bool get_timing(modeline *mode);
 		bool set_timing(modeline *mode);
 
 		static int m_xerrors;
+		static int m_xerrors_flag;
+
 	private:
 		bool restore_mode();
 		bool detect_connector(int screen_pos);
 		bool set_mode(modeline *mode);
+		XRRModeInfo *find_mode(modeline *mode);
 
 		int m_video_modes_position = 0;
 
@@ -53,7 +57,7 @@ class xrandr_timing : public custom_video
 		int m_height = 0;
 
 		int m_output_primary = -1;
-		int m_output_mode = 0;
+		long unsigned int m_output_mode = 0;
 		int m_crtc_flags = 0;
 
 		int (*old_error_handler)(Display *, XErrorEvent *);
