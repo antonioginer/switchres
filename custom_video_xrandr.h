@@ -35,6 +35,7 @@ class xrandr_timing : public custom_video
 		bool set_timing(modeline *mode);
 
 		static int m_xerrors;
+		static int m_xerrors_flag;
 
 	private:
 		bool restore_mode();
