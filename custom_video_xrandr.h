@@ -44,7 +44,6 @@ class xrandr_timing : public custom_video
 		XRRModeInfo *find_mode(modeline *mode);
 
 		int m_video_modes_position = 0;
-
 		char m_device_name[32];
 
 		Display *m_dpy;
