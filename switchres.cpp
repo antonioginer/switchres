@@ -23,27 +23,28 @@
 switchres_manager::switchres_manager()
 {
 	// Set Switchres default config options
-	sprintf(cs.monitor, "generic_15");
-	sprintf(cs.orientation, "horizontal");
-	sprintf(cs.modeline, "auto");
-	for (int i = 0; i++ < MAX_RANGES;) sprintf(cs.crt_range[i], "auto");
-	cs.monitor_rotates_cw = false;
-	cs.monitor_count = 1;
+	set_monitor("generic_15");
+	set_orientation("horizontal");
+	set_modeline("auto");
+	set_lcd_range("auto");
+	for (int i = 0; i++ < MAX_RANGES;) set_crt_range(i, "auto");
+	set_monitor_rotates_cw(false);
 
-	sprintf(ds.screen, "auto");
-	ds.modeline_generation = true;
-	ds.lock_unsupported_modes = true;
-	ds.lock_system_modes = true;
-	ds.refresh_dont_care = false;
+	// Set display manager default options
+	set_screen("auto");
+	set_modeline_generation(true);
+	set_lock_unsupported_modes(true);
+	set_lock_system_modes(true);
+	set_refresh_dont_care(false);
 
 	// Set modeline generator default options
-	gs.interlace = true;
-	gs.doublescan = true;
-	gs.pclock_min = 0.0;
-	gs.rotation = false;
-	gs.monitor_aspect = STANDARD_CRT_ASPECT;
-	gs.refresh_tolerance = 2.0f;
-	gs.super_width = 2560;
+	set_interlace(true);
+	set_doublescan(true);
+	set_dotclock_min(0.0f);
+	set_rotation(false);
+	set_monitor_aspect(STANDARD_CRT_ASPECT);
+	set_refresh_tolerance(2.0f);
+	set_super_width(2560);
 }
 
 //============================================================

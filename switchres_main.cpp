@@ -79,86 +79,96 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 				// Switchres options
 				case s2i("monitor"):
 					transform(value.begin(), value.end(), value.begin(), ::tolower);
-					sprintf(switchres.cs.monitor, value.c_str());
+					switchres.set_monitor(value.c_str());
 					break;
 				case s2i("orientation"):
-					sprintf(switchres.cs.orientation, value.c_str());
+					switchres.set_orientation(value.c_str());
 					break;
 				case s2i("crt_range0"):
-					sprintf(switchres.cs.crt_range[0], value.c_str());
+					switchres.set_crt_range(0, value.c_str());
 					break;
 				case s2i("crt_range1"):
-					sprintf(switchres.cs.crt_range[1], value.c_str());
+					switchres.set_crt_range(1, value.c_str());
 					break;
 				case s2i("crt_range2"):
-					sprintf(switchres.cs.crt_range[2], value.c_str());
+					switchres.set_crt_range(2, value.c_str());
 					break;
 				case s2i("crt_range3"):
-					sprintf(switchres.cs.crt_range[3], value.c_str());
+					switchres.set_crt_range(3, value.c_str());
 					break;
 				case s2i("crt_range4"):
-					sprintf(switchres.cs.crt_range[4], value.c_str());
+					switchres.set_crt_range(4, value.c_str());
 					break;
 				case s2i("crt_range5"):
-					sprintf(switchres.cs.crt_range[5], value.c_str());
+					switchres.set_crt_range(5, value.c_str());
 					break;
 				case s2i("crt_range6"):
-					sprintf(switchres.cs.crt_range[6], value.c_str());
+					switchres.set_crt_range(6, value.c_str());
 					break;
 				case s2i("crt_range7"):
-					sprintf(switchres.cs.crt_range[7], value.c_str());
+					switchres.set_crt_range(7, value.c_str());
 					break;
 				case s2i("crt_range8"):
-					sprintf(switchres.cs.crt_range[8], value.c_str());
+					switchres.set_crt_range(8, value.c_str());
 					break;
 				case s2i("crt_range9"):
-					sprintf(switchres.cs.crt_range[9], value.c_str());
+					switchres.set_crt_range(9, value.c_str());
 					break;
 				case s2i("lcd_range"):
-					sprintf(switchres.cs.lcd_range, value.c_str());
+					switchres.set_lcd_range(value.c_str());
 					break;
 
 				// Display options
 				case s2i("screen"):
-					sprintf(switchres.ds.screen, value.c_str());
+					switchres.set_screen(value.c_str());
 					break;
 				case s2i("api"):
-					sprintf(switchres.ds.api, value.c_str());
+					switchres.set_api(value.c_str());
 					break;
 				case s2i("modeline_generation"):
-					switchres.ds.modeline_generation = atoi(value.c_str());
+					switchres.set_modeline_generation(atoi(value.c_str()));
 					break;
 				case s2i("lock_unsupported_modes"):
-					switchres.ds.lock_unsupported_modes = atoi(value.c_str());
+					switchres.set_lock_unsupported_modes(atoi(value.c_str()));
 					break;
 				case s2i("lock_system_modes"):
-					switchres.ds.lock_system_modes = atoi(value.c_str());
+					switchres.set_lock_system_modes(atoi(value.c_str()));
 					break;
 				case s2i("refresh_dont_care"):
-					switchres.ds.refresh_dont_care = atoi(value.c_str());
+					switchres.set_refresh_dont_care(atoi(value.c_str()));
 					break;
 				case s2i("ps_timing"):
-					sprintf(switchres.ds.ps_timing, value.c_str());
+					switchres.set_ps_timing(value.c_str());
 					break;
 
 				// Modeline generation options
 				case s2i("interlace"):
-					switchres.gs.interlace = atoi(value.c_str());
+					switchres.set_interlace(atoi(value.c_str()));
 					break;
 				case s2i("doublescan"):
-					switchres.gs.doublescan = atoi(value.c_str());
+					switchres.set_doublescan(atoi(value.c_str()));
 					break;
 				case s2i("dotclock_min"):
-					double pclock_min;
+				{
+					double pclock_min = 0.0f;
 					sscanf(value.c_str(), "%lf", &pclock_min);
-					switchres.gs.pclock_min = pclock_min * 1000000;
+					switchres.set_dotclock_min(pclock_min);
 					break;
+				}
 				case s2i("sync_refresh_tolerance"):
-					sscanf(value.c_str(), "%lf", &switchres.gs.refresh_tolerance);
+				{
+					double refresh_tolerance = 0.0f;
+					sscanf(value.c_str(), "%lf", &refresh_tolerance);
+					switchres.set_refresh_tolerance(refresh_tolerance);
 					break;
+				}
 				case s2i("super_width"):
-					sscanf(value.c_str(), "%d", &switchres.gs.super_width);
+				{
+					int super_width = 0;
+					sscanf(value.c_str(), "%d", &super_width);
+					switchres.set_super_width(super_width);
 					break;
+				}
 
 				default:
 					cout << "Invalid option " << key << '\n';
@@ -242,11 +252,15 @@ int main(int argc, char **argv)
 				break;
 
 			case 'm':
-				sprintf(switchres.cs.monitor, optarg);
+				switchres.set_monitor(optarg);
 				break;
 
 			case 'o':
-				sprintf(switchres.cs.orientation, optarg);
+				switchres.set_orientation(optarg);
+				break;
+
+			case 's':
+				switchres.set_screen(optarg);
 				break;
 
 			case 'r':
@@ -256,10 +270,6 @@ int main(int argc, char **argv)
 					break;
 				}
 				user_mode_flag = true;
-				break;
-
-			case 's':
-				sprintf(switchres.ds.screen, optarg);
 				break;
 
 			default:
@@ -363,10 +373,10 @@ int show_usage()
 		"Usage: switchres <width> <height> <refresh> [options]\n"
 		"Options:\n"
 		"  -c, --calc                        Calculate modeline only\n"
+		"  -t, --test                        Test video mode\n"
 		"  -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)\n"
 		"  -o, --orientation <orientation>   Monitor orientation (horizontal, vertical, rotate_r, rotate_l)\n"
-		"  -r, --resolution <width>x<height>@<refresh>\n"
-		"                                    Force a specific resolution\n"
+		"  -r, --resolution <w>x<h>@<r>      Force a specific video mode from display mode list\n"
 		"  -s, --screen <OS_display_name>    Configure target screen\n"
 	};
 
