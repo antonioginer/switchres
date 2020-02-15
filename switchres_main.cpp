@@ -85,34 +85,34 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 					sprintf(switchres.cs.orientation, value.c_str());
 					break;
 				case s2i("crt_range0"):
-					sprintf(switchres.cs.crt_range0, value.c_str());
+					sprintf(switchres.cs.crt_range[0], value.c_str());
 					break;
 				case s2i("crt_range1"):
-					sprintf(switchres.cs.crt_range1, value.c_str());
+					sprintf(switchres.cs.crt_range[1], value.c_str());
 					break;
 				case s2i("crt_range2"):
-					sprintf(switchres.cs.crt_range2, value.c_str());
+					sprintf(switchres.cs.crt_range[2], value.c_str());
 					break;
 				case s2i("crt_range3"):
-					sprintf(switchres.cs.crt_range3, value.c_str());
+					sprintf(switchres.cs.crt_range[3], value.c_str());
 					break;
 				case s2i("crt_range4"):
-					sprintf(switchres.cs.crt_range4, value.c_str());
+					sprintf(switchres.cs.crt_range[4], value.c_str());
 					break;
 				case s2i("crt_range5"):
-					sprintf(switchres.cs.crt_range5, value.c_str());
+					sprintf(switchres.cs.crt_range[5], value.c_str());
 					break;
 				case s2i("crt_range6"):
-					sprintf(switchres.cs.crt_range6, value.c_str());
+					sprintf(switchres.cs.crt_range[6], value.c_str());
 					break;
 				case s2i("crt_range7"):
-					sprintf(switchres.cs.crt_range7, value.c_str());
+					sprintf(switchres.cs.crt_range[7], value.c_str());
 					break;
 				case s2i("crt_range8"):
-					sprintf(switchres.cs.crt_range8, value.c_str());
+					sprintf(switchres.cs.crt_range[8], value.c_str());
 					break;
 				case s2i("crt_range9"):
-					sprintf(switchres.cs.crt_range9, value.c_str());
+					sprintf(switchres.cs.crt_range[9], value.c_str());
 					break;
 				case s2i("lcd_range"):
 					sprintf(switchres.cs.lcd_range, value.c_str());

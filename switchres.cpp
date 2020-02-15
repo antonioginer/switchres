@@ -16,12 +16,6 @@
 #include "switchres.h"
 #include "log.h"
 
-#define CUSTOM_VIDEO_TIMING_SYSTEM      0x00000010
-
-
-bool effective_orientation() { return false; }
-
-
 //============================================================
 //  switchres_manager::switchres_manager
 //============================================================
@@ -32,17 +26,7 @@ switchres_manager::switchres_manager()
 	sprintf(cs.monitor, "generic_15");
 	sprintf(cs.orientation, "horizontal");
 	sprintf(cs.modeline, "auto");
-	sprintf(cs.crt_range0, "auto");
-	sprintf(cs.crt_range1, "auto");
-	sprintf(cs.crt_range2, "auto");
-	sprintf(cs.crt_range3, "auto");
-	sprintf(cs.crt_range4, "auto");
-	sprintf(cs.crt_range5, "auto");
-	sprintf(cs.crt_range6, "auto");
-	sprintf(cs.crt_range7, "auto");
-	sprintf(cs.crt_range8, "auto");
-	sprintf(cs.crt_range9, "auto");
-	sprintf(cs.lcd_range, "auto");
+	for (int i = 0; i++ < MAX_RANGES;) sprintf(cs.crt_range[i], "auto");
 	cs.monitor_rotates_cw = false;
 	cs.monitor_count = 1;
 
@@ -108,18 +92,8 @@ int switchres_manager::get_monitor_specs()
 	memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 
 	if (!strcmp(cs.monitor, "custom"))
-	{
-		monitor_fill_range(&range[0],cs.crt_range0);
-		monitor_fill_range(&range[1],cs.crt_range1);
-		monitor_fill_range(&range[2],cs.crt_range2);
-		monitor_fill_range(&range[3],cs.crt_range3);
-		monitor_fill_range(&range[4],cs.crt_range4);
-		monitor_fill_range(&range[5],cs.crt_range5);
-		monitor_fill_range(&range[6],cs.crt_range6);
-		monitor_fill_range(&range[7],cs.crt_range7);
-		monitor_fill_range(&range[8],cs.crt_range8);
-		monitor_fill_range(&range[9],cs.crt_range9);
-	}
+		for (int i = 0; i++ < MAX_RANGES;) monitor_fill_range(&range[i], cs.crt_range[i]);
+
 	else if (!strcmp(cs.monitor, "lcd"))
 		monitor_fill_lcd_range(&range[0],cs.lcd_range);
 

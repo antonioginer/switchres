@@ -33,16 +33,7 @@ typedef struct config_settings
 	char   monitor[32];
 	char   orientation[32];
 	char   modeline[256];
-	char   crt_range0[256];
-	char   crt_range1[256];
-	char   crt_range2[256];
-	char   crt_range3[256];
-	char   crt_range4[256];
-	char   crt_range5[256];
-	char   crt_range6[256];
-	char   crt_range7[256];
-	char   crt_range8[256];
-	char   crt_range9[256];
+	char   crt_range[MAX_RANGES][256];
 	char   lcd_range[256];
 	bool   monitor_rotates_cw;
 	int    monitor_count;
