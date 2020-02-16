@@ -29,6 +29,7 @@ linux_display::linux_display()
 
 linux_display::~linux_display()
 {
+	restore_desktop_mode();	
 }
 
 //============================================================
@@ -105,11 +106,7 @@ bool linux_display::restore_desktop_mode()
 	if (video() == NULL) 
 		return false;
 
-	modeline mode;
-	memset(&mode, 0, sizeof(struct modeline));
-	mode.type &= MODE_DESKTOP;
-
-        return video()->set_timing(&mode);
+        return video()->set_timing(&desktop_mode);
 }
 
 //============================================================
