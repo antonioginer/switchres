@@ -191,8 +191,6 @@ bool xrandr_timing::restore_mode()
 	// Restore desktop resolution
 	XRRScreenConfiguration *sc = XRRGetScreenInfo(m_dpy, m_root);
 
-	XRRSetScreenConfigAndRate(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, m_original_rate, CurrentTime);
-
 	// resize the framebuffer to the screen size
 	log_verbose("XRANDR: (restore_mode) change screen size\n");
 	XSync(m_dpy, False);
@@ -206,6 +204,8 @@ bool xrandr_timing::restore_mode()
 	{
 		log_error("XRANDR: (restore_mode) [ERROR] in %s\n","XRRSetScreenSize");
 	}
+
+	XRRSetScreenConfigAndRate(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, m_original_rate, CurrentTime);
 
 	XRRFreeScreenConfigInfo(sc);
 
