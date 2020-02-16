@@ -55,6 +55,7 @@ xrandr_timing::xrandr_timing(char *device_name, char *param)
 	int major_version, minor_version;
 	XRRQueryVersion(m_dpy, &major_version, &minor_version);
 	log_verbose("XRANDR: (xrandr_timing) version %d.%d\n",major_version,minor_version);
+	XRRQueryExtension(m_dpy, &m_event_base, &m_error_base); 
 }
 //============================================================
 //  xrandr_timing::~xrandr_timing
@@ -208,16 +209,29 @@ bool xrandr_timing::restore_mode()
 
 	XRRScreenConfiguration *sc = XRRGetScreenInfo(m_dpy, m_root);
 
-	m_xerrors = 0;
-	m_xerrors_flag = 0x01;
 	old_error_handler = XSetErrorHandler(error_handler);
-	XRRSetScreenConfigAndRate(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, m_original_rate, CurrentTime);
-	XSetErrorHandler(old_error_handler);
-
-	if (m_xerrors & m_xerrors_flag)
+	if(XRRSetScreenConfigAndRate(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, m_original_rate, CurrentTime) == RRSetConfigFailed)
 	{
 		log_error("XRANDR: (restore_mode) [ERROR] in %s\n","XRRSetScreenConfigAndRate");
 		XRRSetScreenConfig(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, CurrentTime);
+	}
+
+	bool wait_screen_event = false;
+
+	XRRSelectInput (m_dpy, m_root, RRScreenChangeNotifyMask);
+
+	while (!wait_screen_event) 
+	{
+		XNextEvent(m_dpy, (XEvent *) &m_event);
+		log_verbose("XRANDR: (restore_mode) X event id %d\n",m_event.type);	
+		switch (m_event.type - m_event_base) 
+		{
+			case RRScreenChangeNotify:
+				wait_screen_event = true;
+				break;
+			default:
+				log_verbose("XRANDR: (restore_mode) not processed event type %d\n", m_event.type - m_event_base);
+		}
 	}
 
 	res = XRRGetScreenResourcesCurrent(m_dpy, m_root);

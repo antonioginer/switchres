@@ -49,6 +49,10 @@ class xrandr_timing : public custom_video
 		Display *m_dpy;
 		Window m_root;
 
+		int m_event_base;
+		int m_error_base;
+		XEvent m_event;
+
 		short m_original_rate;
 		Rotation m_original_rotation;
 		SizeID m_original_size_id;
