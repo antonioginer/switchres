@@ -220,6 +220,18 @@ bool xrandr_timing::restore_mode()
 		XRRSetScreenConfig(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, CurrentTime);
 	}
 
+	res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
+	output_info = XRRGetOutputInfo(m_dpy, res, res->outputs[m_desktop_output]);
+	crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc);
+
+	modeid = crtc_info->mode;
+
+	XRRFreeCrtcInfo(crtc_info);
+	XRRFreeOutputInfo(output_info);
+	XRRFreeScreenResources(res);
+
+	log_verbose("XRANDR: (restore_mode) final desktop modeline from 0x%04lx\n", modeid);
+
 	XRRFreeScreenConfigInfo(sc);
 
 	return true;
@@ -474,7 +486,7 @@ bool xrandr_timing::set_mode(modeline *mode)
 
 	// Switch to new modeline
 	XSync(m_dpy, False);
-	m_xerrors_flag = 0x03;
+	m_xerrors_flag = 0x04;
 	old_error_handler = XSetErrorHandler(error_handler);
 	XRRSetCrtcConfig(m_dpy, res, output_info->crtc, CurrentTime, crtc_info->x, crtc_info->y, pmode->id, m_original_rotation, crtc_info->outputs, crtc_info->noutput);
 	XSync(m_dpy, False);
