@@ -200,12 +200,13 @@ bool xrandr_timing::restore_mode()
 	XRRFreeOutputInfo(output_info);
 	XRRFreeScreenResources(res);
 
-	log_verbose("XRANDR: (restore_mode) restore desktop modeline from 0x%04lx to 0x%04lx\n", modeid, m_desktop_modeid);
 	if (modeid == m_desktop_modeid)
 	{
-		log_error("XRANDR: (restore_mode) [WARNING] desktop mode already active\n");
+		log_error("XRANDR: (restore_mode) [WARNING] desktop modeline %04lx already active\n", modeid);
 		return false;
 	}
+
+	log_verbose("XRANDR: (restore_mode) restoring desktop modeline from 0x%04lx to 0x%04lx\n", modeid, m_desktop_modeid);
 
 	XRRScreenConfiguration *sc = XRRGetScreenInfo(m_dpy, m_root);
 
@@ -522,9 +523,7 @@ bool xrandr_timing::set_mode(modeline *mode)
 	if (crtc_info->mode == 0)
 	{
 		log_error("XRANDR: (set_mode) [ERROR] switching resolution, original mode restored\n");
-		XRRScreenConfiguration *sc = XRRGetScreenInfo(m_dpy, m_root);
-		XRRSetScreenConfigAndRate(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, m_original_rate, CurrentTime);
-		XRRFreeScreenConfigInfo(sc);
+		restore_mode();
 	}
 
 	// Verify current active mode
