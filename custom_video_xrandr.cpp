@@ -244,7 +244,7 @@ bool xrandr_timing::restore_mode()
 	XRRFreeOutputInfo(output_info);
 	XRRFreeScreenResources(res);
 
-	log_verbose("XRANDR: (restore_mode) final desktop modeline from 0x%04lx\n", modeid);
+	log_verbose("XRANDR: (restore_mode) final desktop modeline is 0x%04lx\n", modeid);
 
 	XRRFreeScreenConfigInfo(sc);
 
