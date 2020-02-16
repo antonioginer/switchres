@@ -52,11 +52,12 @@ class xrandr_timing : public custom_video
 		short m_original_rate;
 		Rotation m_original_rotation;
 		SizeID m_original_size_id;
-		int m_width = 0;
-		int m_height = 0;
+		//int m_width = 0;
+		//int m_height = 0;
 
-		int m_output_primary = -1;
-		long unsigned int m_output_mode = 0;
+		int m_desktop_output = -1;
+		//long unsigned int m_output_mode = 0;
+		long unsigned int m_desktop_modeid = 0;
 		int m_crtc_flags = 0;
 
 		int (*old_error_handler)(Display *, XErrorEvent *);
