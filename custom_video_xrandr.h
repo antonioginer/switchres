@@ -49,9 +49,12 @@ class xrandr_timing : public custom_video
 		Display *m_dpy;
 		Window m_root;
 
+		// was used by restore_mode
+		/*
 		int m_event_base;
 		int m_error_base;
 		XEvent m_event;
+		*/
 
 		short m_original_rate;
 		Rotation m_original_rotation;
@@ -61,7 +64,8 @@ class xrandr_timing : public custom_video
 
 		int m_desktop_output = -1;
 		//long unsigned int m_output_mode = 0;
-		RRMode m_desktop_modeid = 0;
+		//RRMode m_desktop_modeid = 0;
+		XRRModeInfo m_desktop_mode = {};
 		int m_crtc_flags = 0;
 
 		int (*old_error_handler)(Display *, XErrorEvent *);
