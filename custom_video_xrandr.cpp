@@ -189,15 +189,39 @@ bool xrandr_timing::restore_mode()
 	}
 
 	// Restore desktop resolution
-	log_verbose("XRANDR: (restore_mode) restore desktop modeline\n");
+	XRRScreenResources *res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
+	XRROutputInfo *output_info = XRRGetOutputInfo(m_dpy, res, res->outputs[m_desktop_output]);
+	XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc);
+
+	RRMode modeid = crtc_info->mode;
+
+	XRRFreeCrtcInfo(crtc_info);
+	XRRFreeOutputInfo(output_info);
+	XRRFreeScreenResources(res);
+
+	log_verbose("XRANDR: (restore_mode) restore desktop modeline from 0x%04lx to 0x%04lx\n", modeid, m_desktop_modeid);
+	if (modeid == m_desktop_modeid)
+	{
+		log_error("XRANDR: (restore_mode) [WARNING] desktop mode already active\n");
+		return false;
+	}
 
 	XRRScreenConfiguration *sc = XRRGetScreenInfo(m_dpy, m_root);
 
+	m_xerrors = 0;
+	m_xerrors_flag = 0x01;
+	old_error_handler = XSetErrorHandler(error_handler);
 	XRRSetScreenConfigAndRate(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, m_original_rate, CurrentTime);
+	XSetErrorHandler(old_error_handler);
+
+	if (m_xerrors & m_xerrors_flag)
+	{
+		log_error("XRANDR: (restore_mode) [ERROR] in %s\n","XRRSetScreenConfigAndRate");
+		XRRSetScreenConfig(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, CurrentTime);
+	}
 
 	XRRFreeScreenConfigInfo(sc);
 
-	//set_mode(&m_desktop_mode);
 	return true;
 }
 
@@ -308,6 +332,8 @@ bool xrandr_timing::add_mode(modeline *mode)
 	if (m_xerrors & m_xerrors_flag)
 	{
 		log_error("XRANDR: (add_mode) [ERROR] in %s\n","XRRAddOutputMode");
+		// remove unlinked modeline
+		XRRDestroyMode(m_dpy, find_mode(mode)->id);
 	}
 
 	return m_xerrors==0;
@@ -358,6 +384,7 @@ bool xrandr_timing::set_mode(modeline *mode)
 	if (pmode == NULL)
 	{
 		log_error("XRANDR: (set_mode) [ERROR] mode not found\n");
+		return false;
 	}
 
 	// Use xrandr to switch to new mode.
@@ -480,7 +507,7 @@ bool xrandr_timing::set_mode(modeline *mode)
 		XRRModeInfo *mode = &res->modes[m];
 		if (mode->id == crtc_info->mode)
 		{
-			log_verbose("XRANDR: (set_mode) pos %d id 0x%04x name %s clock %6.6fMHz\n", m, (int)mode->id, mode->name, (double)mode->dotClock / 1000000.0);
+			log_verbose("XRANDR: (set_mode) pos %d id 0x%04lx name %s clock %6.6fMHz\n", m, mode->id, mode->name, (double)mode->dotClock / 1000000.0);
 		}
 	}
 
