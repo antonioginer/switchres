@@ -96,6 +96,7 @@ typedef struct modeline
 	//
 	int    type;
 	int    range;
+	uint64_t platform_data;
 	//
 	mode_result result;
 } modeline;
