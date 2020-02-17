@@ -22,6 +22,7 @@
 
 int xrandr_timing::m_xerrors = 0;
 int xrandr_timing::m_xerrors_flag = 0;
+int (*old_error_handler)(Display *, XErrorEvent *);
 
 static int error_handler(Display *dpy, XErrorEvent *err)
 {
@@ -75,23 +76,83 @@ xrandr_timing::~xrandr_timing()
 bool xrandr_timing::init()
 {
 	// Select current display and root window
-	// root is set at init to reduce open/close calls
+	// display and root window are global variable to reduce open/close calls
 	
-	int s = -1; // 0 for first screen detected
+	// screen_pos defines screen position, 0 is default and equivalent to 'auto'
+	int screen_pos = -1; // first screen starts at 0
 
 	bool detected = false;
 	
 	// Handle the screen name, "auto", "screen[0-9]" and XRANDR device name
 	if (strlen(m_device_name) == 7 && !strncmp(m_device_name,"screen",6) && m_device_name[6]>='0' && m_device_name[6]<='9')
 	{
-		s = m_device_name[6]-'0';
-		log_verbose("XRANDR: (init) check for screen number %d\n",s);
+		screen_pos = m_device_name[6]-'0';
+		log_verbose("XRANDR: (init) check for screen number %d\n", screen_pos);
 	} 
 
 	for (int scr = 0;!detected && scr < ScreenCount(m_dpy);scr++)
 	{
 		m_root = RootWindow(m_dpy, scr);
-		detected = detect_connector(s);
+		
+		XRRScreenResources *res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
+
+		// Get default screen rotation from screen configuration
+		XRRScreenConfiguration *sc = XRRGetScreenInfo(m_dpy, m_root);
+		XRRConfigCurrentConfiguration(sc, &m_desktop_rotation);
+		XRRFreeScreenConfigInfo(sc);
+
+		Rotation current_rotation = 0;
+		int output_position = 0;
+		for (int o = 0;o < res->noutput;o++)
+		{
+			XRROutputInfo *output_info = XRRGetOutputInfo(m_dpy, res, res->outputs[o]);
+			if (!output_info)
+				log_error("XRANDR: (detect_connector) [ERROR] could not get output 0x%x information\n", (uint) res->outputs[o]);
+
+			// Check all connected output
+			if (output_info->connection == RR_Connected)
+			{
+				log_verbose("XRANDR: (detect_connector) check output connector '%s'\n", output_info->name);
+				for (int j = 0;j < output_info->nmode;j++)
+				{
+					// If output has a crtc, select it
+					if (output_info->crtc && m_desktop_output == -1)
+					{
+						XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc);
+						current_rotation = crtc_info->rotation;
+						if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name,output_info->name) || output_position == screen_pos)
+						{
+							log_verbose("XRANDR: (detect_connector) name '%s' id %d selected as primary output\n", output_info->name, o);
+							// Save the output connector
+							m_desktop_output = o;
+	
+							// identify the initial modeline id
+							for (int m = 0;m < res->nmode && m_desktop_mode.id == 0;m++)
+							{
+								XRRModeInfo *mode = &res->modes[m];
+								// Get screen mode
+								if (crtc_info->mode == mode->id)
+								{
+									m_desktop_mode = *mode;
+								}
+							}
+						}
+						XRRFreeCrtcInfo(crtc_info);
+					}
+					if (current_rotation & 0xe) // Screen rotation is left or right
+					{
+						m_crtc_flags = MODE_ROTATED;
+						log_verbose("XRANDR: (detect_connector) desktop rotation is %s\n",(current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
+					}
+				}
+				output_position++;
+			}
+			XRRFreeOutputInfo(output_info);
+		}
+		XRRFreeScreenResources(res);
+
+		// set if screen is detected
+		detected = m_desktop_output != -1;
 	}
 
 	// Handle no screen detected case
@@ -100,153 +161,6 @@ bool xrandr_timing::init()
 
 	return detected;
 }
-
-//============================================================
-//  xrandr_timing::init
-//============================================================
-
-bool xrandr_timing::detect_connector(int screen_pos)
-{
-	// Parameter screen_pos define screen order, 0 is default and equivalent to 'auto'
-
-	XRRScreenResources *res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
-
-	// Get default screen size, rate and rotation from screen configuration
-	XRRScreenConfiguration *sc = XRRGetScreenInfo(m_dpy, m_root);
-	// was used by restore_mode m_original_rate = XRRConfigCurrentRate(sc);
-	m_original_size_id = XRRConfigCurrentConfiguration(sc, &m_original_rotation);
-	XRRFreeScreenConfigInfo(sc);
-
-	Rotation current_rotation = 0;
-	int output_position = 0;
-	for (int o = 0;o < res->noutput;o++)
-	{
-		XRROutputInfo *output_info = XRRGetOutputInfo(m_dpy, res, res->outputs[o]);
-		if (!output_info)
-			log_error("XRANDR: (detect_connector) [ERROR] could not get output 0x%x information\n", (uint) res->outputs[o]);
-
-		// Check all connected output
-		if (output_info->connection == RR_Connected)
-		{
-			log_verbose("XRANDR: (detect_connector) check output connector '%s'\n", output_info->name);
-			for (int j = 0;j < output_info->nmode;j++)
-			{
-				// If output has a crtc, select it
-				if (output_info->crtc && m_desktop_output == -1)
-				{
-					XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc);
-					current_rotation = crtc_info->rotation;
-					if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name,output_info->name) || output_position == screen_pos)
-					{
-						log_verbose("XRANDR: (detect_connector) name '%s' id %d selected as primary output\n", output_info->name, o);
-						// Save the output connector
-						m_desktop_output = o;
-
-						// identify the initial modeline id
-						for (int m = 0;m < res->nmode && m_desktop_mode.id == 0;m++)
-						{
-							XRRModeInfo *mode = &res->modes[m];
-							// Get screen mode
-							if (crtc_info->mode == mode->id)
-							{
-								m_desktop_mode = *mode;
-							}
-						}
-					}
-					XRRFreeCrtcInfo(crtc_info);
-				}
-				if (current_rotation & 0xe) // Screen rotation is left or right
-				{
-					m_crtc_flags = MODE_ROTATED;
-					log_verbose("XRANDR: (detect_connector) desktop rotation is %s\n",(current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
-				}
-			}
-			output_position++;
-		}
-		XRRFreeOutputInfo(output_info);
-	}
-	XRRFreeScreenResources(res);
-
-	// Return true is screen is detected
-	return m_desktop_output != -1;
-}
-
-//============================================================
-//  xrandr_timing::restore_mode
-//============================================================
-/*
-bool xrandr_timing::restore_mode()
-{
-	// Handle no screen detected case
-	if (m_desktop_output == -1)
-	{
-		log_error("XRANDR: (restore_mode) [ERROR] no screen detected\n");
-		return false;
-	}
-
-	// Restore desktop resolution
-	XRRScreenResources *res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
-	XRROutputInfo *output_info = XRRGetOutputInfo(m_dpy, res, res->outputs[m_desktop_output]);
-	XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc);
-
-	RRMode modeid = crtc_info->mode;
-
-	XRRFreeCrtcInfo(crtc_info);
-	XRRFreeOutputInfo(output_info);
-	XRRFreeScreenResources(res);
-
-	if (modeid == m_desktop_mode.id)
-	{
-		log_error("XRANDR: (restore_mode) [WARNING] desktop modeline %04lx already active\n", modeid);
-		return false;
-	}
-
-	log_verbose("XRANDR: (restore_mode) restoring desktop modeline from 0x%04lx to 0x%04lx\n", modeid, m_desktop_mode.id);
-
-	XRRScreenConfiguration *sc = XRRGetScreenInfo(m_dpy, m_root);
-
-	old_error_handler = XSetErrorHandler(error_handler);
-	if(XRRSetScreenConfigAndRate(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, m_original_rate, CurrentTime) == RRSetConfigFailed)
-	{
-		log_error("XRANDR: (restore_mode) [ERROR] in %s\n","XRRSetScreenConfigAndRate");
-		XRRSetScreenConfig(m_dpy, sc, m_root, m_original_size_id, m_original_rotation, CurrentTime);
-	}
-
-	bool wait_screen_event = false;
-
-	XRRSelectInput (m_dpy, m_root, RRScreenChangeNotifyMask);
-
-	while (!wait_screen_event) 
-	{
-		XNextEvent(m_dpy, (XEvent *) &m_event);
-		log_verbose("XRANDR: (restore_mode) X event id %d\n",m_event.type);	
-		switch (m_event.type - m_event_base) 
-		{
-			case RRScreenChangeNotify:
-				wait_screen_event = true;
-				break;
-			default:
-				log_verbose("XRANDR: (restore_mode) not processed event type %d\n", m_event.type - m_event_base);
-		}
-	}
-
-	res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
-	output_info = XRRGetOutputInfo(m_dpy, res, res->outputs[m_desktop_output]);
-	crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc);
-
-	modeid = crtc_info->mode;
-
-	XRRFreeCrtcInfo(crtc_info);
-	XRRFreeOutputInfo(output_info);
-	XRRFreeScreenResources(res);
-
-	log_verbose("XRANDR: (restore_mode) final desktop modeline is 0x%04lx\n", modeid);
-
-	XRRFreeScreenConfigInfo(sc);
-
-	return true;
-}
-*/
 
 //============================================================
 //  xrandr_timing::update_mode
@@ -264,19 +178,13 @@ bool xrandr_timing::update_mode(modeline *mode)
 		return false;
 	}
 
-	bool result = false;
-
-	result = delete_mode(mode);
-
-	if (!result)
+	if (!delete_mode(mode))
 	{
 		log_error("XRANDR: (update_mode) [ERROR] delete operation not successful");
 		return false;
 	}
 
-	result = add_mode(mode);
-
-	if (!result)
+	if (!add_mode(mode))
 	{
 		log_error("XRANDR: (update_mode) [ERROR] add operation not successful");
 		return false;
@@ -300,7 +208,8 @@ bool xrandr_timing::add_mode(modeline *mode)
 		return false;
 	}
 
-	if (find_mode(mode) != NULL)
+	XRRModeInfo *pmode = find_mode(mode);
+	if (pmode != NULL)
 	{
 		log_error("XRANDR: (add_mode) [ERROR] mode already exist\n");
 	}
@@ -337,6 +246,11 @@ bool xrandr_timing::add_mode(modeline *mode)
 	if (m_xerrors & m_xerrors_flag)
 	{
 		log_error("XRANDR: (add_mode) [ERROR] in %s\n","XRRCreateMode");
+		return false;
+	} 
+	else 
+	{
+		mode->platform_data = gmid;
 	}
 
 	// Add new modeline to primary output
@@ -355,7 +269,7 @@ bool xrandr_timing::add_mode(modeline *mode)
 	{
 		log_error("XRANDR: (add_mode) [ERROR] in %s\n","XRRAddOutputMode");
 		// remove unlinked modeline
-		XRRDestroyMode(m_dpy, find_mode(mode)->id);
+		XRRDestroyMode(m_dpy, pmode->id);
 	}
 
 	return m_xerrors==0;
@@ -367,18 +281,16 @@ bool xrandr_timing::add_mode(modeline *mode)
 
 XRRModeInfo *xrandr_timing::find_mode(modeline *mode)
 {
-	char name[48];
-	sprintf(name,"SR-%dx%d_%f",mode->hactive, mode->vactive, mode->vfreq); // Add ID
-
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
 
 	// Select corresponding mode from modeline, can be enhanced by saving mode index to modeline structure
 	XRRModeInfo *pmode=NULL;
-	// Find the mode
-	for (int m = 0;m < res->nmode;m++)
+
+	// if name search is not successful, try with a parameter search instead
+	for (int m = 0;m < res->nmode && !pmode;m++)
 	{
-		XRRModeInfo *tmp_mode = &res->modes[m];
-		if (!strcmp(name, tmp_mode->name))
+		XRRModeInfo *xmode = &res->modes[m];
+		if (mode->platform_data == xmode->id)
 		{
 			pmode = &res->modes[m];
 		}
@@ -390,15 +302,15 @@ XRRModeInfo *xrandr_timing::find_mode(modeline *mode)
 }
 
 //============================================================
-//  xrandr_timing::set_mode
+//  xrandr_timing::set_timing
 //============================================================
 
-bool xrandr_timing::set_mode(modeline *mode)
+bool xrandr_timing::set_timing(modeline *mode)
 {
 	// Handle no screen detected case
 	if (m_desktop_output == -1)
 	{
-		log_error("XRANDR: (set_mode) [ERROR] no screen detected\n");
+		log_error("XRANDR: (set_timing) [ERROR] no screen detected\n");
 		return false;
 	}
 
@@ -413,100 +325,60 @@ bool xrandr_timing::set_mode(modeline *mode)
 
 	if (pmode == NULL)
 	{
-		log_error("XRANDR: (set_mode) [ERROR] mode not found\n");
+		log_error("XRANDR: (set_timing) [ERROR] mode not found\n");
 		return false;
 	}
 
 	// Use xrandr to switch to new mode.
-	char name[48];
-	sprintf(name,"SR-%dx%d_%f",mode->hactive, mode->vactive, mode->vfreq); // Add ID
-
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
 	XRROutputInfo *output_info = XRRGetOutputInfo(m_dpy, res, res->outputs[m_desktop_output]);
 	XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc);
+
+	if (pmode->id == crtc_info->mode)
+	{
+		log_verbose("XRANDR: (set_timing) modeline is already active\n");
+		XRRFreeCrtcInfo(crtc_info);
+		XRRFreeOutputInfo(output_info);
+		XRRFreeScreenResources(res);
+		return true;
+	}
 
 	m_xerrors = 0;
 
 	// Grab X server to prevent unwanted interaction from the window manager
 	XGrabServer(m_dpy);
 
-#if 0
-	// Disable all CRTCs
-	for (int i = 0;i < output_info->ncrtc;i++)
-	{
-		if (XRRSetCrtcConfig(m_dpy, res, output_info->crtcs[i], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0) != RRSetConfigSuccess)
-		{
-			log_error("XRANDR: (set_mode) [ERROR] when disabling CRTC\n");
-			// Release X server, events can be processed now
-			m_xerrors_flag = 0x01;
-			m_xerrors |= m_xerrors_flag;
-		}
-	}
-#else
 	// Disable CRTC
-	if (XRRSetCrtcConfig(m_dpy, res, output_info->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0) != RRSetConfigSuccess)
+	if (XRRSetCrtcConfig(m_dpy, res, output_info->crtc, CurrentTime, crtc_info->x, crtc_info->y, None, RR_Rotate_0, NULL, 0) != RRSetConfigSuccess)
 	{
-		log_error("XRANDR: (set_mode) [ERROR] when disabling CRTC\n");
+		log_error("XRANDR: (set_timing) [ERROR] when disabling CRTC\n");
 		// Release X server, events can be processed now
 		m_xerrors_flag = 0x01;
 		m_xerrors |= m_xerrors_flag;
 	}
-#endif
 
-	log_verbose("XRANDR: (set_mode) CRTC %d mode %#lx, %ux%u+%d+%d.\n", 0, crtc_info->mode, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y);
+	log_verbose("XRANDR: (set_timing) CRTC %d mode %#lx, %ux%u+%d+%d.\n", 0, crtc_info->mode, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y);
 
-#if 0
-        // Check if framebuffer size is correct
-        int change_resolution = 0;
-        if (m_width < crtc_info->x + mode->hactive)
-        {
-                m_width = crtc_info->x + mode->hactive;
-                change_resolution = 1;
-        }
-        if (m_height < crtc_info->y + mode->vactive)
-        {
-                m_height = crtc_info->y + mode->vactive;
-                change_resolution = 1;
-        }
-
-        // Enlarge the screen size for the new mode
-	// resize the framebuffer to the screen size
-        if (change_resolution)
-	{
-		log_verbose("XRANDR: (set_mode) change screen size to %d x %d\n", mode->hactive, mode->vactive);
-		XSync(m_dpy, False);
-		m_xerrors_flag = 0x02;
-		old_error_handler = XSetErrorHandler(error_handler);
-		XRRSetScreenSize(m_dpy, m_root, m_width, m_height, (25.4 * m_width) / 96.0, (25.4 * m_height) / 96.0);
-		XSync(m_dpy, False);
-		XSetErrorHandler(old_error_handler);
-		if (m_xerrors & m_xerrors_flag)
-		{
-			log_error("XRANDR: (set_mode) [ERROR] in %s\n","XRRSetScreenSize");
-		}
-	}
-#else
         if (m_xerrors == 0)
 	{
-		log_verbose("XRANDR: (set_mode) change screen size to %d x %d\n", mode->hactive, mode->vactive);
+		log_verbose("XRANDR: (set_timing) change screen size to %d x %d\n", mode->hactive, mode->vactive);
 		XSync(m_dpy, False);
 		m_xerrors_flag = 0x02;
 		old_error_handler = XSetErrorHandler(error_handler);
-		XRRSetScreenSize(m_dpy, m_root, mode->hactive, mode->vactive, (25.4 * mode->hactive) / 96.0, (25.4 * mode->vactive) / 96.0);
+		XRRSetScreenSize(m_dpy, m_root, crtc_info->x + mode->hactive, crtc_info->y + mode->vactive, (25.4 * mode->hactive) / 96.0, (25.4 * mode->vactive) / 96.0);
 		XSync(m_dpy, False);
 		XSetErrorHandler(old_error_handler);
 		if (m_xerrors & m_xerrors_flag)
 		{
-			log_error("XRANDR: (set_mode) [ERROR] in %s\n","XRRSetScreenSize");
+			log_error("XRANDR: (set_timing) [ERROR] in %s\n","XRRSetScreenSize");
 		}
 	}
-#endif
 
 	// Switch to new modeline
 	XSync(m_dpy, False);
 	m_xerrors_flag = 0x04;
 	old_error_handler = XSetErrorHandler(error_handler);
-	XRRSetCrtcConfig(m_dpy, res, output_info->crtc, CurrentTime, crtc_info->x, crtc_info->y, pmode->id, m_original_rotation, crtc_info->outputs, crtc_info->noutput);
+	XRRSetCrtcConfig(m_dpy, res, output_info->crtc, CurrentTime, crtc_info->x, crtc_info->y, pmode->id, m_desktop_rotation, crtc_info->outputs, crtc_info->noutput);
 	XSync(m_dpy, False);
 	XSetErrorHandler(old_error_handler);
 
@@ -517,27 +389,24 @@ bool xrandr_timing::set_mode(modeline *mode)
 
 	if (m_xerrors & m_xerrors_flag)
 	{
-		log_error("XRANDR: (set_mode) [ERROR] in %s\n","XRRSetCrtcConfig");
+		log_error("XRANDR: (set_timing) [ERROR] in %s\n","XRRSetCrtcConfig");
 	}
 
 	crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc); // Recall crtc to settle parameters
 
-	// If the crtc config modeline change fails, revert to original mode (prevents ending with black screen due to all crtc disabled)
-	/*
+	// log crtc config modeline change fail 
 	if (crtc_info->mode == 0)
 	{
-		log_error("XRANDR: (set_mode) [ERROR] switching resolution, original mode restored\n");
-		restore_mode();
+		log_error("XRANDR: (set_timing) [ERROR] switching resolution, no modeline\n");
 	}
-	*/
 
 	// Verify current active mode
-	for (int m = 0;m < res->nmode;m++)
+	for (int m = 0;m < res->nmode && crtc_info->mode;m++)
 	{
 		XRRModeInfo *mode = &res->modes[m];
 		if (mode->id == crtc_info->mode)
 		{
-			log_verbose("XRANDR: (set_mode) pos %d id 0x%04lx name %s clock %6.6fMHz\n", m, mode->id, mode->name, (double)mode->dotClock / 1000000.0);
+			log_verbose("XRANDR: (set_timing) pos %d id 0x%04lx name %s clock %6.6fMHz\n", m, mode->id, mode->name, (double)mode->dotClock / 1000000.0);
 		}
 	}
 
@@ -564,10 +433,6 @@ bool xrandr_timing::delete_mode(modeline *mode)
 	if (!mode)
 		return false;
 
-	char name[48];
-	// Create the new mode name
-	sprintf(name,"SR-%dx%d_%f",mode->hactive, mode->vactive, mode->vfreq);
-
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent(m_dpy, m_root);
 
 	int total_xerrors = 0;
@@ -575,17 +440,15 @@ bool xrandr_timing::delete_mode(modeline *mode)
 	for (int m = 0;m<res->nmode;m++)
 	{
 		XRRModeInfo *xmode = &res->modes[m];
-		if (!strcmp(name, xmode->name))
+		if (mode->platform_data == xmode->id)
 		{
 			XRROutputInfo *output_info = XRRGetOutputInfo(m_dpy, res, res->outputs[m_desktop_output]);
 			XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_dpy, res, output_info->crtc);
-			/*
 			if (xmode->id == crtc_info->mode)
 			{
-				log_error("XRANDR: (delete_mode) [WARNING] modeline is currently active, restoring original modeline first\n");
-				restore_mode();
+				log_error("XRANDR: (delete_mode) [WARNING] modeline is currently active\n");
 			}
-			*/
+
 			XRRFreeCrtcInfo(crtc_info);
 			XRRFreeOutputInfo(output_info);
 
@@ -618,15 +481,7 @@ bool xrandr_timing::delete_mode(modeline *mode)
 }
 
 //============================================================
-//  pstrip_timing::set_timing
-//============================================================
-
-bool xrandr_timing::set_timing(modeline *mode)
-{
-	return set_mode(mode);
-}
-//============================================================
-//  pstrip_timing::get_timing
+//  xrandr_timing::get_timing
 //============================================================
 
 bool xrandr_timing::get_timing(modeline *mode)
@@ -650,6 +505,8 @@ bool xrandr_timing::get_timing(modeline *mode)
 
 			if (xmode->id==output_info->modes[m_video_modes_position]) 
 			{
+				mode->platform_data = xmode->id;
+
 				mode->pclock  	= xmode->dotClock;
 				mode->hactive 	= xmode->width;
 				mode->hbegin  	= xmode->hSyncStart;
