@@ -38,35 +38,16 @@ class xrandr_timing : public custom_video
 		static int m_xerrors_flag;
 
 	private:
-		bool restore_mode();
-		bool detect_connector(int screen_pos);
-		bool set_mode(modeline *mode);
 		XRRModeInfo *find_mode(modeline *mode);
 
 		int m_video_modes_position = 0;
 		char m_device_name[32];
+		Rotation m_desktop_rotation;
 
 		Display *m_dpy;
 		Window m_root;
 
-		// was used by restore_mode
-		/*
-		int m_event_base;
-		int m_error_base;
-		XEvent m_event;
-		*/
-
-		short m_original_rate;
-		Rotation m_original_rotation;
-		SizeID m_original_size_id;
-		//int m_width = 0;
-		//int m_height = 0;
-
 		int m_desktop_output = -1;
-		//long unsigned int m_output_mode = 0;
-		//RRMode m_desktop_modeid = 0;
 		XRRModeInfo m_desktop_mode = {};
 		int m_crtc_flags = 0;
-
-		int (*old_error_handler)(Display *, XErrorEvent *);
 };
