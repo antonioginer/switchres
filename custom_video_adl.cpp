@@ -444,7 +444,9 @@ bool adl_timing::add_mode(modeline *mode)
 		return false;
 	}
 
+	refresh_timings();
 	mode->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
+
 	return true;
 }
 
@@ -475,4 +477,20 @@ bool adl_timing::update_mode(modeline *mode)
 
 	mode->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
 	return true;
+}
+
+//============================================================
+//  adl_timing::refresh_timings
+//============================================================
+
+void adl_timing::refresh_timings(void)
+{
+	int iModeNum = 0;
+	DEVMODEA lpDevMode;
+
+	memset(&lpDevMode, 0, sizeof(DEVMODEA));
+	lpDevMode.dmSize = sizeof(DEVMODEA);
+
+	while (EnumDisplaySettingsExA(m_display_name, iModeNum, &lpDevMode, 0) != 0)
+		iModeNum++;
 }

@@ -162,6 +162,7 @@ class adl_timing : public custom_video
 		bool enum_displays();
 		bool get_device_mapping_from_display_name();
 		bool display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m);
+		void refresh_timings(void);
 
 		char m_display_name[32];
 		char m_device_key[128];
