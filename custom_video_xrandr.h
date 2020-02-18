@@ -44,7 +44,7 @@ class xrandr_timing : public custom_video
 		char m_device_name[32];
 		Rotation m_desktop_rotation;
 
-		Display *m_dpy;
+		Display *m_pdisplay;
 		Window m_root;
 
 		int m_desktop_output = -1;
