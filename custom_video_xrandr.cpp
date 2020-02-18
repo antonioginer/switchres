@@ -110,40 +110,32 @@ bool xrandr_timing::init()
 				log_error("XRANDR: (detect_connector) [ERROR] could not get output 0x%x information\n", (uint) resources->outputs[o]);
 
 			// Check all connected output
-			if (output_info->connection == RR_Connected)
+			if (output_info->connection == RR_Connected && output_info->crtc && m_desktop_output == -1)
 			{
 				log_verbose("XRANDR: (detect_connector) check output connector '%s'\n", output_info->name);
-				for (int j = 0;j < output_info->nmode;j++)
+				XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
+				current_rotation = crtc_info->rotation;
+				if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name,output_info->name) || output_position == screen_pos)
 				{
-					// If output has a crtc, select it
-					if (output_info->crtc && m_desktop_output == -1)
+					log_verbose("XRANDR: (detect_connector) name '%s' id %d selected as primary output\n", output_info->name, o);
+					// Save the output connector
+					m_desktop_output = o;
+					// identify the initial modeline id
+					for (int m = 0;m < resources->nmode && m_desktop_mode.id == 0;m++)
 					{
-						XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
-						current_rotation = crtc_info->rotation;
-						if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name,output_info->name) || output_position == screen_pos)
+						XRRModeInfo *pxmode = &resources->modes[m];
+						// Get screen mode
+						if (crtc_info->mode == pxmode->id)
 						{
-							log_verbose("XRANDR: (detect_connector) name '%s' id %d selected as primary output\n", output_info->name, o);
-							// Save the output connector
-							m_desktop_output = o;
-	
-							// identify the initial modeline id
-							for (int m = 0;m < resources->nmode && m_desktop_mode.id == 0;m++)
-							{
-								XRRModeInfo *pxmode = &resources->modes[m];
-								// Get screen mode
-								if (crtc_info->mode == pxmode->id)
-								{
-									m_desktop_mode = *pxmode;
-								}
-							}
+							m_desktop_mode = *pxmode;
 						}
-						XRRFreeCrtcInfo(crtc_info);
 					}
-					if (current_rotation & 0xe) // Screen rotation is left or right
-					{
-						m_crtc_flags = MODE_ROTATED;
-						log_verbose("XRANDR: (detect_connector) desktop rotation is %s\n",(current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
-					}
+				}
+				XRRFreeCrtcInfo(crtc_info);
+				if (current_rotation & 0xe) // Screen rotation is left or right
+				{
+					m_crtc_flags = MODE_ROTATED;
+					log_verbose("XRANDR: (detect_connector) desktop rotation is %s\n",(current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
 				}
 				output_position++;
 			}
@@ -375,31 +367,36 @@ bool xrandr_timing::set_timing(modeline *mode)
 		XRRFreeCrtcInfo(crtc_info);
 	}
 #else
-	for (int c = 0;c < resources->noutput;c++)
+	for (int o = 0;o < resources->noutput;o++)
 	{
-		XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[c]);
-		if (output_info->connection == RR_Connected)
+		XRROutputInfo *output_info2 = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[o]);
+		if (output_info2->connection == RR_Connected && output_info2->crtc)
 		{
-			for (int m = 0;m < output_info->nmode;m++)
+			XRRCrtcInfo *crtc_info2 = XRRGetCrtcInfo(m_pdisplay, resources, output_info2->crtc);
+			for (int m = 0;m < output_info2->nmode;m++)
 			{
-				if (output_info->crtc)
+				XRRModeInfo *pxmode2 = &resources->modes[m];
+				if (crtc_info2->mode == pxmode2->id)
 				{
-					XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
-					XRRModeInfo *pxmode = &resources->modes[m];
-					if (crtc_info->mode == pxmode->id)
+					if ( output_info->crtc == output_info2->crtc)
 					{
-						log_verbose("XRANDR: (set_timing) [DEBUG] <%s> mode [%04lx] name %s clock %6.6fMHz %ux%u+%d+%d\n", crtc_info->mode == pxmode->id?"*":" ", pxmode->id, pxmode->name, (double)pxmode->dotClock / 1000000.0, pxmode->width, pxmode->height, crtc_info->x, crtc_info->y);
-						log_verbose("XRANDR: (set_timing) [DEBUG] <*> %d: %04lx %dx%d+%d+%d\n", c, crtc_info->mode, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y);
-						if (crtc_info->x + crtc_info->width > width)
-							width=crtc_info->x + crtc_info->width;
-						if (crtc_info->y + crtc_info->height > height)
-							height=crtc_info->y + crtc_info->height;
+						// switchres output, use new mode info
+						if (crtc_info->x + pxmode->width > width)
+							width=crtc_info->x + pxmode->width;
+						if (crtc_info->y + pxmode->height > height)
+							height=crtc_info->y + pxmode->height;
+					} else {
+						// other outputs
+						if (crtc_info2->x + crtc_info2->width > width)
+							width=crtc_info2->x + crtc_info2->width;
+						if (crtc_info2->y + crtc_info2->height > height)
+							height=crtc_info2->y + crtc_info2->height;
 					}
-					XRRFreeCrtcInfo(crtc_info);
 				}
 			}
+			XRRFreeCrtcInfo(crtc_info2);
 		}
-		XRRFreeOutputInfo(output_info);
+		XRRFreeOutputInfo(output_info2);
 	}							
 #endif
 
