@@ -87,11 +87,11 @@ bool xrandr_timing::init()
 	if (strlen(m_device_name) == 7 && !strncmp(m_device_name,"screen",6) && m_device_name[6]>='0' && m_device_name[6]<='9')
 	{
 		screen_pos = m_device_name[6]-'0';
-		log_verbose("XRANDR: (init) check screen number %d\n", screen_pos);
 	} 
 
 	for (int screen = 0;!detected && screen < ScreenCount(m_pdisplay);screen++)
 	{
+		log_verbose("XRANDR: (init) check screen number %d\n", screen);
 		m_root = RootWindow(m_pdisplay, screen);
 		
 		XRRScreenResources *resources = XRRGetScreenResourcesCurrent(m_pdisplay, m_root);
@@ -355,6 +355,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 	unsigned int width=0;
 	unsigned int height=0;
 
+#if 0
 	for (int c = 0; c < output_info->ncrtc; c++) {
 		XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtcs[c]);
 		if ( output_info->crtcs[c] == output_info->crtc)
@@ -371,7 +372,36 @@ bool xrandr_timing::set_timing(modeline *mode)
 			if (crtc_info->y + crtc_info->height > height)
 				height=crtc_info->y + crtc_info->height;
 		}
+		XRRFreeCrtcInfo(crtc_info);
 	}
+#else
+	for (int c = 0;c < resources->noutput;c++)
+	{
+		XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[c]);
+		if (output_info->connection == RR_Connected)
+		{
+			for (int m = 0;m < output_info->nmode;m++)
+			{
+				if (output_info->crtc)
+				{
+					XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
+					XRRModeInfo *pxmode = &resources->modes[m];
+					if (crtc_info->mode == pxmode->id)
+					{
+						log_verbose("XRANDR: (set_timing) [DEBUG] <%s> mode [%04lx] name %s clock %6.6fMHz %ux%u+%d+%d\n", crtc_info->mode == pxmode->id?"*":" ", pxmode->id, pxmode->name, (double)pxmode->dotClock / 1000000.0, pxmode->width, pxmode->height, crtc_info->x, crtc_info->y);
+						log_verbose("XRANDR: (set_timing) [DEBUG] <*> %d: %04lx %dx%d+%d+%d\n", c, crtc_info->mode, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y);
+						if (crtc_info->x + crtc_info->width > width)
+							width=crtc_info->x + crtc_info->width;
+						if (crtc_info->y + crtc_info->height > height)
+							height=crtc_info->y + crtc_info->height;
+					}
+					XRRFreeCrtcInfo(crtc_info);
+				}
+			}
+		}
+		XRRFreeOutputInfo(output_info);
+	}							
+#endif
 
 	// Disable CRTC
 	if (XRRSetCrtcConfig(m_pdisplay, resources, output_info->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0) != RRSetConfigSuccess)
@@ -575,4 +605,3 @@ bool xrandr_timing::get_timing(modeline *mode)
 
 	return true;
 }
-
