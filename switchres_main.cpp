@@ -195,8 +195,6 @@ int main(int argc, char **argv)
 	set_log_info((void*)printf);
 	set_log_error((void*)printf);
 
-	parse_config(switchres, "switchres.ini");
-
 	int width = 0;
 	int height = 0;
 	float refresh = 0.0;
@@ -209,6 +207,7 @@ int main(int argc, char **argv)
 	bool user_mode_flag = false;
 	bool calculate_flag = false;
 	bool test_flag = false;
+	string ini_file = "switchres.ini";
 	int c;
 
 	while (1)
@@ -224,11 +223,12 @@ int main(int argc, char **argv)
 			{"orientation", required_argument, 0, 'o'},
 			{"resolution",  required_argument, 0, 'r'},
 			{"screen",      required_argument, 0, 's'},
+			{"ini",         required_argument, 0, 'i'},
 			{0, 0, 0, 0}
 		};
 
 		int option_index = 0;
-		c = getopt_long(argc, argv, "vhctm:o:r:s:", long_options, &option_index);
+		c = getopt_long(argc, argv, "vhctm:o:r:s:i:", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -272,6 +272,10 @@ int main(int argc, char **argv)
 				user_mode_flag = true;
 				break;
 
+			case 'i':
+				ini_file = optarg;
+				break;
+
 			default:
 				break;
 		}
@@ -304,6 +308,8 @@ int main(int argc, char **argv)
 		refresh = atof(argv[optind + 2]);
 		resolution_flag = true;
 	}
+
+	parse_config(switchres, ini_file.c_str());
 
 	switchres.init();
 
@@ -378,6 +384,7 @@ int show_usage()
 		"  -o, --orientation <orientation>   Monitor orientation (horizontal, vertical, rotate_r, rotate_l)\n"
 		"  -r, --resolution <w>x<h>@<r>      Force a specific video mode from display mode list\n"
 		"  -s, --screen <OS_display_name>    Configure target screen\n"
+		"  -i, --ini <file.ini>              Specify a ini file\n"
 	};
 
 	printf("%s", usage);
