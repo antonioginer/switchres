@@ -59,6 +59,8 @@ constexpr unsigned int s2i(const char* str, int h = 0)
 
 bool parse_config(switchres_manager &switchres, const char *file_name)
 {	
+	printf("parsing %s\n", file_name);
+
 	ifstream config_file(file_name);
 
 	if (!config_file.is_open())
@@ -195,6 +197,8 @@ int main(int argc, char **argv)
 	set_log_info((void*)printf);
 	set_log_error((void*)printf);
 
+	parse_config(switchres, "switchres.ini");
+
 	int width = 0;
 	int height = 0;
 	float refresh = 0.0;
@@ -207,7 +211,8 @@ int main(int argc, char **argv)
 	bool user_mode_flag = false;
 	bool calculate_flag = false;
 	bool test_flag = false;
-	string ini_file = "switchres.ini";
+	bool user_ini_flag = false;
+	string ini_file;
 	int c;
 
 	while (1)
@@ -273,6 +278,7 @@ int main(int argc, char **argv)
 				break;
 
 			case 'i':
+				user_ini_flag = true;
 				ini_file = optarg;
 				break;
 
@@ -309,7 +315,8 @@ int main(int argc, char **argv)
 		resolution_flag = true;
 	}
 
-	parse_config(switchres, ini_file.c_str());
+	if (user_ini_flag)
+		parse_config(switchres, ini_file.c_str());
 
 	switchres.init();
 
