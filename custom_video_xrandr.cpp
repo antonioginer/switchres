@@ -414,7 +414,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 		XSync(m_pdisplay, False);
 		m_xerrors_flag = 0x02;
 		old_error_handler = XSetErrorHandler(error_handler);
-		XRRSetScreenSize(m_pdisplay, m_root, width, height, (25.4 * mode->hactive) / 96.0, (25.4 * mode->vactive) / 96.0);
+		XRRSetScreenSize(m_pdisplay, m_root, width, height, (25.4 * width) / 96.0, (25.4 * height) / 96.0);
 		XSync(m_pdisplay, False);
 		XSetErrorHandler(old_error_handler);
 		if (m_xerrors & m_xerrors_flag)
