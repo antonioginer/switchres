@@ -86,7 +86,7 @@ bool linux_display::get_desktop_mode()
 //  linux_display::set_desktop_mode
 //============================================================
 
-bool linux_display::set_desktop_mode(modeline *mode, int flags)
+bool linux_display::set_desktop_mode(modeline *mode, int)
 {
 	if (!mode) 
 		return false;

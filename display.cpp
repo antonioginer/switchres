@@ -137,7 +137,7 @@ bool display_manager::update_mode(modeline *mode)
 //  display_manager::set_mode
 //============================================================
 
-bool display_manager::set_mode(modeline *mode)
+bool display_manager::set_mode(modeline *)
 {
 	return false;
 }

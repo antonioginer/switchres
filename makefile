@@ -11,7 +11,7 @@ AR ?= ar
 LDFLAGS =
 FINAL_CXX=$(CROSS_COMPILE)$(CXX)
 FINAL_AR=$(CROSS_COMPILE)$(AR)
-CPPFLAGS = -O3 -Wall -Wextra -std=c++11
+CPPFLAGS = -O3 -Wall -Wextra
 
 # Linux
 ifeq  ($(PLATFORM),Linux)

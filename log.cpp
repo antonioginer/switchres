@@ -1,6 +1,6 @@
 #include "log.h"
 
-void log_dummy(const char *format, ...) {}
+void log_dummy(const char *, ...) {}
 
 LOG_VERBOSE log_verbose = &log_dummy;
 LOG_INFO log_info = &log_dummy;

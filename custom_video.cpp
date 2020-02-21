@@ -106,7 +106,7 @@ bool custom_video::get_timing(modeline *mode)
 //  custom_video::set_timing
 //============================================================
 
-bool custom_video::set_timing(modeline *mode)
+bool custom_video::set_timing(modeline *)
 {
 	return false;
 }
@@ -115,7 +115,7 @@ bool custom_video::set_timing(modeline *mode)
 //  custom_video::add_mode
 //============================================================
 
-bool custom_video::add_mode(modeline *mode)
+bool custom_video::add_mode(modeline *)
 {
 	return false;
 }
@@ -124,7 +124,7 @@ bool custom_video::add_mode(modeline *mode)
 //  custom_video::delete_mode
 //============================================================
 
-bool custom_video::delete_mode(modeline *mode)
+bool custom_video::delete_mode(modeline *)
 {
 	return false;
 }
@@ -133,7 +133,7 @@ bool custom_video::delete_mode(modeline *mode)
 //  custom_video::update_mode
 //============================================================
 
-bool custom_video::update_mode(modeline *mode)
+bool custom_video::update_mode(modeline *)
 {
 	return false;
 }

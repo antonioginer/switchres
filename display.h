@@ -64,7 +64,7 @@ public:
 	bool add_mode(modeline *mode);
 	bool delete_mode(modeline *mode);
 	bool update_mode(modeline *mode);
-	virtual bool set_mode(modeline *mode);
+	virtual bool set_mode(modeline *);
 	void log_mode(modeline *mode);
 
 	// mode list handling
