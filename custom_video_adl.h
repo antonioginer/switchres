@@ -13,6 +13,7 @@
 
 #include <windows.h>
 #include "custom_video.h"
+#include "resync_windows.h"
 
 //	Constants and structures ported from AMD ADL SDK files
 
@@ -162,7 +163,6 @@ class adl_timing : public custom_video
 		bool enum_displays();
 		bool get_device_mapping_from_display_name();
 		bool display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m);
-		void refresh_timings(void);
 
 		char m_display_name[32];
 		char m_device_key[128];
@@ -187,6 +187,8 @@ class adl_timing : public custom_video
 
 		ADLDisplayModeInfo adl_mode[MAX_MODELINES];
 		int m_num_of_adl_modes = 0;
+
+		resync_handler m_resync;
 
 		int invert_pol(bool on_read) { return ((cat_version <= 12) || (cat_version >= 15 && on_read)); }
 		int interlace_factor(bool interlace, bool on_read) { return interlace && ((cat_version <= 12) || (cat_version >= 15 && on_read))? 2 : 1; }
