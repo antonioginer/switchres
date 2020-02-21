@@ -115,7 +115,7 @@ LRESULT CALLBACK resync_handler::my_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam,
 		{
 			PostQuitMessage(0);
 			return 0;
-        }
+		}
 
 		default:
 			return DefWindowProc(hwnd, msg, wparam, lparam);

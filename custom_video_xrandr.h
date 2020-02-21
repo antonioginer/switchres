@@ -27,9 +27,9 @@ class xrandr_timing : public custom_video
 		int caps() { return CUSTOM_VIDEO_CAPS_ADD; }
 		bool init();
 
-                bool add_mode(modeline *mode);
-                bool delete_mode(modeline *mode);
-                bool update_mode(modeline *mode);
+		bool add_mode(modeline *mode);
+		bool delete_mode(modeline *mode);
+		bool update_mode(modeline *mode);
 
 		bool get_timing(modeline *mode);
 		bool set_timing(modeline *mode);

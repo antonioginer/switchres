@@ -27,8 +27,8 @@ class linux_display : public display_manager
 		bool set_mode(modeline *mode);
 
 	private:
-                bool get_desktop_mode();
-                bool set_desktop_mode(modeline *mode, int flags);
-                bool restore_desktop_mode();
-                int get_available_video_modes();
+		bool get_desktop_mode();
+		bool set_desktop_mode(modeline *mode, int flags);
+		bool restore_desktop_mode();
+		int get_available_video_modes();
 };
