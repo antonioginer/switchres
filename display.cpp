@@ -351,5 +351,6 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 		log_verbose("Switchres: Modeline %s\n", modeline_print(&best_mode, modeline, MS_FULL));
 	}
 
+	*m_best_mode = best_mode;
 	return m_best_mode;
 }

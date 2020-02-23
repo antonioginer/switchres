@@ -38,10 +38,10 @@ linux_display::~linux_display()
 //  linux_display::init
 //============================================================
 
-bool linux_display::init(display_settings *ds)
+bool linux_display::init()
 {
 	set_factory(new custom_video);
-	set_custom_video(factory()->make(ds->screen, NULL, 0, NULL));
+	set_custom_video(factory()->make(m_ds.screen, NULL, 0, NULL));
 	if (video()) video()->init();
 
         // Build our display's mode list
