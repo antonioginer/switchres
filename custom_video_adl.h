@@ -126,16 +126,17 @@ typedef struct AdapterList
 } AdapterList, *LPAdapterList;
 
 
+typedef void* ADL_CONTEXT_HANDLE;
 typedef void* (__stdcall *ADL_MAIN_MALLOC_CALLBACK)(int);
-typedef int (*ADL_MAIN_CONTROL_CREATE)(ADL_MAIN_MALLOC_CALLBACK, int);
-typedef int (*ADL_MAIN_CONTROL_DESTROY)();
-typedef int (*ADL_ADAPTER_NUMBEROFADAPTERS_GET) (int*);
-typedef int (*ADL_ADAPTER_ADAPTERINFO_GET) (LPAdapterInfo, int);
-typedef int (*ADL_DISPLAY_DISPLAYINFO_GET) (int, int *, ADLDisplayInfo **, int);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_GET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayMode *lpModeIn, ADLDisplayModeInfo *lpModeInfoOut);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_SET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayModeInfo *lpMode, int iForceUpdate);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET) (int iAdapterIndex, int iDisplayIndex, int iMaxNumOfOverrides, ADLDisplayModeInfo *lpModeInfoList, int *lpNumOfOverrides);
-typedef int (*ADL_FLUSH_DRIVER_DATA) (int iAdapterIndex);
+typedef int (*ADL2_MAIN_CONTROL_CREATE)(ADL_MAIN_MALLOC_CALLBACK, int, 	ADL_CONTEXT_HANDLE *);
+typedef int (*ADL2_MAIN_CONTROL_DESTROY)(ADL_CONTEXT_HANDLE);
+typedef int (*ADL2_ADAPTER_NUMBEROFADAPTERS_GET) (ADL_CONTEXT_HANDLE, int*);
+typedef int (*ADL2_ADAPTER_ADAPTERINFO_GET) (ADL_CONTEXT_HANDLE, LPAdapterInfo, int);
+typedef int (*ADL2_DISPLAY_DISPLAYINFO_GET) (ADL_CONTEXT_HANDLE, int, int *, ADLDisplayInfo **, int);
+typedef int (*ADL2_DISPLAY_MODETIMINGOVERRIDE_GET) (ADL_CONTEXT_HANDLE, int iAdapterIndex, int iDisplayIndex, ADLDisplayMode *lpModeIn, ADLDisplayModeInfo *lpModeInfoOut);
+typedef int (*ADL2_DISPLAY_MODETIMINGOVERRIDE_SET) (ADL_CONTEXT_HANDLE, int iAdapterIndex, int iDisplayIndex, ADLDisplayModeInfo *lpMode, int iForceUpdate);
+typedef int (*ADL2_DISPLAY_MODETIMINGOVERRIDELIST_GET) (ADL_CONTEXT_HANDLE, int iAdapterIndex, int iDisplayIndex, int iMaxNumOfOverrides, ADLDisplayModeInfo *lpModeInfoList, int *lpNumOfOverrides);
+typedef int (*ADL2_FLUSH_DRIVER_DATA) (ADL_CONTEXT_HANDLE, int iAdapterIndex);
 
 
 class adl_timing : public custom_video
@@ -170,13 +171,13 @@ class adl_timing : public custom_video
 		int m_adapter_index = 0;
 		int m_display_index = 0;
 
-		ADL_ADAPTER_NUMBEROFADAPTERS_GET        ADL_Adapter_NumberOfAdapters_Get;
-		ADL_ADAPTER_ADAPTERINFO_GET             ADL_Adapter_AdapterInfo_Get;
-		ADL_DISPLAY_DISPLAYINFO_GET             ADL_Display_DisplayInfo_Get;
-		ADL_DISPLAY_MODETIMINGOVERRIDE_GET      ADL_Display_ModeTimingOverride_Get;
-		ADL_DISPLAY_MODETIMINGOVERRIDE_SET      ADL_Display_ModeTimingOverride_Set;
-		ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET  ADL_Display_ModeTimingOverrideList_Get;
-		ADL_FLUSH_DRIVER_DATA                   ADL_Flush_Driver_Data;
+		ADL2_ADAPTER_NUMBEROFADAPTERS_GET        ADL2_Adapter_NumberOfAdapters_Get;
+		ADL2_ADAPTER_ADAPTERINFO_GET             ADL2_Adapter_AdapterInfo_Get;
+		ADL2_DISPLAY_DISPLAYINFO_GET             ADL2_Display_DisplayInfo_Get;
+		ADL2_DISPLAY_MODETIMINGOVERRIDE_GET      ADL2_Display_ModeTimingOverride_Get;
+		ADL2_DISPLAY_MODETIMINGOVERRIDE_SET      ADL2_Display_ModeTimingOverride_Set;
+		ADL2_DISPLAY_MODETIMINGOVERRIDELIST_GET  ADL2_Display_ModeTimingOverrideList_Get;
+		ADL2_FLUSH_DRIVER_DATA                   ADL2_Flush_Driver_Data;
 
 		HINSTANCE hDLL;
 		LPAdapterInfo lpAdapterInfo = NULL;
@@ -185,6 +186,7 @@ class adl_timing : public custom_video
 		int cat_version;
 		int sub_version;
 
+		ADL_CONTEXT_HANDLE m_adl = 0;
 		ADLDisplayModeInfo adl_mode[MAX_MODELINES];
 		int m_num_of_adl_modes = 0;
 
