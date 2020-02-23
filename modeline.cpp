@@ -261,6 +261,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 	}
 
 	// finally, store result
+	t_mode->result.scan_penalty = (s_mode->interlace != t_mode->interlace? 1:0) + (s_mode->doublescan != t_mode->doublescan? 1:0);
 	t_mode->result.x_scale = x_scale;
 	t_mode->result.y_scale = y_scale;
 	t_mode->result.v_scale = v_scale;
@@ -270,7 +271,6 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 	t_mode->result.x_ratio = x_ratio;
 	t_mode->result.y_ratio = y_ratio;
 	t_mode->result.v_ratio = 0;
-	t_mode->result.rotated = cs->rotation;
 
 	return 0;
 }
@@ -491,8 +491,8 @@ int modeline_compare(modeline *t, modeline *best)
 		}
 		else
 		{
-			int t_y_score = t->result.y_scale + t->interlace + t->doublescan;
-			int b_y_score = best->result.y_scale + best->interlace + best->doublescan;
+			int t_y_score = t->result.y_scale + t->result.scan_penalty;
+			int b_y_score = best->result.y_scale + best->result.scan_penalty;
 			double xy_diff = roundf((t->result.x_diff + t->result.y_diff) * 100) / 100;
 			double best_xy_diff = roundf((best->result.x_diff + best->result.y_diff) * 100) / 100;
 			

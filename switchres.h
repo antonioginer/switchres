@@ -50,7 +50,6 @@ public:
 	};
 
 	// getters
-	modeline *best_mode() const { return m_best_mode; }
 	display_manager *display() const { return m_display; }
 
 	// setters (switchres manager)
@@ -81,7 +80,6 @@ public:
 
 	// interface
 	void init();
-	modeline *get_video_mode(int width, int height, float refresh, bool rotated);
 
 	//settings
 	config_settings cs;
@@ -89,13 +87,9 @@ public:
 	generator_settings gs;
 
 private:
-	monitor_range range[MAX_RANGES];
 
 	display_manager *m_display_factory = 0;
 	display_manager *m_display = 0;
-	modeline *m_best_mode = 0;
-
-	int get_monitor_specs();
 };
 
 

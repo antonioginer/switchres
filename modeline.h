@@ -58,6 +58,7 @@
 typedef struct mode_result
 {
 	int     weight;
+	int     scan_penalty;
 	int     x_scale;
 	int     y_scale;
 	int     v_scale;
@@ -67,7 +68,6 @@ typedef struct mode_result
 	double  x_ratio;
 	double  y_ratio;
 	double  v_ratio;
-	bool    rotated;
 } mode_result;
 
 typedef struct modeline

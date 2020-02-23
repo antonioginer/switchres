@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <cstring>
 #include <algorithm>
 #include <getopt.h>
 #include "switchres.h"
@@ -121,7 +121,7 @@ bool parse_config(switchres_manager &switchres, const char *file_name)
 					break;
 
 				// Display options
-				case s2i("screen"):
+				case s2i("display"):
 					switchres.set_screen(value.c_str());
 					break;
 				case s2i("api"):
@@ -208,12 +208,16 @@ int main(int argc, char **argv)
 	bool version_flag = false;
 	bool help_flag = false;
 	bool resolution_flag = false;
-	bool user_mode_flag = false;
 	bool calculate_flag = false;
-	bool test_flag = false;
+	bool switch_flag = false;
+	bool launch_flag = false;
+	bool rotated_flag = false;
+	bool force_flag = false;
+	bool interlaced_flag = false;
 	bool user_ini_flag = false;
+
 	string ini_file;
-	int c;
+	string launch_command;
 
 	while (1)
 	{
@@ -223,17 +227,19 @@ int main(int argc, char **argv)
 			{"version",     no_argument,       0, 'v'},
 			{"help",        no_argument,       0, 'h'},
 			{"calc",        no_argument,       0, 'c'},
-			{"test",        no_argument,       0, 't'},
+			{"switch",      no_argument,       0, 's'},
+			{"launch",      required_argument, 0, 'l'},
 			{"monitor",     required_argument, 0, 'm'},
 			{"orientation", required_argument, 0, 'o'},
-			{"resolution",  required_argument, 0, 'r'},
-			{"screen",      required_argument, 0, 's'},
+			{"rotated",     no_argument,       0, 'r'},
+			{"display",     required_argument, 0, 'd'},
+			{"force",       required_argument, 0, 'f'},
 			{"ini",         required_argument, 0, 'i'},
 			{0, 0, 0, 0}
 		};
 
 		int option_index = 0;
-		c = getopt_long(argc, argv, "vhctm:o:r:s:i:", long_options, &option_index);
+		int c = getopt_long(argc, argv, "vhcsl:m:o:rd:f:i:", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -252,8 +258,13 @@ int main(int argc, char **argv)
 				calculate_flag = true;
 				break;
 
-			case 't':
-				test_flag = true;
+			case 's':
+				switch_flag = true;
+				break;
+
+			case 'l':
+				launch_flag = true;
+				launch_command = optarg;
 				break;
 
 			case 'm':
@@ -264,17 +275,18 @@ int main(int argc, char **argv)
 				switchres.set_orientation(optarg);
 				break;
 
-			case 's':
+			case 'r':
+				rotated_flag = true;
+				break;
+
+			case 'd':
 				switchres.set_screen(optarg);
 				break;
 
-			case 'r':
-				if ((sscanf(optarg, "%dx%d@%d", &user_mode.width, &user_mode.height, &user_mode.refresh) < 3))
-				{
-					printf ("SwitchRes: illegal -resolution value: %s\n", optarg);
-					break;
-				}
-				user_mode_flag = true;
+			case 'f':
+				force_flag = true;
+				if ((sscanf(optarg, "%dx%d@%d", &user_mode.width, &user_mode.height, &user_mode.refresh) < 1))
+					printf ("Error: use format --force <w>x<h>@<r>\n");
 				break;
 
 			case 'i':
@@ -309,10 +321,14 @@ int main(int argc, char **argv)
 	}
 	else
 	{
+		resolution_flag = true;
 		width = atoi(argv[optind]);
 		height = atoi(argv[optind + 1]);
 		refresh = atof(argv[optind + 2]);
-		resolution_flag = true;
+
+		char scan_mode = argv[optind + 2][strlen(argv[optind + 2]) -1];
+		if (scan_mode == 'i')
+			interlaced_flag = true;
 	}
 
 	if (user_ini_flag)
@@ -320,15 +336,15 @@ int main(int argc, char **argv)
 
 	switchres.init();
 
-	if (user_mode_flag)
+	if (force_flag)
 		switchres.display()->set_user_mode(&user_mode);
 	
 	if (!calculate_flag)
-		switchres.display()->init(&switchres.ds);
+		switchres.display()->init();
 
 	if (resolution_flag)
 	{
-		modeline *mode = switchres.get_video_mode(width, height, refresh, 0);
+		modeline *mode = switchres.display()->get_mode(width, height, refresh, interlaced_flag, rotated_flag);
 		if (mode)
 		{
 			if (mode->type & MODE_UPDATED)
@@ -339,12 +355,21 @@ int main(int argc, char **argv)
 			{
 				switchres.display()->add_mode(mode);
 			}
-			if (test_flag)
+
+			if (switch_flag)
 			{
 				switchres.display()->set_mode(mode);
-				cin.get();
+				if (!launch_flag)
+				{
+					printf("Press ENTER to exit...\n");
+					cin.get();
+				}
 			}
 
+			if (launch_flag)
+			{
+				system(launch_command.c_str());
+			}
 		}
 	}
 
@@ -385,12 +410,14 @@ int show_usage()
 	{
 		"Usage: switchres <width> <height> <refresh> [options]\n"
 		"Options:\n"
-		"  -c, --calc                        Calculate modeline only\n"
-		"  -t, --test                        Test video mode\n"
+		"  -c, --calc                        Calculate video mode and exit\n"
+		"  -s, --switch                      Switch to video mode\n"
+		"  -l, --launch <command>            Launch <command>\n"
 		"  -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)\n"
 		"  -o, --orientation <orientation>   Monitor orientation (horizontal, vertical, rotate_r, rotate_l)\n"
-		"  -r, --resolution <w>x<h>@<r>      Force a specific video mode from display mode list\n"
-		"  -s, --screen <OS_display_name>    Configure target screen\n"
+		"  -r  --rotated                     Original mode's native orientation is rotated\n"
+		"  -d, --display <OS_display_name>   Use target display (Windows: \\\\.\\DISPLAY1, ... Linux: VGA-0, ...)\n"
+		"  -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list\n"
 		"  -i, --ini <file.ini>              Specify a ini file\n"
 	};
 

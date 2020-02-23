@@ -21,9 +21,9 @@
 class linux_display : public display_manager
 {
 	public:
-		linux_display();
+		linux_display(display_settings *ds);
 		~linux_display();
-		bool init(display_settings *ds);
+		bool init();
 		bool set_mode(modeline *mode);
 
 	private:

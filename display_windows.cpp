@@ -15,16 +15,23 @@
 #include "display_windows.h"
 #include "log.h"
 
+
+//============================================================
+//  windows_display::windows_display
+//============================================================
+
+windows_display::windows_display(display_settings *ds)
+{
+	// Get display settings
+	m_ds = *ds;
+}
+
 //============================================================
 //  windows_display::init
 //============================================================
 
-bool windows_display::init(display_settings *ds)
+bool windows_display::init()
 {
-	// Initialize display settings
-	m_ds = ds;
-
-
 	DISPLAY_DEVICEA lpDisplayDevice[DISPLAY_MAX];
 	int idev = 0;
 	int found = -1;
@@ -37,8 +44,8 @@ bool windows_display::init(display_settings *ds)
 		if (EnumDisplayDevicesA(NULL, idev, &lpDisplayDevice[idev], 0) == FALSE)
 			break;
 
-		if ((!strcmp(ds->screen, "auto") && (lpDisplayDevice[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
-			|| !strcmp(ds->screen, lpDisplayDevice[idev].DeviceName))
+		if ((!strcmp(m_ds.screen, "auto") && (lpDisplayDevice[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
+			|| !strcmp(m_ds.screen, lpDisplayDevice[idev].DeviceName))
 			found = idev;
 
 		idev++;
@@ -80,10 +87,10 @@ bool windows_display::init(display_settings *ds)
 	// Initialize custom video
 	int method = CUSTOM_VIDEO_TIMING_AUTO;
 
-	if(!strcmp(ds->api, "powerstrip"))
+	if(!strcmp(m_ds.api, "powerstrip"))
 		method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
 
-	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&ds->ps_timing : m_device_key;
+	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&m_ds.ps_timing : m_device_key;
 
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(m_device_name, m_device_id, method, s_param));
@@ -180,7 +187,7 @@ int windows_display::get_available_video_modes()
 
 	log_verbose("Switchres: Searching for custom video modes...\n");
 
-	while (EnumDisplaySettingsExA(m_device_name, iModeNum, &lpDevMode, m_ds->lock_unsupported_modes?0:EDS_RAWMODE) != 0)
+	while (EnumDisplaySettingsExA(m_device_name, iModeNum, &lpDevMode, m_ds.lock_unsupported_modes?0:EDS_RAWMODE) != 0)
 	{
 		if (lpDevMode.dmBitsPerPel == 32 && lpDevMode.dmDisplayFixedOutput == DMDFO_DEFAULT)
 		{

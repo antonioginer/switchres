@@ -19,8 +19,10 @@
 //  linux_display::linux_display
 //============================================================
 
-linux_display::linux_display()
+linux_display::linux_display(display_settings *ds)
 {
+	// Get display settings
+	m_ds = *ds;
 }
 
 //============================================================
@@ -38,9 +40,6 @@ linux_display::~linux_display()
 
 bool linux_display::init(display_settings *ds)
 {
-	// init the display manager
-	m_ds = ds;
-
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(ds->screen, NULL, 0, NULL));
 	if (video()) video()->init();
