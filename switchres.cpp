@@ -58,6 +58,7 @@ void switchres_manager::init()
 
 	// Create our display manager
 	m_display_factory = new display_manager();
+	ds.gs = gs;
 	m_display = m_display_factory->make(&ds);
 
 	// Get user defined modeline
