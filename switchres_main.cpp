@@ -59,7 +59,7 @@ constexpr unsigned int s2i(const char* str, int h = 0)
 
 bool parse_config(switchres_manager &switchres, const char *file_name)
 {	
-	printf("parsing %s\n", file_name);
+	log_verbose("parsing %s\n", file_name);
 
 	ifstream config_file(file_name);
 
@@ -193,7 +193,6 @@ int main(int argc, char **argv)
 	switchres_manager switchres;
 
 	// Init logging
-	set_log_verbose((void*)printf);
 	set_log_info((void*)printf);
 	set_log_error((void*)printf);
 
@@ -204,8 +203,8 @@ int main(int argc, char **argv)
 	float refresh = 0.0;
 	modeline user_mode = {};
 
-	int verbose_flag = false;
-	bool version_flag = false;
+	int version_flag = false;
+	bool verbose_flag = false;
 	bool help_flag = false;
 	bool resolution_flag = false;
 	bool calculate_flag = false;
@@ -223,8 +222,7 @@ int main(int argc, char **argv)
 	{
 		static struct option long_options[] =
 		{
-			{"verbose",     no_argument,       &verbose_flag, '1'},
-			{"version",     no_argument,       0, 'v'},
+			{"version",     no_argument,       &version_flag, '1'},
 			{"help",        no_argument,       0, 'h'},
 			{"calc",        no_argument,       0, 'c'},
 			{"switch",      no_argument,       0, 's'},
@@ -235,6 +233,7 @@ int main(int argc, char **argv)
 			{"display",     required_argument, 0, 'd'},
 			{"force",       required_argument, 0, 'f'},
 			{"ini",         required_argument, 0, 'i'},
+			{"verbose",     no_argument,       0, 'v'},
 			{0, 0, 0, 0}
 		};
 
@@ -247,7 +246,7 @@ int main(int argc, char **argv)
 		switch (c)
 		{
 			case 'v':
-				version_flag = true;
+				verbose_flag = true;
 				break;
 
 			case 'h':
@@ -286,7 +285,7 @@ int main(int argc, char **argv)
 			case 'f':
 				force_flag = true;
 				if ((sscanf(optarg, "%dx%d@%d", &user_mode.width, &user_mode.height, &user_mode.refresh) < 1))
-					printf ("Error: use format --force <w>x<h>@<r>\n");
+					log_error("Error: use format --force <w>x<h>@<r>\n");
 				break;
 
 			case 'i':
@@ -295,8 +294,13 @@ int main(int argc, char **argv)
 				break;
 
 			default:
-				break;
+				return 0;
 		}
+	}
+
+	if (verbose_flag)
+	{
+		set_log_verbose((void*)printf);
 	}
 
 	if (version_flag)
@@ -311,12 +315,12 @@ int main(int argc, char **argv)
 	// Get user video mode information from command line
 	if ((argc - optind) < 3)
 	{
-		printf ("Error: missing argument\n");
+		log_error("Error: missing argument\n");
 		goto usage;
 	}
 	else if ((argc - optind) > 3)
 	{
-		printf ("Error: too many arguments\n");
+		log_error("Error: too many arguments\n");
 		goto usage;
 	}
 	else
@@ -361,7 +365,7 @@ int main(int argc, char **argv)
 				switchres.display()->set_mode(mode);
 				if (!launch_flag)
 				{
-					printf("Press ENTER to exit...\n");
+					log_info("Press ENTER to exit...\n");
 					cin.get();
 				}
 			}
@@ -396,7 +400,7 @@ int show_version()
 		"There is NO WARRANTY, to the extent permitted by law.\n"
 	};
 	
-	printf("%s", version);
+	log_info("%s", version);
 	return 0;
 }
 
@@ -421,6 +425,6 @@ int show_usage()
 		"  -i, --ini <file.ini>              Specify a ini file\n"
 	};
 
-	printf("%s", usage);
+	log_info("%s", usage);
 	return 0;
 }
