@@ -505,7 +505,7 @@ bool xrandr_timing::delete_mode(modeline *mode)
 
 	int total_xerrors = 0;
 	// Delete modeline
-	for (int m = 0;m<resources->nmode;m++)
+	for (int m = 0;m < resources->nmode && mode->platform_data != 0;m++)
 	{
 		if (mode->platform_data == resources->modes[m].id)
 		{
@@ -537,6 +537,7 @@ bool xrandr_timing::delete_mode(modeline *mode)
 				log_error("XRANDR: (delete_mode) [ERROR] in %s\n","XRRDestroyMode");
 				total_xerrors++;
 			}
+			mode->platform_data = 0;
 		}
 	}
 
