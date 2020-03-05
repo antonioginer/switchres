@@ -125,11 +125,9 @@ bool xrandr_timing::init()
 					// identify the current modeline id
 					for (int m = 0;m < resources->nmode && m_desktop_mode.id == 0;m++)
 					{
-						XRRModeInfo *pxmode = &resources->modes[m];
-
 						// Get screen mode
-						if (crtc_info->mode == pxmode->id)
-							m_desktop_mode = *pxmode;
+						if (crtc_info->mode == resources->modes[m].id)
+							m_desktop_mode = resources->modes[m];
 					}
 				}
 				XRRFreeCrtcInfo(crtc_info);
@@ -213,10 +211,10 @@ bool xrandr_timing::add_mode(modeline *mode)
 	sprintf(name,"SR-%dx%d_%f",mode->hactive, mode->vactive, mode->vfreq);
 
 	// Setup the xrandr mode structure
-	XRRModeInfo xmode;
+	XRRModeInfo xmode = {};
 	xmode.name       = name;
 	xmode.nameLength = strlen(name);
-	xmode.dotClock   = float(mode->pclock);
+	xmode.dotClock   = mode->pclock;
 	xmode.width      = mode->hactive;
 	xmode.hSyncStart = mode->hbegin;
 	xmode.hSyncEnd   = mode->hend;
@@ -283,11 +281,10 @@ XRRModeInfo *xrandr_timing::find_mode(modeline *mode)
 	XRRModeInfo *pxmode=NULL;
 	XRRScreenResources *resources = XRRGetScreenResourcesCurrent(m_pdisplay, m_root);
 
-	// if name search is not successful, try with a parameter search instead
+	// use platform_data (mode id) to return the mode
 	for (int m = 0;m < resources->nmode && !pxmode;m++)
 	{
-		XRRModeInfo *pxmode2 = &resources->modes[m];
-		if (mode->platform_data == pxmode2->id)
+		if (mode->platform_data == resources->modes[m].id)
 			pxmode = &resources->modes[m];
 	}
 
@@ -509,13 +506,12 @@ bool xrandr_timing::delete_mode(modeline *mode)
 	// Delete modeline
 	for (int m = 0;m<resources->nmode;m++)
 	{
-		XRRModeInfo *pxmode = &resources->modes[m];
-		if (mode->platform_data == pxmode->id)
+		if (mode->platform_data == resources->modes[m].id)
 		{
 			XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[m_desktop_output]);
 			XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
-			if (pxmode->id == crtc_info->mode)
-				log_error("XRANDR: (delete_mode) [WARNING] modeline [%04lx] is currently active\n", pxmode->id);
+			if (resources->modes[m].id == crtc_info->mode)
+				log_error("XRANDR: (delete_mode) [WARNING] modeline [%04lx] is currently active\n",resources->modes[m].id);
 
 			XRRFreeCrtcInfo(crtc_info);
 			XRRFreeOutputInfo(output_info);
@@ -524,7 +520,7 @@ bool xrandr_timing::delete_mode(modeline *mode)
 			m_xerrors = 0;
 			m_xerrors_flag = 0x01;
 			old_error_handler = XSetErrorHandler(error_handler);
-			XRRDeleteOutputMode(m_pdisplay, resources->outputs[m_desktop_output], pxmode->id);
+			XRRDeleteOutputMode(m_pdisplay, resources->outputs[m_desktop_output], resources->modes[m].id);
 			if (m_xerrors & m_xerrors_flag)
 			{
 				log_error("XRANDR: (delete_mode) [ERROR] in %s\n","XRRDeleteOutputMode");
@@ -532,7 +528,7 @@ bool xrandr_timing::delete_mode(modeline *mode)
 			}
 
 			m_xerrors_flag = 0x02;
-			XRRDestroyMode(m_pdisplay, pxmode->id);
+			XRRDestroyMode(m_pdisplay, resources->modes[m].id);
 			XSync(m_pdisplay, False);
 			XSetErrorHandler(old_error_handler);
 			if (m_xerrors & m_xerrors_flag)
