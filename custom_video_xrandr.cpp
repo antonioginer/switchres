@@ -80,7 +80,7 @@ bool xrandr_timing::init()
 	// Display XRANDR version
 	int major_version, minor_version;
 	XRRQueryVersion(m_pdisplay, &major_version, &minor_version);
-	log_verbose("XRANDR: (xrandr_timing) version %d.%d\n",major_version,minor_version);
+	log_verbose("XRANDR: (init) version %d.%d\n",major_version,minor_version);
 
 	// screen_pos defines screen position, 0 is default first screen position and equivalent to 'auto'
 	int screen_pos = -1;
@@ -224,6 +224,7 @@ bool xrandr_timing::add_mode(modeline *mode)
 	xmode.vSyncEnd   = mode->vend;
 	xmode.vTotal     = mode->vtotal;
 	xmode.modeFlags  = (mode->interlace?RR_Interlace:0) | (mode->doublescan?RR_DoubleScan:0) | (mode->hsync?RR_HSyncPositive:RR_HSyncNegative) | (mode->vsync?RR_VSyncPositive:RR_VSyncNegative);
+	xmode.hSkew      = 0;
 		
 	mode->type |= CUSTOM_VIDEO_TIMING_XRANDR;
 
