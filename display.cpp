@@ -328,7 +328,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 		return nullptr;
 	}
 
-	log_info("\nSwitchres: %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", rotated?"vertical":"horizontal",
+	log_verbose("\nSwitchres: %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", rotated?"vertical":"horizontal",
 		width, height, refresh, best_mode.hactive, best_mode.vactive, best_mode.vfreq);
 
 	log_verbose("%s\n", modeline_result(&best_mode, result));
@@ -348,7 +348,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 			best_mode.type |= MODE_UPDATED;
 
 		char modeline[256]={'\x00'};
-		log_verbose("Switchres: Modeline %s\n", modeline_print(&best_mode, modeline, MS_FULL));
+		log_info("Switchres: Modeline %s\n", modeline_print(&best_mode, modeline, MS_FULL));
 	}
 
 	*m_best_mode = best_mode;
