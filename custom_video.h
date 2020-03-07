@@ -31,11 +31,11 @@
 #define CUSTOM_VIDEO_CAPS_DESKTOP_EDITABLE  0x004
 #define CUSTOM_VIDEO_CAPS_SCAN_EDITABLE     0x008
 
-// Modeline commands
-#define MODELINE_DELETE      0x001
-#define MODELINE_CREATE      0x002
-#define MODELINE_UPDATE      0x004
-#define MODELINE_UPDATE_LIST 0x008 
+// Timing creation commands
+#define TIMING_DELETE      0x001
+#define TIMING_CREATE      0x002
+#define TIMING_UPDATE      0x004
+#define TIMING_UPDATE_LIST 0x008 
 
 
 class custom_video

@@ -390,14 +390,23 @@ bool adl_timing::get_timing(modeline *m)
 //  adl_timing::set_timing
 //============================================================
 
-bool adl_timing::set_timing(modeline *m, int update_mode)
+bool adl_timing::set_timing(modeline *m)
+{
+	return adl_timing::set_timing_override(m, TIMING_UPDATE);
+}
+
+//============================================================
+//  adl_timing::set_timing_override
+//============================================================
+
+bool adl_timing::set_timing_override(modeline *m, int update_mode)
 {
 	ADLDisplayModeInfo mode_info = {};
 	ADLDetailedTiming *dt;
 	modeline m_temp;
 
 	//modeline to ADLDisplayModeInfo
-	mode_info.iTimingStandard   = (update_mode & MODELINE_DELETE)? ADL_DL_MODETIMING_STANDARD_DRIVER_DEFAULT : ADL_DL_MODETIMING_STANDARD_CUSTOM;
+	mode_info.iTimingStandard   = (update_mode & TIMING_DELETE)? ADL_DL_MODETIMING_STANDARD_DRIVER_DEFAULT : ADL_DL_MODETIMING_STANDARD_CUSTOM;
 	mode_info.iPossibleStandard = 0;
 	mode_info.iRefreshRate      = m->refresh * interlace_factor(m->interlace, 0);
 	mode_info.iPelsWidth        = m->width;
@@ -422,13 +431,13 @@ bool adl_timing::set_timing(modeline *m, int update_mode)
 	dt->sVOverscanBottom = 0;
 	dt->sVOverscanTop    = 0;
 
-	if (ADL2_Display_ModeTimingOverride_Set(m_adl, m_adapter_index, m_display_index, &mode_info, (update_mode & MODELINE_UPDATE_LIST)? 1 : 0) != ADL_OK) return false;
+	if (ADL2_Display_ModeTimingOverride_Set(m_adl, m_adapter_index, m_display_index, &mode_info, (update_mode & TIMING_UPDATE_LIST)? 1 : 0) != ADL_OK) return false;
 
 	//ADL_Flush_Driver_Data(display_index);
 
 	// read modeline to trigger timing refresh on modded drivers
 	memcpy(&m_temp, m, sizeof(modeline));
-	if (update_mode & MODELINE_UPDATE) get_timing(&m_temp);
+	if (update_mode & TIMING_UPDATE) get_timing(&m_temp);
 
 	return true;
 }
@@ -439,7 +448,7 @@ bool adl_timing::set_timing(modeline *m, int update_mode)
 
 bool adl_timing::add_mode(modeline *mode)
 {
-	if (!set_timing(mode, MODELINE_UPDATE_LIST))
+	if (!set_timing_override(mode, TIMING_UPDATE_LIST))
 	{
 		return false;
 	}
@@ -456,7 +465,7 @@ bool adl_timing::add_mode(modeline *mode)
 
 bool adl_timing::delete_mode(modeline *mode)
 {
-	if (!set_timing(mode, MODELINE_DELETE | MODELINE_UPDATE_LIST))
+	if (!set_timing_override(mode, TIMING_DELETE | TIMING_UPDATE_LIST))
 	{
 		return false;
 	}
@@ -470,7 +479,7 @@ bool adl_timing::delete_mode(modeline *mode)
 
 bool adl_timing::update_mode(modeline *mode)
 {
-	if (!set_timing(mode, MODELINE_UPDATE))
+	if (!set_timing_override(mode, TIMING_UPDATE))
 	{
 		return false;
 	}

@@ -153,10 +153,8 @@ class adl_timing : public custom_video
 		bool delete_mode(modeline *mode);
 		bool update_mode(modeline *mode);
 
-		bool get_timing_list();
-		bool get_timing_from_cache(modeline *m);
 		bool get_timing(modeline *m);
-		bool set_timing(modeline *m, int update_mode);
+		bool set_timing(modeline *m);
 
 	private:
 		int open();
@@ -164,6 +162,9 @@ class adl_timing : public custom_video
 		bool enum_displays();
 		bool get_device_mapping_from_display_name();
 		bool display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m);
+		bool get_timing_list();
+		bool get_timing_from_cache(modeline *m);
+		bool set_timing_override(modeline *m, int update_mode);
 
 		char m_display_name[32];
 		char m_device_key[128];
