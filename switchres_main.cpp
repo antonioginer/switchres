@@ -193,8 +193,8 @@ int main(int argc, char **argv)
 	switchres_manager switchres;
 
 	// Init logging
-	set_log_info((void*)printf);
-	set_log_error((void*)printf);
+	switchres.set_log_info_fn((void*)printf);
+	switchres.set_log_error_fn((void*)printf);
 
 	parse_config(switchres, "switchres.ini");
 
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 
 	if (verbose_flag)
 	{
-		set_log_verbose((void*)printf);
+		switchres.set_log_verbose_fn((void*)printf);
 	}
 
 	if (version_flag)

@@ -52,6 +52,11 @@ public:
 	// getters
 	display_manager *display() const { return m_display; }
 
+	// setters (log manager)
+	void set_log_verbose_fn(void *func_ptr);
+	void set_log_info_fn(void *func_ptr);
+	void set_log_error_fn(void *func_ptr);
+
 	// setters (switchres manager)
 	void set_monitor(const char *preset) { strncpy(cs.monitor, preset, sizeof(cs.monitor)-1); }
 	void set_orientation(const char *orientation) { strncpy(cs.orientation, orientation, sizeof(cs.orientation)-1); }

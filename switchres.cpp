@@ -16,6 +16,15 @@
 #include "switchres.h"
 #include "log.h"
 
+
+//============================================================
+//  logging
+//============================================================
+
+void switchres_manager::set_log_verbose_fn(void *func_ptr) { set_log_verbose((void *)func_ptr); }
+void switchres_manager::set_log_info_fn(void *func_ptr) { set_log_info((void *)func_ptr); }
+void switchres_manager::set_log_error_fn(void *func_ptr) { set_log_error((void *)func_ptr); }
+
 //============================================================
 //  switchres_manager::switchres_manager
 //============================================================
