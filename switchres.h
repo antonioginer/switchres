@@ -53,21 +53,21 @@ public:
 	display_manager *display() const { return m_display; }
 
 	// setters (switchres manager)
-	void set_monitor(const char *preset) { sprintf(cs.monitor, preset); }
-	void set_orientation(const char *orientation) { sprintf(cs.orientation, orientation); }
-	void set_modeline(const char *modeline) { sprintf(cs.modeline, modeline); }
-	void set_crt_range(int i, const char *range) { sprintf(cs.crt_range[i], range); }
-	void set_lcd_range(const char *range) { sprintf(cs.lcd_range, range); }
+	void set_monitor(const char *preset) { strncpy(cs.monitor, preset, sizeof(cs.monitor)-1); }
+	void set_orientation(const char *orientation) { strncpy(cs.orientation, orientation, sizeof(cs.orientation)-1); }
+	void set_modeline(const char *modeline) { strncpy(cs.modeline, modeline, sizeof(cs.modeline)-1); }
+	void set_crt_range(int i, const char *range) { strncpy(cs.crt_range[i], range, sizeof(cs.crt_range[i])-1); }
+	void set_lcd_range(const char *range) { strncpy(cs.lcd_range, range, sizeof(cs.lcd_range)-1); }
 	void set_monitor_rotates_cw(bool value) { cs.monitor_rotates_cw = value; }
 
 	// setters (display manager)
-	void set_screen(const char *screen) { sprintf(ds.screen, screen); }
-	void set_api(const char *api) { sprintf(ds.api, api); }
+	void set_screen(const char *screen) { strncpy(ds.screen, screen, sizeof(ds.screen)-1); }
+	void set_api(const char *api) { strncpy(ds.api, api, sizeof(ds.api)-1); }
 	void set_modeline_generation(bool value) { ds.modeline_generation = value; }
 	void set_lock_unsupported_modes(bool value) { ds.lock_unsupported_modes = value; }
 	void set_lock_system_modes(bool value) { ds.lock_system_modes = value; }
 	void set_refresh_dont_care(bool value) { ds.refresh_dont_care = value; }
-	void set_ps_timing(const char *ps_timing) { sprintf(ds.ps_timing, ps_timing); }
+	void set_ps_timing(const char *ps_timing) { strncpy(ds.ps_timing, ps_timing, sizeof(ds.ps_timing)-1); }
 
 	//setters (modeline generator)
 	void set_interlace(bool value) { gs.interlace = value; }
