@@ -43,14 +43,7 @@ class custom_video
 public:
 
 	custom_video() {};
-	virtual ~custom_video()
-	{
-		if (m_custom_video)
-		{
-			delete m_custom_video;
-			m_custom_video = nullptr;
-		}
-	}
+	virtual ~custom_video();
 
 	custom_video *make(char *device_name, char *device_id, int method, char *s_param);
 	virtual const char *api_name() { return "empty"; }
@@ -74,6 +67,9 @@ private:
 	custom_video *m_custom_video = 0;
 	int m_custom_method;
 
+#if defined(__linux__)
+	void *m_handle;
+#endif
 };
 
 #endif

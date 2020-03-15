@@ -8,16 +8,18 @@ OBJS = $(SRC:.cpp=.o)
 CROSS_COMPILE ?=
 CXX ?= g++
 AR ?= ar
-LDFLAGS =
+LDFLAGS = -shared
 FINAL_CXX=$(CROSS_COMPILE)$(CXX)
 FINAL_AR=$(CROSS_COMPILE)$(AR)
-CPPFLAGS = -O3 -Wall -Wextra
+CPPFLAGS = -O3 -Wall -Wextra -rdynamic
 
 # Linux
 ifeq  ($(PLATFORM),Linux)
-SRC += display_linux.cpp custom_video_xrandr.cpp
+SRC += display_linux.cpp 
+SRC_LIB = custom_video_xrandr.cpp
+OBJS += $(SRC_LIB:.cpp=.o) $(SRC_LIB:.cpp=.so) 
 CPPFLAGS += -fPIC
-LIBS = -lXrandr -lX11
+LIBS = -ldl
 REMOVE = rm -f 
 STATIC_LIB_EXT = a
 DYNAMIC_LIB_EXT = so
@@ -35,12 +37,15 @@ endif
 %.o : %.cpp
 	$(FINAL_CXX) -c $(CPPFLAGS) $< -o $@
 
-all: $(SRC:.cpp=.o) $(MAIN).cpp
+all: $(SRC:.cpp=.o) $(MAIN).cpp $(SRC_LIB:.cpp=.so)
 	@echo $(OSFLAG)
 	$(FINAL_CXX) $(CPPFLAGS) $(CXXFLAGS) $(SRC:.cpp=.o) $(MAIN).cpp $(LIBS) -o $(MAIN)
 
+custom_video_xrandr.so: custom_video_xrandr.o
+	$(FINAL_CXX) $(LDFLAGS) $(CPPFLAGS) $< -lXrandr -lX11 -o $@
+
 $(TARGET_LIB): $(OBJS)
-	$(FINAL_CXX) $(LDFLAGS) $(CPPFLAGS) -shared -o $@.$(DYNAMIC_LIB_EXT) $^
+	$(FINAL_CXX) $(LDFLAGS) $(CPPFLAGS) -o $@.$(DYNAMIC_LIB_EXT) $^
 	$(FINAL_AR) rcs $@.$(STATIC_LIB_EXT) $(^)
 
 clean:

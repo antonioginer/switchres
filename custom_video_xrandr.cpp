@@ -16,6 +16,24 @@
 #include "log.h"
 
 //============================================================
+//  shared library factory code 
+//============================================================
+
+extern "C" xrandr_timing* factory(char *device_name, char *param)
+{
+	return new xrandr_timing(device_name, param);
+}
+
+//============================================================
+//  shared library delete code 
+//============================================================
+
+extern "C" void terminate(xrandr_timing* instance)
+{
+	delete instance;
+}
+
+//============================================================
 //  error_handler 
 //  xorg error handler (static)
 //============================================================

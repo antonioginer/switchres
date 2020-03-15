@@ -14,6 +14,7 @@
 
 
 #include <stdio.h>
+#include <dlfcn.h>
 #include "custom_video.h"
 #include "log.h"
 
@@ -27,6 +28,29 @@
 
 
 extern bool ati_is_legacy(int vendor, int device);
+
+//============================================================
+//  custom_video::~custom_video
+//============================================================
+
+custom_video::~custom_video()
+{
+	if (m_custom_video)
+	{
+#if defined(_WIN32)
+		delete m_custom_video;
+#elif defined(__linux__)
+		if (m_handle)
+		{
+			void (*terminate)(custom_video*);
+			terminate = (void (*)(custom_video*))dlsym(m_handle, "terminate");
+			terminate(m_custom_video);
+			dlclose(m_handle);
+		}
+#endif
+		m_custom_video = nullptr;
+	}
+}
 
 //============================================================
 //  custom_video::make
@@ -79,7 +103,23 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 		if (sizeof(device_id) != 0)
 			log_verbose("Device ID: %s\n", device_id);
 
-		m_custom_video = new xrandr_timing(device_name, s_param);
+		char *error;
+		m_handle = dlopen ("./custom_video_xrandr.so", RTLD_NOW);
+		if (m_handle)
+		{
+			custom_video* (*factory)(char *, char *);
+			factory = (custom_video* (*)(char *,char *)) dlsym(m_handle , "factory");
+			m_custom_video = factory(device_name, s_param);
+		}
+		else
+		{
+			error = dlerror();
+			if (error != NULL) {
+				fprintf(stderr, "%s\n", error);
+				exit(EXIT_FAILURE);
+			}
+							               
+		}
 		if (m_custom_video)
 		{
 			m_custom_method = CUSTOM_VIDEO_TIMING_XRANDR;
