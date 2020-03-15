@@ -1,6 +1,6 @@
 /**************************************************************
 
-   video_xrandr_xrandr.cpp - Linux XRANDR video management layer
+   custom_video_xrandr.cpp - Linux XRANDR video management layer
 
    ---------------------------------------------------------
 
@@ -64,11 +64,11 @@ xrandr_timing::~xrandr_timing()
 	if (m_pdisplay != NULL)
 		XCloseDisplay(m_pdisplay);
 
-	// clode Xrandr library
+	// close Xrandr library
 	if (m_xrandr_handle)
 		dlclose(m_xrandr_handle);
 
-	// clode X11 library
+	// close X11 library
 	if (m_x11_handle)
 		dlclose(m_x11_handle);
 
