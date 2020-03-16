@@ -38,7 +38,7 @@ class xrandr_timing : public custom_video
 		static int m_xerrors_flag;
 
 	private:
-		void *m_xrandr_handle;
+		void *m_xrandr_handle = 0;
 
 		__typeof__(XRRAddOutputMode) *p_XRRAddOutputMode;
 		__typeof__(XRRConfigCurrentConfiguration) *p_XRRConfigCurrentConfiguration;
@@ -74,7 +74,7 @@ class xrandr_timing : public custom_video
 #define XRRSetCrtcConfig p_XRRSetCrtcConfig
 #define XRRSetScreenSize p_XRRSetScreenSize
 
-		void *m_x11_handle;
+		void *m_x11_handle = 0;
 
 		__typeof__(XCloseDisplay) *p_XCloseDisplay;
 		__typeof__(XGrabServer) *p_XGrabServer;

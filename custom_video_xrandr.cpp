@@ -81,7 +81,8 @@ xrandr_timing::~xrandr_timing()
 bool xrandr_timing::init()
 {
 	log_verbose("XRANDR: (init) loading Xrandr library\n");
-	m_xrandr_handle = dlopen ("libXrandr.so", RTLD_NOW);
+	if (!m_xrandr_handle)
+		m_xrandr_handle = dlopen ("libXrandr.so", RTLD_NOW);
 	if (m_xrandr_handle)
 	{
 		p_XRRAddOutputMode = (__typeof__(XRRAddOutputMode))dlsym(m_xrandr_handle,"XRRAddOutputMode");
@@ -201,7 +202,8 @@ bool xrandr_timing::init()
 	}
 
 	log_verbose("XRANDR: (init) loading X11 library\n");
-	m_x11_handle = dlopen ("libX11.so", RTLD_NOW);
+	if (!m_x11_handle)
+		m_x11_handle = dlopen ("libX11.so", RTLD_NOW);
 	if (m_x11_handle)
 	{
 		p_XCloseDisplay = (__typeof__(XCloseDisplay))dlsym(m_x11_handle,"XCloseDisplay");
