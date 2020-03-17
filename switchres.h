@@ -46,7 +46,8 @@ public:
 	};
 
 	// getters
-	display_manager *display() const { return m_display[0]; }
+	display_manager *display() const { return displays[0]; }
+	display_manager *display(int i) const { return displays[i]; }
 
 	// setters (log manager)
 	void set_log_verbose_fn(void *func_ptr);
@@ -89,10 +90,12 @@ public:
 	display_settings ds;
 	generator_settings gs;
 
+	// display list
+	std::vector<display_manager *> displays;
+
 private:
 
 	display_manager *m_display_factory = 0;
-	std::vector<display_manager *> m_display;
 
 	double get_aspect(const char* aspect);
 };

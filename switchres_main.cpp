@@ -42,9 +42,9 @@ int main(int argc, char **argv)
 	int height = 0;
 	float refresh = 0.0;
 	modeline user_mode = {};
+	int index = 0;
 
 	int version_flag = false;
-	bool verbose_flag = false;
 	bool help_flag = false;
 	bool resolution_flag = false;
 	bool calculate_flag = false;
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 		switch (c)
 		{
 			case 'v':
-				verbose_flag = true;
+				switchres.set_log_verbose_fn((void*)printf);
 				break;
 
 			case 'h':
@@ -120,6 +120,9 @@ int main(int argc, char **argv)
 				break;
 
 			case 'd':
+				// Add new display in multi-monitor case
+				if (index > 0) switchres.add_display();
+				index ++;
 				switchres.set_screen(optarg);
 				break;
 
@@ -141,11 +144,6 @@ int main(int argc, char **argv)
 			default:
 				return 0;
 		}
-	}
-
-	if (verbose_flag)
-	{
-		switchres.set_log_verbose_fn((void*)printf);
 	}
 
 	if (version_flag)
@@ -189,37 +187,36 @@ int main(int argc, char **argv)
 		switchres.display()->set_user_mode(&user_mode);
 	
 	if (!calculate_flag)
-		switchres.display()->init();
+	{
+		for (auto &display : switchres.displays)
+			display->init();
+	}
 
 	if (resolution_flag)
 	{
-		modeline *mode = switchres.display()->get_mode(width, height, refresh, interlaced_flag, rotated_flag);
-		if (mode)
+		for (auto &display : switchres.displays)
 		{
-			if (mode->type & MODE_UPDATED)
+			modeline *mode = display->get_mode(width, height, refresh, interlaced_flag, rotated_flag);
+			if (mode)
 			{
-				switchres.display()->update_mode(mode);
-			}
-			else if (mode->type & MODE_NEW)
-			{
-				switchres.display()->add_mode(mode);
-			}
+				if (mode->type & MODE_UPDATED) display->update_mode(mode);
 
-			if (switch_flag)
-			{
-				switchres.display()->set_mode(mode);
-				if (!launch_flag)
-				{
-					log_info("Press ENTER to exit...\n");
-					cin.get();
-				}
+				else if (mode->type & MODE_NEW) display->add_mode(mode);
 			}
+		}
 
-			if (launch_flag)
-			{
-				int status_code = system(launch_command.c_str());
-				log_info("Process exited with value %d\n", status_code);
-			}
+		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->best_mode());
+
+		if (switch_flag && !launch_flag)
+		{
+			log_info("Press ENTER to exit...\n");
+			cin.get();
+		}
+
+		if (launch_flag)
+		{
+			int status_code = system(launch_command.c_str());
+			log_info("Process exited with value %d\n", status_code);
 		}
 	}
 

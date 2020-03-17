@@ -34,10 +34,7 @@ display_manager *display_manager::make(display_settings *ds)
 #endif
 
 	if (m_display_manager)
-	{
-		m_display_manager->parse_options();
 		return m_display_manager;
-	}
 
 	return nullptr;
 }

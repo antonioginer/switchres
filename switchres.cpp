@@ -111,10 +111,12 @@ display_manager* switchres_manager::add_display()
 	ds.gs = gs;
 	display_manager *display = m_display_factory->make(&ds);
 
-	m_display.push_back(display);
+	displays.push_back(display);
 
 	log_verbose("Switchres: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
 		SWITCHRES_VERSION, ds.monitor, ds.orientation, ds.modeline_generation?"enabled":"disabled");
+
+	display->parse_options();
 
 	return display;
 }
