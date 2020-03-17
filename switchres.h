@@ -14,6 +14,7 @@
 #ifndef __SWITCHRES_H__
 #define __SWITCHRES_H__
 
+#include <vector>
 #include "monitor.h"
 #include "modeline.h"
 #include "display.h"
@@ -45,7 +46,7 @@ public:
 	};
 
 	// getters
-	display_manager *display() const { return m_display; }
+	display_manager *display() const { return m_display[0]; }
 
 	// setters (log manager)
 	void set_log_verbose_fn(void *func_ptr);
@@ -80,7 +81,7 @@ public:
 	void set_monitor_aspect(const char* aspect) { set_monitor_aspect(get_aspect(aspect)); }
 
 	// interface
-	void init();
+	display_manager* add_display();
 	bool parse_config(const char *file_name);
 
 	//settings
@@ -91,7 +92,7 @@ public:
 private:
 
 	display_manager *m_display_factory = 0;
-	display_manager *m_display = 0;
+	std::vector<display_manager *> m_display;
 
 	double get_aspect(const char* aspect);
 };

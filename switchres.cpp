@@ -96,21 +96,27 @@ switchres_manager::switchres_manager()
 	set_monitor_aspect(STANDARD_CRT_ASPECT);
 	set_refresh_tolerance(2.0f);
 	set_super_width(2560);
-}
-
-//============================================================
-//  switchres_manager::init
-//============================================================
-
-void switchres_manager::init()
-{
-	log_verbose("Switchres: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
-		SWITCHRES_VERSION, ds.monitor, ds.orientation, ds.modeline_generation?"enabled":"disabled");
 
 	// Create our display manager
 	m_display_factory = new display_manager();
+}
+
+//============================================================
+//  switchres_manager::add_display
+//============================================================
+
+display_manager* switchres_manager::add_display()
+{
+	// Create new display
 	ds.gs = gs;
-	m_display = m_display_factory->make(&ds);
+	display_manager *display = m_display_factory->make(&ds);
+
+	m_display.push_back(display);
+
+	log_verbose("Switchres: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
+		SWITCHRES_VERSION, ds.monitor, ds.orientation, ds.modeline_generation?"enabled":"disabled");
+
+	return display;
 }
 
 //============================================================

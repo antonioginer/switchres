@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 	if (user_ini_flag)
 		switchres.parse_config(ini_file.c_str());
 
-	switchres.init();
+	switchres.add_display();
 
 	if (force_flag)
 		switchres.display()->set_user_mode(&user_mode);
