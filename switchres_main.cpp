@@ -84,6 +84,12 @@ int main(int argc, char **argv)
 		if (c == -1)
 			break;
 
+		if (version_flag)
+		{
+			show_version();
+			return 0;
+		}
+
 		switch (c)
 		{
 			case 'v':
@@ -144,12 +150,6 @@ int main(int argc, char **argv)
 			default:
 				return 0;
 		}
-	}
-
-	if (version_flag)
-	{
-		show_version();
-		return 0;
 	}
 
 	if (help_flag)
