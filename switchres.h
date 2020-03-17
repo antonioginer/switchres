@@ -77,9 +77,11 @@ public:
 	void set_super_width(int value) { gs.super_width = value; }
 	void set_rotation(bool value) { gs.rotation = value; }
 	void set_monitor_aspect(double value) { gs.monitor_aspect = value; }
+	void set_monitor_aspect(const char* aspect) { set_monitor_aspect(get_aspect(aspect)); }
 
 	// interface
 	void init();
+	bool parse_config(const char *file_name);
 
 	//settings
 	config_settings cs;
@@ -90,6 +92,8 @@ private:
 
 	display_manager *m_display_factory = 0;
 	display_manager *m_display = 0;
+
+	double get_aspect(const char* aspect);
 };
 
 
