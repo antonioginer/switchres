@@ -302,17 +302,17 @@ bool xrandr_timing::init()
 		{
 			XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[o]);
 			if (!output_info)
-				log_error("XRANDR: (detect_connector) [ERROR] could not get output 0x%x information\n", (uint) resources->outputs[o]);
+				log_error("XRANDR: (init) [ERROR] could not get output 0x%x information\n", (uint) resources->outputs[o]);
 
 			// Check all connected output
 			if (output_info->connection == RR_Connected && output_info->crtc && m_desktop_output == -1)
 			{
-				log_verbose("XRANDR: (detect_connector) check output connector '%s'\n", output_info->name);
+				log_verbose("XRANDR: (init) check output connector '%s'\n", output_info->name);
 				XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
 				current_rotation = crtc_info->rotation;
 				if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name,output_info->name) || output_position == screen_pos)
 				{
-					log_verbose("XRANDR: (detect_connector) name '%s' id %d selected as primary output\n", output_info->name, o);
+					log_verbose("XRANDR: (init) name '%s' id %d selected as primary output\n", output_info->name, o);
 					// store the output connector
 					m_desktop_output = o;
 
@@ -330,7 +330,7 @@ bool xrandr_timing::init()
 				if (current_rotation & 0xe)
 				{
 					m_crtc_flags = MODE_ROTATED;
-					log_verbose("XRANDR: (detect_connector) desktop rotation is %s\n",(current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
+					log_verbose("XRANDR: (init) desktop rotation is %s\n",(current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
 				}
 				output_position++;
 			}

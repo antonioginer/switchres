@@ -13,9 +13,7 @@
 
 // X11 Xrandr headers
 #include <X11/extensions/Xrandr.h>
-
 #include <string.h>
-
 #include "display.h"
 
 class xrandr_timing : public custom_video
@@ -96,11 +94,10 @@ class xrandr_timing : public custom_video
 		char m_device_name[32];
 		Rotation m_desktop_rotation;
 
-		Display *m_pdisplay;
+		Display *m_pdisplay = NULL;
 		Window m_root;
 
 		int m_desktop_output = -1;
 		XRRModeInfo m_desktop_mode = {};
 		int m_crtc_flags = 0;
-
 };
