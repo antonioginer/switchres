@@ -1,16 +1,14 @@
 /**************************************************************
 
-   switchres_sdl.cpp - SDL OSD SwitchRes core routines
+   switchres_sdl.cpp - SDL OSD Switchres core routines
 
    ---------------------------------------------------------
 
    SwitchRes   Modeline generation engine for emulation
 
-   GroovyMAME  Integration of SwitchRes into the MAME project
-               Some reworked patches from SailorSat's CabMAME
-
    License     GPL-2.0+
-   Copyright   2010-2017 - Chris Kennedy, Antonio Giner, Alexandre Wodarczyk
+   Copyright   2010-2020 Chris Kennedy, Antonio Giner,
+                         Alexandre Wodarczyk, Gil Delescluse
 
  **************************************************************/
 
