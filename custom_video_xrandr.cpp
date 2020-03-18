@@ -402,7 +402,7 @@ bool xrandr_timing::add_mode(modeline *mode)
 
 	// Create specific mode name
 	char name[48];
-	sprintf(name,"SR-%dx%d_%f",mode->hactive, mode->vactive, mode->vfreq);
+	sprintf(name,"SR-%d_%dx%d_%f", m_desktop_output, mode->hactive, mode->vactive, mode->vfreq);
 
 	// Setup the xrandr mode structure
 	XRRModeInfo xmode = {};
