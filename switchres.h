@@ -14,6 +14,7 @@
 #ifndef __SWITCHRES_H__
 #define __SWITCHRES_H__
 
+#include <vector>
 #include "monitor.h"
 #include "modeline.h"
 #include "display.h"
@@ -30,12 +31,7 @@
 
 typedef struct config_settings
 {
-	char   monitor[32];
-	char   orientation[32];
-	char   modeline[256];
-	char   crt_range[MAX_RANGES][256];
-	char   lcd_range[256];
-	bool   monitor_rotates_cw;
+	bool mode_switching;
 } config_settings;
 
 
@@ -50,7 +46,8 @@ public:
 	};
 
 	// getters
-	display_manager *display() const { return m_display; }
+	display_manager *display() const { return displays[0]; }
+	display_manager *display(int i) const { return displays[i]; }
 
 	// setters (log manager)
 	void set_log_verbose_fn(void *func_ptr);
@@ -58,12 +55,12 @@ public:
 	void set_log_error_fn(void *func_ptr);
 
 	// setters (switchres manager)
-	void set_monitor(const char *preset) { strncpy(cs.monitor, preset, sizeof(cs.monitor)-1); }
-	void set_orientation(const char *orientation) { strncpy(cs.orientation, orientation, sizeof(cs.orientation)-1); }
-	void set_modeline(const char *modeline) { strncpy(cs.modeline, modeline, sizeof(cs.modeline)-1); }
-	void set_crt_range(int i, const char *range) { strncpy(cs.crt_range[i], range, sizeof(cs.crt_range[i])-1); }
-	void set_lcd_range(const char *range) { strncpy(cs.lcd_range, range, sizeof(cs.lcd_range)-1); }
-	void set_monitor_rotates_cw(bool value) { cs.monitor_rotates_cw = value; }
+	void set_monitor(const char *preset) { strncpy(ds.monitor, preset, sizeof(ds.monitor)-1); }
+	void set_orientation(const char *orientation) { strncpy(ds.orientation, orientation, sizeof(ds.orientation)-1); }
+	void set_modeline(const char *modeline) { strncpy(ds.modeline, modeline, sizeof(ds.modeline)-1); }
+	void set_crt_range(int i, const char *range) { strncpy(ds.crt_range[i], range, sizeof(ds.crt_range[i])-1); }
+	void set_lcd_range(const char *range) { strncpy(ds.lcd_range, range, sizeof(ds.lcd_range)-1); }
+	void set_monitor_rotates_cw(bool value) { ds.monitor_rotates_cw = value; }
 
 	// setters (display manager)
 	void set_screen(const char *screen) { strncpy(ds.screen, screen, sizeof(ds.screen)-1); }
@@ -82,19 +79,25 @@ public:
 	void set_super_width(int value) { gs.super_width = value; }
 	void set_rotation(bool value) { gs.rotation = value; }
 	void set_monitor_aspect(double value) { gs.monitor_aspect = value; }
+	void set_monitor_aspect(const char* aspect) { set_monitor_aspect(get_aspect(aspect)); }
 
 	// interface
-	void init();
+	display_manager* add_display();
+	bool parse_config(const char *file_name);
 
 	//settings
 	config_settings cs;
 	display_settings ds;
 	generator_settings gs;
 
+	// display list
+	std::vector<display_manager *> displays;
+
 private:
 
 	display_manager *m_display_factory = 0;
-	display_manager *m_display = 0;
+
+	double get_aspect(const char* aspect);
 };
 
 
