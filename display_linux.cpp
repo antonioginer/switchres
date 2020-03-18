@@ -124,7 +124,7 @@ int linux_display::get_available_video_modes()
 
 		// get next mode
 		video()->get_timing(&mode);
-		if (mode.type == 0 || mode.type == CUSTOM_VIDEO_TIMING_SYSTEM)
+		if (mode.type == 0 || mode.platform_data == 0)
 			break;
 		
 		// set the desktop mode
