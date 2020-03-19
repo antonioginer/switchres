@@ -103,6 +103,18 @@ switchres_manager::switchres_manager()
 }
 
 //============================================================
+//  switchres_manager::~switchres_manager
+//============================================================
+
+switchres_manager::~switchres_manager()
+{
+	if (m_display_factory) delete m_display_factory;
+
+	for (auto &display : displays)
+		delete display;
+};
+
+//============================================================
 //  switchres_manager::add_display
 //============================================================
 

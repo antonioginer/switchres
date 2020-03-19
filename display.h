@@ -49,7 +49,7 @@ public:
 	{
 		restore_modes();
 		if (m_factory) delete m_factory;
-		if (m_display_manager) delete m_display_manager;
+		//if (m_display_manager) delete m_display_manager;
 	};
 
 	display_manager *make(display_settings *ds);
@@ -94,7 +94,7 @@ public:
 
 private:
 	// osd display manager
-	display_manager *m_display_manager = 0;
+	//display_manager *m_display_manager = 0;
 
 	// custom video backend
 	custom_video *m_factory = 0;
