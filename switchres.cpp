@@ -1,29 +1,71 @@
 /**************************************************************
 
-   switchres.cpp - SwichRes core routines
+   switchres.cpp - Swichres manager
 
    ---------------------------------------------------------
 
-   SwitchRes   Modeline generation engine for emulation
+   Switchres   Modeline generation engine for emulation
 
    License     GPL-2.0+
-   Copyright   2010-2016 - Chris Kennedy, Antonio Giner
+   Copyright   2010-2020 - Chris Kennedy, Antonio Giner
 
  **************************************************************/
 
-#include <stdio.h>
+#include <fstream>
 #include <string.h>
+#include <algorithm>
 #include "switchres.h"
+#include "log.h"
 
-#define CUSTOM_VIDEO_TIMING_SYSTEM      0x00000010
+using namespace std;
+const string WHITESPACE = " \n\r\t\f\v";
 
+//============================================================
+//  logging
+//============================================================
 
-const auto log_verbose = printf;
-const auto log_error = printf;
-const auto log_info = printf;
+void switchres_manager::set_log_verbose_fn(void *func_ptr) { set_log_verbose((void *)func_ptr); }
+void switchres_manager::set_log_info_fn(void *func_ptr) { set_log_info((void *)func_ptr); }
+void switchres_manager::set_log_error_fn(void *func_ptr) { set_log_error((void *)func_ptr); }
 
-bool effective_orientation() { return false; }
+//============================================================
+//  File parsing helpers
+//============================================================
 
+string ltrim(const string& s)
+{
+	size_t start = s.find_first_not_of(WHITESPACE);
+	return (start == string::npos) ? "" : s.substr(start);
+}
+
+string rtrim(const string& s)
+{
+	size_t end = s.find_last_not_of(WHITESPACE);
+	return (end == string::npos) ? "" : s.substr(0, end + 1);
+}
+
+string trim(const string& s)
+{
+	return rtrim(ltrim(s));
+}
+
+bool get_value(const string& line, string& key, string& value)
+{
+	size_t key_end = line.find_first_of(WHITESPACE);
+
+	key = line.substr(0, key_end);
+	value = ltrim(line.substr(key_end + 1));
+
+	if (key.length() > 0 && value.length() > 0)
+		return true;
+
+	return false;
+}
+
+constexpr unsigned int s2i(const char* str, int h = 0)
+{
+    return !str[h] ? 5381 : (s2i(str, h+1)*33) ^ str[h];
+}
 
 //============================================================
 //  switchres_manager::switchres_manager
@@ -32,217 +74,202 @@ bool effective_orientation() { return false; }
 switchres_manager::switchres_manager()
 {
 	// Set Switchres default config options
-	sprintf(cs.monitor, "generic_15");
-	sprintf(cs.orientation, "horizontal");
-	sprintf(cs.modeline, "auto");
-	sprintf(cs.crt_range0, "auto");
-	sprintf(cs.crt_range1, "auto");
-	sprintf(cs.crt_range2, "auto");
-	sprintf(cs.crt_range3, "auto");
-	sprintf(cs.crt_range4, "auto");
-	sprintf(cs.crt_range5, "auto");
-	sprintf(cs.crt_range6, "auto");
-	sprintf(cs.crt_range7, "auto");
-	sprintf(cs.crt_range8, "auto");
-	sprintf(cs.crt_range9, "auto");
-	sprintf(cs.lcd_range, "auto");
-	cs.monitor_rotates_cw = false;
-	cs.monitor_count = 1;
+	set_monitor("generic_15");
+	set_orientation("horizontal");
+	set_modeline("auto");
+	set_lcd_range("auto");
+	for (int i = 0; i++ < MAX_RANGES;) set_crt_range(i, "auto");
+	set_monitor_rotates_cw(false);
 
-	sprintf(ds.screen, "auto");
-	ds.lock_unsupported_modes = true;
-	ds.lock_system_modes = true;
-	ds.refresh_dont_care = false;
+	// Set display manager default options
+	set_screen("auto");
+	set_modeline_generation(true);
+	set_lock_unsupported_modes(true);
+	set_lock_system_modes(true);
+	set_refresh_dont_care(false);
 
 	// Set modeline generator default options
-	gs.modeline_generation = true;
-	gs.width = 0;
-	gs.height = 0;
-	gs.refresh = 0;
-	gs.interlace = true;
-	gs.doublescan = true;
-	gs.pclock_min = 0.0;
-	gs.rotation = false;
-	gs.monitor_aspect = STANDARD_CRT_ASPECT;
-	gs.refresh_tolerance = 2.0f;
-	gs.super_width = 2560;
-}
-
-//============================================================
-//  switchres_manager::init
-//============================================================
-
-void switchres_manager::init()
-{
-	log_verbose("Switchres: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
-		SWITCHRES_VERSION, cs.monitor, cs.orientation, gs.modeline_generation?"enabled":"disabled");
-
-	// Get user defined modeline
-	if (gs.modeline_generation)
-	{
-		modeline_parse(cs.modeline, &user_mode);
-		user_mode.type |= MODE_USER_DEF;
-	}
-
-	// Get monitor specs
-	if (user_mode.hactive)
-	{
-		modeline_to_monitor_range(range, &user_mode);
-		monitor_show_range(range);
-	}
-	else
-		get_monitor_specs();
+	set_interlace(true);
+	set_doublescan(true);
+	set_dotclock_min(0.0f);
+	set_rotation(false);
+	set_monitor_aspect(STANDARD_CRT_ASPECT);
+	set_refresh_tolerance(2.0f);
+	set_super_width(2560);
 
 	// Create our display manager
 	m_display_factory = new display_manager();
-	m_display = m_display_factory->make();
 }
 
-
 //============================================================
-//  switchres_manager::get_monitor_specs
+//  switchres_manager::add_display
 //============================================================
 
-int switchres_manager::get_monitor_specs()
+display_manager* switchres_manager::add_display()
 {
-	char default_monitor[] = "generic_15";
-	
-	memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
+	// Create new display
+	ds.gs = gs;
+	display_manager *display = m_display_factory->make(&ds);
 
-	if (!strcmp(cs.monitor, "custom"))
-	{
-		monitor_fill_range(&range[0],cs.crt_range0);
-		monitor_fill_range(&range[1],cs.crt_range1);
-		monitor_fill_range(&range[2],cs.crt_range2);
-		monitor_fill_range(&range[3],cs.crt_range3);
-		monitor_fill_range(&range[4],cs.crt_range4);
-		monitor_fill_range(&range[5],cs.crt_range5);
-		monitor_fill_range(&range[6],cs.crt_range6);
-		monitor_fill_range(&range[7],cs.crt_range7);
-		monitor_fill_range(&range[8],cs.crt_range8);
-		monitor_fill_range(&range[9],cs.crt_range9);
-	}
-	else if (!strcmp(cs.monitor, "lcd"))
-		monitor_fill_lcd_range(&range[0],cs.lcd_range);
+	displays.push_back(display);
 
-	else if (monitor_set_preset(cs.monitor, range) == 0)
-		monitor_set_preset(default_monitor, range);
+	log_verbose("Switchres: v%s, Monitor: %s, Orientation: %s, Modeline generation: %s\n",
+		SWITCHRES_VERSION, ds.monitor, ds.orientation, ds.modeline_generation?"enabled":"disabled");
 
-	return 0;
+	display->parse_options();
+
+	return display;
 }
 
-
 //============================================================
-//  switchres_manager::get_video_mode
+//  switchres_manager::parse_config
 //============================================================
 
-modeline *switchres_manager::get_video_mode()
+bool switchres_manager::parse_config(const char *file_name)
 {
-	modeline s_mode = {};
-	modeline t_mode = {};
-	modeline best_mode = {};
-	char result[256]={'\x00'};
+	log_verbose("parsing %s\n", file_name);
 
-	gs.rotation = effective_orientation();
+	ifstream config_file(file_name);
 
-	log_verbose("Switchres: v%s:[%s] Calculating best video mode for %dx%d@%.6f orientation: %s\n",
-						SWITCHRES_VERSION, game.name, game.width, game.height, game.refresh,
-						gs.rotation?"rotated":"normal");
+	if (!config_file.is_open())
+		return false;
 
-	best_mode.result.weight |= R_OUT_OF_RANGE;
-	s_mode.hactive = game.vector?1:normalize(game.width, 8);
-	s_mode.vactive = game.vector?1:game.height;
-	s_mode.vfreq = game.refresh;
-
-	// Create a dummy mode entry
-	modeline new_mode = {};
-	new_mode.type = XYV_EDITABLE | MODE_NEW;
-	m_display->video_modes.push_back(new_mode);
-
-	// Run through our mode list and find the most suitable mode
-	for (auto &mode : m_display->video_modes)
+	string line;
+	while (getline(config_file, line))
 	{
-		// apply options to mode type
-		if (!gs.modeline_generation)
-			mode.type &= ~XYV_EDITABLE;
+		line = trim(line);
+		if (line.length() == 0 || line.at(0) == '#')
+			continue;
 
-		if (ds.refresh_dont_care)
-			mode.type |= V_FREQ_EDITABLE;
-		
-		if (ds.lock_system_modes && (mode.type & CUSTOM_VIDEO_TIMING_SYSTEM) && !(mode.type & MODE_DESKTOP) && !(mode.type & MODE_USER_DEF))
-			mode.type |= MODE_DISABLED;
-
-		log_verbose("\nSwitchres: %s%4d%sx%s%4d%s_%s%d=%.6fHz%s%s\n",
-			mode.type & X_RES_EDITABLE?"(":"[", mode.width, mode.type & X_RES_EDITABLE?")":"]",
-			mode.type & Y_RES_EDITABLE?"(":"[", mode.height, mode.type & Y_RES_EDITABLE?")":"]",
-			mode.type & V_FREQ_EDITABLE?"(":"[", mode.refresh, mode.vfreq, mode.type & V_FREQ_EDITABLE?")":"]",
-			mode.type & MODE_DISABLED?" - locked":"");
-
-		// now get the mode if allowed
-		if (!(mode.type & MODE_DISABLED))
+		string key, value;
+		if(get_value(line, key, value))
 		{
-			for (int i = 0 ; i < MAX_RANGES ; i++)
+			switch (s2i(key.c_str()))
 			{
-				if (range[i].hfreq_min)
+				// Switchres options
+				case s2i("monitor"):
+					transform(value.begin(), value.end(), value.begin(), ::tolower);
+					set_monitor(value.c_str());
+					break;
+				case s2i("orientation"):
+					set_orientation(value.c_str());
+					break;
+				case s2i("crt_range0"):
+					set_crt_range(0, value.c_str());
+					break;
+				case s2i("crt_range1"):
+					set_crt_range(1, value.c_str());
+					break;
+				case s2i("crt_range2"):
+					set_crt_range(2, value.c_str());
+					break;
+				case s2i("crt_range3"):
+					set_crt_range(3, value.c_str());
+					break;
+				case s2i("crt_range4"):
+					set_crt_range(4, value.c_str());
+					break;
+				case s2i("crt_range5"):
+					set_crt_range(5, value.c_str());
+					break;
+				case s2i("crt_range6"):
+					set_crt_range(6, value.c_str());
+					break;
+				case s2i("crt_range7"):
+					set_crt_range(7, value.c_str());
+					break;
+				case s2i("crt_range8"):
+					set_crt_range(8, value.c_str());
+					break;
+				case s2i("crt_range9"):
+					set_crt_range(9, value.c_str());
+					break;
+				case s2i("lcd_range"):
+					set_lcd_range(value.c_str());
+					break;
+
+				// Display options
+				case s2i("display"):
+					set_screen(value.c_str());
+					break;
+				case s2i("api"):
+					set_api(value.c_str());
+					break;
+				case s2i("modeline_generation"):
+					set_modeline_generation(atoi(value.c_str()));
+					break;
+				case s2i("lock_unsupported_modes"):
+					set_lock_unsupported_modes(atoi(value.c_str()));
+					break;
+				case s2i("lock_system_modes"):
+					set_lock_system_modes(atoi(value.c_str()));
+					break;
+				case s2i("refresh_dont_care"):
+					set_refresh_dont_care(atoi(value.c_str()));
+					break;
+				case s2i("ps_timing"):
+					set_ps_timing(value.c_str());
+					break;
+
+				// Modeline generation options
+				case s2i("interlace"):
+					set_interlace(atoi(value.c_str()));
+					break;
+				case s2i("doublescan"):
+					set_doublescan(atoi(value.c_str()));
+					break;
+				case s2i("dotclock_min"):
 				{
-					t_mode = mode;
-					modeline_create(&s_mode, &t_mode, &range[i], &gs);
-					t_mode.range = i;
-
-					log_verbose("%s\n", modeline_result(&t_mode, result));
-
-					if (modeline_compare(&t_mode, &best_mode))
-					{
-						best_mode = t_mode;
-						m_best_mode = &mode;
-					}
+					double pclock_min = 0.0f;
+					sscanf(value.c_str(), "%lf", &pclock_min);
+					set_dotclock_min(pclock_min);
+					break;
 				}
+				case s2i("sync_refresh_tolerance"):
+				{
+					double refresh_tolerance = 0.0f;
+					sscanf(value.c_str(), "%lf", &refresh_tolerance);
+					set_refresh_tolerance(refresh_tolerance);
+					break;
+				}
+				case s2i("super_width"):
+				{
+					int super_width = 0;
+					sscanf(value.c_str(), "%d", &super_width);
+					set_super_width(super_width);
+					break;
+				}
+				case s2i("aspect"):
+					set_monitor_aspect(get_aspect(value.c_str()));
+					break;
+
+				default:
+					log_error("Invalid option %s\n", key.c_str());
+					break;
 			}
 		}
 	}
+	config_file.close();
+	return true;
+}
 
-	// Check if a new mode was created
-	if (m_best_mode == &m_display->video_modes.back())
+//============================================================
+//  switchres_manager::get_aspect
+//============================================================
+
+double switchres_manager::get_aspect(const char* aspect)
+{
+	int num, den;
+	if (sscanf(aspect, "%d:%d", &num, &den) == 2)
 	{
-		log_verbose ("New mode was added!\n");
-	}
-	// otherwise remove our dummy entry
-	else
-	{
-		m_display->video_modes.pop_back();
-	}
-
-	// If we didn't find a suitable mode, exit now
-	if (best_mode.result.weight & R_OUT_OF_RANGE)
-	{
-		m_best_mode = 0;
-		log_error("Switchres: could not find a video mode that meets your specs\n");
-		return nullptr;
-	}
-
-	log_info("\nSwitchres: [%s] (%d) %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", game.name, game.screens, game.orientation?"vertical":"horizontal",
-		game.width, game.height, game.refresh, best_mode.hactive, best_mode.vactive, best_mode.vfreq);
-
-	log_verbose("%s\n", modeline_result(&best_mode, result));
-
-	// Copy the new modeline to our mode list
-	if (gs.modeline_generation)
-	{
-		if (best_mode.type & MODE_NEW)
+		if (den == 0)
 		{
-			best_mode.width = best_mode.hactive;
-			best_mode.height = best_mode.vactive;
-			best_mode.refresh = int(best_mode.vfreq);
-			best_mode.type &= ~(X_RES_EDITABLE | Y_RES_EDITABLE);
+			log_error("Error: denominator can't be zero\n");
+			return STANDARD_CRT_ASPECT;
 		}
-		else
-			best_mode.type |= MODE_UPDATED;
-
-		*m_best_mode = best_mode;
-
-		char modeline[256]={'\x00'};
-		log_verbose("Switchres: Modeline %s\n", modeline_print(&best_mode, modeline, MS_FULL));
+		return (double(num)/double(den));
 	}
 
-	return m_best_mode;
+	log_error("Error: use format --aspect <num:den>\n");
+	return STANDARD_CRT_ASPECT;
 }

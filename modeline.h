@@ -45,6 +45,7 @@
 #define V_FREQ_EDITABLE 0x00000001
 #define X_RES_EDITABLE  0x00000002
 #define Y_RES_EDITABLE  0x00000004
+#define SCAN_EDITABLE	0x00000008
 #define XYV_EDITABLE   (X_RES_EDITABLE | Y_RES_EDITABLE | V_FREQ_EDITABLE )
 
 #define DUMMY_WIDTH 1234
@@ -56,17 +57,17 @@
 
 typedef struct mode_result
 {
-	int    weight;
-	int    x_scale;
-	int    y_scale;
-	int    v_scale;
-	float  x_diff;
-	float  y_diff;
-	float  v_diff;
-	float  x_ratio;
-	float  y_ratio;
-	float  v_ratio;
-	bool   rotated;
+	int     weight;
+	int     scan_penalty;
+	int     x_scale;
+	int     y_scale;
+	int     v_scale;
+	double  x_diff;
+	double  y_diff;
+	double  v_diff;
+	double  x_ratio;
+	double  y_ratio;
+	double  v_ratio;
 } mode_result;
 
 typedef struct modeline
@@ -95,23 +96,20 @@ typedef struct modeline
 	//
 	int    type;
 	int    range;
+	uint64_t platform_data;
 	//
 	mode_result result;
 } modeline;
 
 typedef struct generator_settings
 {
-	bool   modeline_generation;
-	int    width;
-	int    height;
-	int    refresh;
-	int    interlace;
-	int    doublescan;
-	int    pclock_min;
-	bool   rotation;
-	float  monitor_aspect;
-	float  refresh_tolerance;
-	int    super_width;
+	int      interlace;
+	int      doublescan;
+	uint64_t pclock_min;
+	bool     rotation;
+	double   monitor_aspect;
+	double   refresh_tolerance;
+	int      super_width;
 } generator_settings;
 
 //============================================================

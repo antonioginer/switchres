@@ -16,10 +16,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "custom_video_adl.h"
-
-const auto log_verbose = printf;
-const auto log_info = printf;
-const auto log_error = printf;
+#include "log.h"
 
 
 //============================================================
@@ -52,6 +49,15 @@ adl_timing::adl_timing(char *display_name, char *device_key)
 }
 
 //============================================================
+//  adl_timing::~adl_timing
+//============================================================
+
+adl_timing::~adl_timing()
+{
+	close();
+}
+
+//============================================================
 //  adl_timing::init
 //============================================================
 
@@ -68,50 +74,71 @@ bool adl_timing::init()
 		return false;
 	}
 
-	ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET)GetProcAddress(hDLL,"ADL_Adapter_NumberOfAdapters_Get");
-	if (ADL_Adapter_NumberOfAdapters_Get == NULL)
+	ADL2_Adapter_NumberOfAdapters_Get = (ADL2_ADAPTER_NUMBEROFADAPTERS_GET) (void *) GetProcAddress(hDLL,"ADL2_Adapter_NumberOfAdapters_Get");
+	if (ADL2_Adapter_NumberOfAdapters_Get == NULL)
 	{
-		log_verbose("ERROR: ADL_Adapter_NumberOfAdapters_Get not available!");
+		log_verbose("ERROR: ADL2_Adapter_NumberOfAdapters_Get not available!");
 		return false;
 	}
-	ADL_Adapter_AdapterInfo_Get = (ADL_ADAPTER_ADAPTERINFO_GET)GetProcAddress(hDLL,"ADL_Adapter_AdapterInfo_Get");
-	if (ADL_Adapter_AdapterInfo_Get == NULL)
+	ADL2_Adapter_AdapterInfo_Get = (ADL2_ADAPTER_ADAPTERINFO_GET) (void *) GetProcAddress(hDLL,"ADL2_Adapter_AdapterInfo_Get");
+	if (ADL2_Adapter_AdapterInfo_Get == NULL)
 	{
-		log_verbose("ERROR: ADL_Adapter_AdapterInfo_Get not available!");
+		log_verbose("ERROR: ADL2_Adapter_AdapterInfo_Get not available!");
 		return false;
 	}
-	ADL_Display_DisplayInfo_Get = (ADL_DISPLAY_DISPLAYINFO_GET)GetProcAddress(hDLL,"ADL_Display_DisplayInfo_Get");
-	if (ADL_Display_DisplayInfo_Get == NULL)
+	ADL2_Display_DisplayInfo_Get = (ADL2_DISPLAY_DISPLAYINFO_GET) (void *) GetProcAddress(hDLL,"ADL2_Display_DisplayInfo_Get");
+	if (ADL2_Display_DisplayInfo_Get == NULL)
 	{
-		log_verbose("ERROR: ADL_Display_DisplayInfo_Get not available!");
+		log_verbose("ERROR: ADL2_Display_DisplayInfo_Get not available!");
 		return false;
 	}
-	ADL_Display_ModeTimingOverride_Get = (ADL_DISPLAY_MODETIMINGOVERRIDE_GET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverride_Get");
-	if (ADL_Display_ModeTimingOverride_Get == NULL)
+	ADL2_Display_ModeTimingOverride_Get = (ADL2_DISPLAY_MODETIMINGOVERRIDE_GET) (void *) GetProcAddress(hDLL,"ADL2_Display_ModeTimingOverride_Get");
+	if (ADL2_Display_ModeTimingOverride_Get == NULL)
 	{
-		log_verbose("ERROR: ADL_Display_ModeTimingOverride_Get not available!");
+		log_verbose("ERROR: ADL2_Display_ModeTimingOverride_Get not available!");
 		return false;
 	}
-	ADL_Display_ModeTimingOverride_Set = (ADL_DISPLAY_MODETIMINGOVERRIDE_SET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverride_Set");
-	if (ADL_Display_ModeTimingOverride_Set == NULL)
+	ADL2_Display_ModeTimingOverride_Set = (ADL2_DISPLAY_MODETIMINGOVERRIDE_SET) (void *) GetProcAddress(hDLL,"ADL2_Display_ModeTimingOverride_Set");
+	if (ADL2_Display_ModeTimingOverride_Set == NULL)
 	{
-		log_verbose("ERROR: ADL_Display_ModeTimingOverride_Set not available!");
+		log_verbose("ERROR: ADL2_Display_ModeTimingOverride_Set not available!");
 		return false;
 	}
-	ADL_Display_ModeTimingOverrideList_Get = (ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET)GetProcAddress(hDLL,"ADL_Display_ModeTimingOverrideList_Get");
-	if (ADL_Display_ModeTimingOverrideList_Get == NULL)
+	ADL2_Display_ModeTimingOverrideList_Get = (ADL2_DISPLAY_MODETIMINGOVERRIDELIST_GET) (void *) GetProcAddress(hDLL,"ADL2_Display_ModeTimingOverrideList_Get");
+	if (ADL2_Display_ModeTimingOverrideList_Get == NULL)
 	{
-		log_verbose("ERROR: ADL_Display_ModeTimingOverrideList_Get not available!");
+		log_verbose("ERROR: ADL2_Display_ModeTimingOverrideList_Get not available!");
 		return false;
 	}
 
-	if (!enum_displays(hDLL))
+	ADL2_Flush_Driver_Data = (ADL2_FLUSH_DRIVER_DATA) (void *) GetProcAddress(hDLL,"ADL2_Flush_Driver_Data");
+	if (ADL2_Flush_Driver_Data == NULL)
+	{
+		log_verbose("ERROR: ADL2_Flush_Driver_Data not available!");
+		return false;
+	}
+
+	if (!enum_displays())
 	{
 		log_error("ADL error enumerating displays.\n");
 		return false;
 	}
 
-	get_driver_version(m_device_key);
+	if (!get_device_mapping_from_display_name())
+	{
+		log_error("ADL error mapping display.\n");
+		return false;
+	}
+
+	if (!get_driver_version(m_device_key))
+	{
+		log_error("ADL driver version unknown!.\n");
+	}
+
+	if (!get_timing_list())
+	{
+		log_error("ADL error getting list of timing overrides.\n");
+	}
 
 	log_verbose("ADL functions retrieved successfully.\n");
 	return true;
@@ -123,7 +150,7 @@ bool adl_timing::init()
 
 int adl_timing::open()
 {
-	ADL_MAIN_CONTROL_CREATE ADL_Main_Control_Create;
+	ADL2_MAIN_CONTROL_CREATE ADL2_Main_Control_Create;
 	int ADL_Err = ADL_ERR;
 
 	hDLL = LoadLibraryA("atiadlxx.dll");
@@ -131,9 +158,9 @@ int adl_timing::open()
 
 	if (hDLL != NULL)
 	{
-		ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE)GetProcAddress(hDLL, "ADL_Main_Control_Create");
-		if (ADL_Main_Control_Create != NULL)
-				ADL_Err = ADL_Main_Control_Create(ADL_Main_Memory_Alloc, 1);
+		ADL2_Main_Control_Create = (ADL2_MAIN_CONTROL_CREATE) (void *) GetProcAddress(hDLL, "ADL2_Main_Control_Create");
+		if (ADL2_Main_Control_Create != NULL)
+				ADL_Err = ADL2_Main_Control_Create(ADL_Main_Memory_Alloc, 1, &m_adl);
 	}
 	else
 	{
@@ -149,7 +176,7 @@ int adl_timing::open()
 
 void adl_timing::close()
 {
-	ADL_MAIN_CONTROL_DESTROY ADL_Main_Control_Destroy;
+	ADL2_MAIN_CONTROL_DESTROY ADL2_Main_Control_Destroy;
 
 	log_verbose("ATI/AMD ADL close\n");
 
@@ -159,9 +186,9 @@ void adl_timing::close()
 	ADL_Main_Memory_Free((void **)&lpAdapterInfo);
 	ADL_Main_Memory_Free((void **)&lpAdapter);
 
-	ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY)GetProcAddress(hDLL, "ADL_Main_Control_Destroy");
-	if (ADL_Main_Control_Destroy != NULL)
-		ADL_Main_Control_Destroy();
+	ADL2_Main_Control_Destroy = (ADL2_MAIN_CONTROL_DESTROY) (void *) GetProcAddress(hDLL, "ADL2_Main_Control_Destroy");
+	if (ADL2_Main_Control_Destroy != NULL)
+		ADL2_Main_Control_Destroy(m_adl);
 
 	FreeLibrary(hDLL);
 }
@@ -195,13 +222,13 @@ bool adl_timing::get_driver_version(char *device_key)
 //  adl_timing::enum_displays
 //============================================================
 
-bool adl_timing::enum_displays(HINSTANCE h_dll)
+bool adl_timing::enum_displays()
 {
-	ADL_Adapter_NumberOfAdapters_Get(&iNumberAdapters);
+	ADL2_Adapter_NumberOfAdapters_Get(m_adl, &iNumberAdapters);
 
 	lpAdapterInfo = (LPAdapterInfo)malloc(sizeof(AdapterInfo) * iNumberAdapters);
 	memset(lpAdapterInfo, '\0', sizeof(AdapterInfo) * iNumberAdapters);
-	ADL_Adapter_AdapterInfo_Get(lpAdapterInfo, sizeof(AdapterInfo) * iNumberAdapters);
+	ADL2_Adapter_AdapterInfo_Get(m_adl, lpAdapterInfo, sizeof(AdapterInfo) * iNumberAdapters);
 
 	lpAdapter = (LPAdapterList)malloc(sizeof(AdapterList) * iNumberAdapters);
 	for (int i = 0; i <= iNumberAdapters - 1; i++)
@@ -215,7 +242,7 @@ bool adl_timing::enum_displays(HINSTANCE h_dll)
 
 		// Only get display info from target adapter (this api is very slow!)
 		if (!strcmp(lpAdapter[i].m_display_name, m_display_name))
-			ADL_Display_DisplayInfo_Get(lpAdapter[i].m_index, &lpAdapter[i].m_num_of_displays, &lpAdapter[i].m_display_list, 1);
+			ADL2_Display_DisplayInfo_Get(m_adl, lpAdapter[i].m_index, &lpAdapter[i].m_num_of_displays, &lpAdapter[i].m_display_list, 1);
 	}
 	return true;
 }
@@ -224,7 +251,7 @@ bool adl_timing::enum_displays(HINSTANCE h_dll)
 //  adl_timing::get_device_mapping_from_display_name
 //============================================================
 
-bool adl_timing::get_device_mapping_from_display_name(int *adapter_index, int *display_index)
+bool adl_timing::get_device_mapping_from_display_name()
 {
 	for (int i = 0; i <= iNumberAdapters -1; i++)
 	{
@@ -237,8 +264,8 @@ bool adl_timing::get_device_mapping_from_display_name(int *adapter_index, int *d
 			{
 				if (lpAdapter[i].m_index == display_list[j].displayID.iDisplayLogicalAdapterIndex)
 				{
-					*adapter_index = lpAdapter[i].m_index;
-					*display_index = display_list[j].displayID.iDisplayLogicalIndex;
+					m_adapter_index = lpAdapter[i].m_index;
+					m_display_index = display_list[j].displayID.iDisplayLogicalIndex;
 					return true;
 				}
 			}
@@ -283,13 +310,49 @@ bool adl_timing::display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline
 }
 
 //============================================================
+//  adl_timing::get_timing_list
+//============================================================
+
+bool adl_timing::get_timing_list()
+{
+	if (ADL2_Display_ModeTimingOverrideList_Get(m_adl, m_adapter_index, m_display_index, MAX_MODELINES, adl_mode, &m_num_of_adl_modes) != ADL_OK) return false;
+
+	return true;
+}
+
+//============================================================
+//  adl_timing::get_timing_from_cache
+//============================================================
+
+bool adl_timing::get_timing_from_cache(modeline *m)
+{
+	ADLDisplayModeInfo *mode = 0;
+
+	for (int i = 0; i < m_num_of_adl_modes; i++)
+	{
+		mode = &adl_mode[i];
+		if (mode->iPelsWidth == m->width && mode->iPelsHeight == m->height && mode->iRefreshRate == m->refresh)
+		{
+			if ((m->interlace) && !(mode->sDetailedTiming.sTimingFlags & ADL_DL_TIMINGFLAG_INTERLACED))
+				continue;
+			goto found;
+		}
+	}
+
+	return false;
+
+	found:
+	if (display_mode_info_to_modeline(mode, m))	return true;
+
+	return false;
+}
+
+//============================================================
 //  adl_timing::get_timing
 //============================================================
 
 bool adl_timing::get_timing(modeline *m)
 {
-	int adapter_index = 0;
-	int display_index = 0;
 	ADLDisplayMode mode_in;
 	ADLDisplayModeInfo mode_info_out;
 	modeline m_temp = *m;
@@ -300,18 +363,26 @@ bool adl_timing::get_timing(modeline *m)
 	mode_in.iBitsPerPel       = 32;
 	mode_in.iDisplayFrequency = m->refresh * interlace_factor(m->interlace, 1);
 
-	if (!get_device_mapping_from_display_name(&adapter_index, &display_index)) return false;
-	if (ADL_Display_ModeTimingOverride_Get(adapter_index, display_index, &mode_in, &mode_info_out) != ADL_OK) goto not_found;
+	if (ADL2_Display_ModeTimingOverride_Get(m_adl, m_adapter_index, m_display_index, &mode_in, &mode_info_out) != ADL_OK) goto not_found;
 	if (display_mode_info_to_modeline(&mode_info_out, &m_temp))
 	{
 		if (m_temp.interlace == m->interlace)
 		{
 			memcpy(m, &m_temp, sizeof(modeline));
-			m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL | (!(m->type & MODE_DESKTOP)? V_FREQ_EDITABLE :0);
+			m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
 			return true;
 		}
 	}
+
 	not_found:
+
+	// Try to get timing from our cache (interlaced modes are not properly retrieved by ADL_Display_ModeTimingOverride_Get)
+	if (get_timing_from_cache(m))
+	{
+		m->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
+		return true;
+	}
+
 	return false;
 }
 
@@ -319,16 +390,23 @@ bool adl_timing::get_timing(modeline *m)
 //  adl_timing::set_timing
 //============================================================
 
-bool adl_timing::set_timing(modeline *m, int update_mode)
+bool adl_timing::set_timing(modeline *m)
 {
-	int adapter_index = 0;
-	int display_index = 0;
-	ADLDisplayModeInfo mode_info;
+	return adl_timing::set_timing_override(m, TIMING_UPDATE);
+}
+
+//============================================================
+//  adl_timing::set_timing_override
+//============================================================
+
+bool adl_timing::set_timing_override(modeline *m, int update_mode)
+{
+	ADLDisplayModeInfo mode_info = {};
 	ADLDetailedTiming *dt;
 	modeline m_temp;
 
 	//modeline to ADLDisplayModeInfo
-	mode_info.iTimingStandard   = (update_mode & MODELINE_DELETE)? ADL_DL_MODETIMING_STANDARD_DRIVER_DEFAULT : ADL_DL_MODETIMING_STANDARD_CUSTOM;
+	mode_info.iTimingStandard   = (update_mode & TIMING_DELETE)? ADL_DL_MODETIMING_STANDARD_DRIVER_DEFAULT : ADL_DL_MODETIMING_STANDARD_CUSTOM;
 	mode_info.iPossibleStandard = 0;
 	mode_info.iRefreshRate      = m->refresh * interlace_factor(m->interlace, 0);
 	mode_info.iPelsWidth        = m->width;
@@ -353,12 +431,59 @@ bool adl_timing::set_timing(modeline *m, int update_mode)
 	dt->sVOverscanBottom = 0;
 	dt->sVOverscanTop    = 0;
 
-	if (!get_device_mapping_from_display_name(&adapter_index, &display_index)) return false;
-	if (ADL_Display_ModeTimingOverride_Set(adapter_index, display_index, &mode_info, (update_mode & MODELINE_UPDATE_LIST)? 1 : 0) != ADL_OK) return false;
+	if (ADL2_Display_ModeTimingOverride_Set(m_adl, m_adapter_index, m_display_index, &mode_info, (update_mode & TIMING_UPDATE_LIST)? 1 : 0) != ADL_OK) return false;
+
+	//ADL_Flush_Driver_Data(display_index);
 
 	// read modeline to trigger timing refresh on modded drivers
 	memcpy(&m_temp, m, sizeof(modeline));
-	if (update_mode & MODELINE_UPDATE) get_timing(&m_temp);
+	if (update_mode & TIMING_UPDATE) get_timing(&m_temp);
 
+	return true;
+}
+
+//============================================================
+//  adl_timing::add_mode
+//============================================================
+
+bool adl_timing::add_mode(modeline *mode)
+{
+	if (!set_timing_override(mode, TIMING_UPDATE_LIST))
+	{
+		return false;
+	}
+
+	m_resync.wait();
+	mode->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
+
+	return true;
+}
+
+//============================================================
+//  adl_timing::delete_mode
+//============================================================
+
+bool adl_timing::delete_mode(modeline *mode)
+{
+	if (!set_timing_override(mode, TIMING_DELETE | TIMING_UPDATE_LIST))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+//============================================================
+//  adl_timing::update_mode
+//============================================================
+
+bool adl_timing::update_mode(modeline *mode)
+{
+	if (!set_timing_override(mode, TIMING_UPDATE))
+	{
+		return false;
+	}
+
+	mode->type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
 	return true;
 }

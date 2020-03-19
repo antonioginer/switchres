@@ -13,18 +13,25 @@
 
 #include <stdio.h>
 #include "display_windows.h"
+#include "log.h"
 
-const auto log_verbose = printf;
-const auto log_error = printf;
+
+//============================================================
+//  windows_display::windows_display
+//============================================================
+
+windows_display::windows_display(display_settings *ds)
+{
+	// Get display settings
+	m_ds = *ds;
+}
 
 //============================================================
 //  windows_display::init
 //============================================================
 
-bool windows_display::init(display_settings *ds)
+bool windows_display::init()
 {
-	m_lock_unsupported_modes = ds->lock_unsupported_modes;
-
 	DISPLAY_DEVICEA lpDisplayDevice[DISPLAY_MAX];
 	int idev = 0;
 	int found = -1;
@@ -37,16 +44,16 @@ bool windows_display::init(display_settings *ds)
 		if (EnumDisplayDevicesA(NULL, idev, &lpDisplayDevice[idev], 0) == FALSE)
 			break;
 
-		if ((!strcmp(ds->screen, "auto") && (lpDisplayDevice[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
-			|| !strcmp(ds->screen, lpDisplayDevice[idev].DeviceName))
+		if ((!strcmp(m_ds.screen, "auto") && (lpDisplayDevice[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
+			|| !strcmp(m_ds.screen, lpDisplayDevice[idev].DeviceName))
 			found = idev;
 
 		idev++;
 	}
 	if (found != -1)
 	{
-		strncpy(m_device_name, lpDisplayDevice[found].DeviceName, sizeof(m_device_name));
-		strncpy(m_device_id, lpDisplayDevice[found].DeviceID, sizeof(m_device_id));
+		strncpy(m_device_name, lpDisplayDevice[found].DeviceName, sizeof(m_device_name) -1);
+		strncpy(m_device_id, lpDisplayDevice[found].DeviceID, sizeof(m_device_id) -1);
 		log_verbose("Switchres: %s: %s (%s)\n", m_device_name, lpDisplayDevice[found].DeviceString, m_device_id);
 
 		char *pch;
@@ -78,20 +85,37 @@ bool windows_display::init(display_settings *ds)
 	log_verbose("Switchres: Device key: %s\n", m_device_key);
 	
 	// Initialize custom video
-	modeline user_mode;
-	memset(&user_mode, 0, sizeof(modeline));
-	factory = new custom_video();
-	video = factory->make(m_device_name, m_device_id, &user_mode, 0, m_device_key);
-	if (video) video->init();
+	int method = CUSTOM_VIDEO_TIMING_AUTO;
+
+	if(!strcmp(m_ds.api, "powerstrip"))
+		method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
+
+	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&m_ds.ps_timing : m_device_key;
+
+	set_factory(new custom_video);
+	set_custom_video(factory()->make(m_device_name, m_device_id, method, s_param));
+	if (video()) video()->init();
 
 	// Build our display's mode list
 	video_modes.clear();
+	backup_modes.clear();
 	get_desktop_mode();
 	get_available_video_modes();
+	filter_modes();
 
 	return true;
 }
 
+//============================================================
+//  windows_display::set_mode
+//============================================================
+
+bool windows_display::set_mode(modeline *mode)
+{
+	if (mode) return set_desktop_mode(mode, CDS_FULLSCREEN);
+
+	return false;
+}
 
 //============================================================
 //  windows_display::get_desktop_mode
@@ -119,20 +143,15 @@ bool windows_display::get_desktop_mode()
 
 bool windows_display::set_desktop_mode(modeline *mode, int flags)
 {
-	modeline *backup_mode = video->get_backup_mode();
-	modeline *mode_to_check_interlace = backup_mode->hactive? backup_mode : mode;
-	DEVMODEA lpDevMode;
-
-	get_desktop_mode();
-
 	if (mode)
 	{
+		DEVMODEA lpDevMode;
 		memset(&lpDevMode, 0, sizeof(DEVMODEA));
 		lpDevMode.dmSize = sizeof(DEVMODEA);
 		lpDevMode.dmPelsWidth = mode->type & MODE_ROTATED? mode->height : mode->width;
 		lpDevMode.dmPelsHeight = mode->type & MODE_ROTATED? mode->width : mode->height;
 		lpDevMode.dmDisplayFrequency = (int)mode->refresh;
-		lpDevMode.dmDisplayFlags = mode_to_check_interlace->interlace?DM_INTERLACED:0;
+		lpDevMode.dmDisplayFlags = mode->interlace? DM_INTERLACED : 0;
 		lpDevMode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY | DM_DISPLAYFLAGS;
 
 		if (ChangeDisplaySettingsExA(m_device_name, &lpDevMode, NULL, flags, 0) == DISP_CHANGE_SUCCESSFUL)
@@ -160,7 +179,7 @@ bool windows_display::restore_desktop_mode()
 
 int windows_display::get_available_video_modes()
 {
-	int iModeNum = 0, i = 0, j = 0, k = 1;
+	int iModeNum = 0, j = 0, k = 0;
 	DEVMODEA lpDevMode;
 
 	memset(&lpDevMode, 0, sizeof(DEVMODEA));
@@ -168,7 +187,7 @@ int windows_display::get_available_video_modes()
 
 	log_verbose("Switchres: Searching for custom video modes...\n");
 
-	while (EnumDisplaySettingsExA(m_device_name, iModeNum, &lpDevMode, m_lock_unsupported_modes?0:EDS_RAWMODE) != 0)
+	while (EnumDisplaySettingsExA(m_device_name, iModeNum, &lpDevMode, m_ds.lock_unsupported_modes?0:EDS_RAWMODE) != 0)
 	{
 		if (lpDevMode.dmBitsPerPel == 32 && lpDevMode.dmDisplayFixedOutput == DMDFO_DEFAULT)
 		{
@@ -183,7 +202,7 @@ int windows_display::get_available_video_modes()
 			m.vfreq = m.refresh;
 			m.type |= lpDevMode.dmDisplayOrientation == DMDO_90 || lpDevMode.dmDisplayOrientation == DMDO_270? MODE_ROTATED : MODE_OK;
 
-			for (auto &mode : video_modes) if (mode.width == m.width && mode.height == m.height && mode.refresh == m.refresh) goto found;
+			for (auto &mode : video_modes) if (mode.width == m.width && mode.height == m.height && mode.refresh == m.refresh && m.interlace == mode.interlace) goto found;
 
 			if (m.width == desktop_mode.width && m.height == desktop_mode.height && m.refresh == desktop_mode.refresh)
 			{
@@ -191,15 +210,13 @@ int windows_display::get_available_video_modes()
 				if (m.type & MODE_ROTATED) m_desktop_rotated = true;
 			}
 
-			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s %s: ", k, m.width, m.height, m.refresh, m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
+			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s%s %s: ", k, m.width, m.height, m.refresh, m.interlace?"i":"p", m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
 
-			if (video && video->get_timing(&m))
+			if (video() && video()->get_timing(&m))
 			{
 				j++;
 				if (m.type & MODE_DESKTOP) memcpy(&desktop_mode, &m, sizeof(modeline));
-
-				char modeline_txt[256];
-				log_verbose("%s timing %s\n", video->api_name(), modeline_print(&m, modeline_txt, MS_FULL));
+				log_mode(&m);
 			}
 			else
 			{
@@ -208,6 +225,7 @@ int windows_display::get_available_video_modes()
 			}
 
 			video_modes.push_back(m);
+			backup_modes.push_back(m);
 			k++;
 		}
 		found:

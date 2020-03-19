@@ -115,23 +115,11 @@
 	 9 = 2D memory clock in hertz (if different from 3D)
 	10 = 2D engine clock in hertz (if different from 3D) */
 
-// standard windows headers
 #include <windows.h>
 #include <stdio.h>
 
-// PowerStrip header
 #include "custom_video_pstrip.h"
-
-const auto log_verbose = printf;
-const auto log_info = printf;
-const auto log_error = printf;
-
-//============================================================
-//  GLOBALS
-//============================================================
-
-static HWND hPSWnd;
-static MonitorTiming timing_backup;
+#include "log.h"
 
 //============================================================
 //  CONSTANTS
@@ -159,72 +147,131 @@ static MonitorTiming timing_backup;
 //  pstrip_timing::pstrip_timing
 //============================================================
 
-pstrip_timing::pstrip_timing(char *device_name, modeline *user_mode, char *ps_timing)
+pstrip_timing::pstrip_timing(char *device_name, char *ps_timing)
 {
-	if (ps_init(ps_monitor_index(m_device_name), &m_backup_mode))
-	{
-		m_backup_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
-
-		// If we have a -ps_timing string defined, use it as user defined modeline
-		if (strcmp(ps_timing, "auto"))
-		{
-			MonitorTiming timing;
-			if (ps_read_timing_string(ps_timing, &timing))
-			{
-				ps_pstiming_to_modeline(&timing, &m_user_mode);
-				m_user_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
-				memcpy(user_mode, &m_user_mode, sizeof(modeline));
-
-				char modeline_txt[256]={'\x00'};
-				log_verbose("SwitchRes: ps_string: %s (%s)\n", ps_timing, modeline_print(&m_user_mode, modeline_txt, MS_PARAMS));
-			}
-			else log_verbose("Switchres: ps_timing string with invalid format\n");
-		}
-		//return true;
-	}
+	strcpy (m_device_name, device_name);
+	strcpy (m_ps_timing, ps_timing);
 }
 
 //============================================================
-//  ps_init
+//  pstrip_timing::~pstrip_timing()
 //============================================================
 
-int ps_init(int monitor_index, modeline *modeline)
+pstrip_timing::~pstrip_timing()
 {
+	ps_reset();
+}
+
+//============================================================
+//  pstrip_timing::init
+//============================================================
+
+bool pstrip_timing::init()
+{
+	m_monitor_index = ps_monitor_index(m_device_name);
+
 	hPSWnd = FindWindowA("TPShidden", NULL);
 
 	if (hPSWnd)
 	{
 		log_verbose("PStrip: PowerStrip found!\n");
-		if (ps_get_monitor_timing(monitor_index, &timing_backup) && modeline)
+
+		// Save current settings
+		ps_get_monitor_timing(&m_timing_backup);
+
+		// If we have a -ps_timing string defined, use it as user defined modeline
+		if (strcmp(m_ps_timing, "auto"))
 		{
-			ps_pstiming_to_modeline(&timing_backup, modeline);
-			return 1;
+			MonitorTiming timing;
+			if (ps_read_timing_string(m_ps_timing, &timing))
+			{
+				ps_pstiming_to_modeline(&timing, &m_user_mode);
+				m_user_mode.type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
+
+				char modeline_txt[256]={'\x00'};
+				log_verbose("SwitchRes: ps_string: %s (%s)\n", m_ps_timing, modeline_print(&m_user_mode, modeline_txt, MS_PARAMS));
+			}
+			else
+				log_verbose("Switchres: ps_timing string with invalid format\n");
 		}
 	}
 	else
+	{
 		log_verbose("PStrip: Could not get PowerStrip API interface\n");
+		return false;
+	}
 
-	return 0;
+	return true;
 }
 
 //============================================================
-//  ps_reset
+//  pstrip_timing::get_timing
 //============================================================
 
-int ps_reset(int monitor_index)
+bool pstrip_timing::get_timing(modeline *mode)
 {
-	return ps_set_monitor_timing(monitor_index, &timing_backup);
+	// If we have an user defined mode (ps_timing), lock any non matching mode
+	if (m_user_mode.hactive)
+	{
+		if (mode->width != m_user_mode.width || mode->height != m_user_mode.height)
+		{
+			mode->type |= MODE_DISABLED;
+			return false;
+		}
+	}
+
+	modeline m_temp = {};
+	if (ps_get_modeline(&m_temp))
+	{
+		// We can only get the timings of the current desktop mode, so filter out anything different
+		if (m_temp.width == mode->width && m_temp.height == mode->height && m_temp.refresh == mode->refresh)
+		{
+			*mode = m_temp;
+		}
+		mode->type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
+		return true;
+	}
+
+	return false;
+}
+
+//============================================================
+//  pstrip_timing::set_timing
+//============================================================
+
+bool pstrip_timing::set_timing(modeline *mode)
+{
+	// In case -ps_timing is provided, pass it as raw string
+	if (m_user_mode.hactive)
+		ps_set_monitor_timing_string(m_ps_timing);
+
+	// Otherwise pass it as modeline
+	else
+		ps_set_modeline(mode);
+	
+	Sleep(100);
+	return true;
+}
+
+
+//============================================================
+//  pstrip_timing::ps_reset
+//============================================================
+
+int pstrip_timing::ps_reset()
+{
+	return ps_set_monitor_timing(&m_timing_backup);
 }
 
 //============================================================
 //  ps_get_modeline
 //============================================================
 
-int ps_get_modeline(int monitor_index, modeline *modeline)
+int pstrip_timing::ps_get_modeline(modeline *modeline)
 {
-	MonitorTiming timing = {0};
+	MonitorTiming timing = {};
 
-	if (ps_get_monitor_timing(monitor_index, &timing))
+	if (ps_get_monitor_timing(&timing))
 	{
 		ps_pstiming_to_modeline(&timing, modeline);
 		return 1;
@@ -233,35 +280,35 @@ int ps_get_modeline(int monitor_index, modeline *modeline)
 }
 
 //============================================================
-//  ps_set_modeline
+//  pstrip_timing::ps_set_modeline
 //============================================================
 
-int ps_set_modeline(int monitor_index, modeline *modeline)
+int pstrip_timing::ps_set_modeline(modeline *modeline)
 {
-	MonitorTiming timing = {0};
+	MonitorTiming timing = {};
 
 	ps_modeline_to_pstiming(modeline, &timing);
 
-	timing.PixelClockInKiloHertz = ps_best_pclock(monitor_index, &timing, timing.PixelClockInKiloHertz);
+	timing.PixelClockInKiloHertz = ps_best_pclock(&timing, timing.PixelClockInKiloHertz);
 
-	if (ps_set_monitor_timing(monitor_index, &timing))
+	if (ps_set_monitor_timing(&timing))
 		return 1;
 	else
 		return 0;
 }
 
 //============================================================
-//  ps_get_monitor_timing
+//  pstrip_timing::ps_get_monitor_timing
 //============================================================
 
-int ps_get_monitor_timing(int monitor_index, MonitorTiming *timing)
+int pstrip_timing::ps_get_monitor_timing(MonitorTiming *timing)
 {
 	LRESULT lresult;
 	char in[256];
 
 	if (!hPSWnd) return 0;
 
-	lresult = SendMessage(hPSWnd, UM_GETTIMING, monitor_index, 0);
+	lresult = SendMessage(hPSWnd, UM_GETTIMING, m_monitor_index, 0);
 
 	if (lresult == -1)
 	{
@@ -275,7 +322,7 @@ int ps_get_monitor_timing(int monitor_index, MonitorTiming *timing)
 		return 0;
 	}
 
-	log_verbose("PStrip: ps_get_monitor_timing(%d): %s\n", monitor_index, in);
+	log_verbose("PStrip: ps_get_monitor_timing(%d): %s\n", m_monitor_index, in);
 
 	ps_read_timing_string(in, timing);
 
@@ -285,10 +332,10 @@ int ps_get_monitor_timing(int monitor_index, MonitorTiming *timing)
 }
 
 //============================================================
-//  ps_set_monitor_timing
+//  pstrip_timing::ps_set_monitor_timing
 //============================================================
 
-int ps_set_monitor_timing(int monitor_index, MonitorTiming *timing)
+int pstrip_timing::ps_set_monitor_timing(MonitorTiming *timing)
 {
 	LRESULT lresult;
 	ATOM atom;
@@ -301,7 +348,7 @@ int ps_set_monitor_timing(int monitor_index, MonitorTiming *timing)
 
 	if (atom)
 	{
-		lresult = SendMessage(hPSWnd, UM_SETCUSTOMTIMING, monitor_index, atom);
+		lresult = SendMessage(hPSWnd, UM_SETCUSTOMTIMING, m_monitor_index, atom);
 
 		if (lresult < 0)
 		{
@@ -310,7 +357,7 @@ int ps_set_monitor_timing(int monitor_index, MonitorTiming *timing)
 		}
 		else
 		{
-			log_verbose("PStrip: ps_set_monitor_timing(%d): %s\n", monitor_index, out);
+			log_verbose("PStrip: ps_set_monitor_timing(%d): %s\n", m_monitor_index, out);
 			return 1;
 		}
 	}
@@ -320,29 +367,29 @@ int ps_set_monitor_timing(int monitor_index, MonitorTiming *timing)
 }
 
 //============================================================
-//  ps_set_monitor_timing_string
+//  pstrip_timing::ps_set_monitor_timing_string
 //============================================================
 
-int ps_set_monitor_timing_string(int monitor_index, char *in)
+int pstrip_timing::ps_set_monitor_timing_string(char *in)
 {
 	MonitorTiming timing;
 
 	ps_read_timing_string(in, &timing);
-	return ps_set_monitor_timing(monitor_index, &timing);
+	return ps_set_monitor_timing(&timing);
 }
 
 //============================================================
-//  ps_set_refresh
+//  pstrip_timing::ps_set_refresh
 //============================================================
 
-int ps_set_refresh(int monitor_index, double vfreq)
+int pstrip_timing::ps_set_refresh(double vfreq)
 {
-	MonitorTiming timing = {0};
+	MonitorTiming timing = {};
 	int hht, vvt, new_vvt;
 	int desired_pClock;
 	int best_pClock;
 
-	memcpy(&timing, &timing_backup, sizeof(MonitorTiming));
+	memcpy(&timing, &m_timing_backup, sizeof(MonitorTiming));
 
 	hht = timing.HorizontalActivePixels
 		+ timing.HorizontalFrontPorch
@@ -355,56 +402,56 @@ int ps_set_refresh(int monitor_index, double vfreq)
 		+ timing.VerticalBackPorch;
 
 	desired_pClock = hht * vvt * vfreq / 1000;
-	best_pClock = ps_best_pclock(monitor_index, &timing, desired_pClock);
+	best_pClock = ps_best_pclock(&timing, desired_pClock);
 
 	new_vvt = best_pClock * 1000 / (vfreq * hht);
 
 	timing.VerticalBackPorch += (new_vvt - vvt);
 	timing.PixelClockInKiloHertz = best_pClock;
 
-	ps_set_monitor_timing(monitor_index, &timing);
-	ps_get_monitor_timing(monitor_index, &timing);
+	ps_set_monitor_timing(&timing);
+	ps_get_monitor_timing(&timing);
 
 	return 1;
 }
 
 //============================================================
-//  ps_best_pclock
+//  pstrip_timing::ps_best_pclock
 //============================================================
 
-int ps_best_pclock(int monitor_index, MonitorTiming *timing, int desired_pclock)
+int pstrip_timing::ps_best_pclock(MonitorTiming *timing, int desired_pclock)
 {
 	MonitorTiming timing_read;
 	int best_pclock = 0;
 
-	log_verbose("PStrip: ps_best_pclock(%d), getting stable dotclocks for %d...\n", monitor_index, desired_pclock);
+	log_verbose("PStrip: ps_best_pclock(%d), getting stable dotclocks for %d...\n", m_monitor_index, desired_pclock);
 
 	for (int i = -50; i <= 50; i += 25)
 	{
 		timing->PixelClockInKiloHertz = desired_pclock + i;
 
-		ps_set_monitor_timing(monitor_index, timing);
-		ps_get_monitor_timing(monitor_index, &timing_read);
+		ps_set_monitor_timing(timing);
+		ps_get_monitor_timing(&timing_read);
 
 		if (abs(timing_read.PixelClockInKiloHertz - desired_pclock) < abs(desired_pclock - best_pclock))
 			best_pclock = timing_read.PixelClockInKiloHertz;
 	}
 
-	log_verbose("PStrip: ps_best_pclock(%d), new dotclock: %d\n", monitor_index, best_pclock);
+	log_verbose("PStrip: ps_best_pclock(%d), new dotclock: %d\n", m_monitor_index, best_pclock);
 
 	return best_pclock;
 }
 
 //============================================================
-//  ps_create_resolution
+//  pstrip_timing::ps_create_resolution
 //============================================================
 
-int ps_create_resolution(int monitor_index, modeline *modeline)
+int pstrip_timing::ps_create_resolution(modeline *modeline)
 {
 	LRESULT     lresult;
 	ATOM        atom;
 	char        out[256];
-	MonitorTiming timing = {0};
+	MonitorTiming timing = {};
 
 	if (!hPSWnd) return 0;
 
@@ -415,7 +462,7 @@ int ps_create_resolution(int monitor_index, modeline *modeline)
 
 	if (atom)
 	{
-		lresult = SendMessage(hPSWnd, UM_CREATERESOLUTION, monitor_index, atom);
+		lresult = SendMessage(hPSWnd, UM_CREATERESOLUTION, m_monitor_index, atom);
 
 		if (lresult < 0)
         	{
@@ -425,7 +472,7 @@ int ps_create_resolution(int monitor_index, modeline *modeline)
         	else
         	{
         		log_verbose("PStrip: ps_create_resolution(%d): %dx%d succeded \n",
-        			modeline->width, modeline->height, monitor_index);
+        			modeline->width, modeline->height, m_monitor_index);
         		return 1;
         	}
         }
@@ -435,10 +482,10 @@ int ps_create_resolution(int monitor_index, modeline *modeline)
 }
 
 //============================================================
-//  ps_read_timing_string
+//  pstrip_timing::ps_read_timing_string
 //============================================================
 
-bool ps_read_timing_string(char *in, MonitorTiming *timing)
+bool pstrip_timing::ps_read_timing_string(char *in, MonitorTiming *timing)
 {
 	if (sscanf(in,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
 		&timing->HorizontalActivePixels,
@@ -456,10 +503,10 @@ bool ps_read_timing_string(char *in, MonitorTiming *timing)
 }
 
 //============================================================
-//  ps_fill_timing_string
+//  pstrip_timing::ps_fill_timing_string
 //============================================================
 
-void ps_fill_timing_string(char *out, MonitorTiming *timing)
+void pstrip_timing::ps_fill_timing_string(char *out, MonitorTiming *timing)
 {
 	sprintf(out, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
 		timing->HorizontalActivePixels,
@@ -475,10 +522,10 @@ void ps_fill_timing_string(char *out, MonitorTiming *timing)
 }
 
 //============================================================
-//  ps_modeline_to_pstiming
+//  pstrip_timing::ps_modeline_to_pstiming
 //============================================================
 
-int ps_modeline_to_pstiming(modeline *modeline, MonitorTiming *timing)
+int pstrip_timing::ps_modeline_to_pstiming(modeline *modeline, MonitorTiming *timing)
 {
 	timing->HorizontalActivePixels = modeline->hactive;
 	timing->HorizontalFrontPorch = modeline->hbegin - modeline->hactive;
@@ -503,10 +550,10 @@ int ps_modeline_to_pstiming(modeline *modeline, MonitorTiming *timing)
 }
 
 //============================================================
-//  ps_pstiming_to_modeline
+//  pstrip_timing::ps_pstiming_to_modeline
 //============================================================
 
-int ps_pstiming_to_modeline(MonitorTiming *timing, modeline *modeline)
+int pstrip_timing::ps_pstiming_to_modeline(MonitorTiming *timing, modeline *modeline)
 {
 	modeline->hactive = timing->HorizontalActivePixels;
 	modeline->hbegin = modeline->hactive + timing->HorizontalFrontPorch;
@@ -534,15 +581,16 @@ int ps_pstiming_to_modeline(MonitorTiming *timing, modeline *modeline)
 
 	modeline->hfreq = modeline->pclock / modeline->htotal;
 	modeline->vfreq = modeline->hfreq / modeline->vtotal * (modeline->interlace?2:1);
+	modeline->refresh = int(modeline->vfreq);
 
 	return 0;
 }
 
 //============================================================
-//  ps_monitor_index
+//  pstrip_timing::ps_monitor_index
 //============================================================
 
-int ps_monitor_index (const char *display_name)
+int pstrip_timing::ps_monitor_index (const char *display_name)
 {
 	int monitor_index = 0;
 	char sub_index[2];
@@ -553,4 +601,19 @@ int ps_monitor_index (const char *display_name)
 		monitor_index --;
 
 	return monitor_index;
+}
+
+//============================================================
+//  pstrip_timing::update_mode
+//============================================================
+
+bool pstrip_timing::update_mode(modeline *mode)
+{
+	if (!set_timing(mode))
+	{
+		return false;
+	}
+
+	mode->type |= CUSTOM_VIDEO_TIMING_POWERSTRIP;
+	return true;
 }

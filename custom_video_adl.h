@@ -11,7 +11,9 @@
 
  **************************************************************/
 
+#include <windows.h>
 #include "custom_video.h"
+#include "resync_windows.h"
 
 //	Constants and structures ported from AMD ADL SDK files
 
@@ -124,43 +126,59 @@ typedef struct AdapterList
 } AdapterList, *LPAdapterList;
 
 
+typedef void* ADL_CONTEXT_HANDLE;
 typedef void* (__stdcall *ADL_MAIN_MALLOC_CALLBACK)(int);
-typedef int (*ADL_MAIN_CONTROL_CREATE)(ADL_MAIN_MALLOC_CALLBACK, int);
-typedef int (*ADL_MAIN_CONTROL_DESTROY)();
-typedef int (*ADL_ADAPTER_NUMBEROFADAPTERS_GET) (int*);
-typedef int (*ADL_ADAPTER_ADAPTERINFO_GET) (LPAdapterInfo, int);
-typedef int (*ADL_DISPLAY_DISPLAYINFO_GET) (int, int *, ADLDisplayInfo **, int);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_GET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayMode *lpModeIn, ADLDisplayModeInfo *lpModeInfoOut);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDE_SET) (int iAdapterIndex, int iDisplayIndex, ADLDisplayModeInfo *lpMode, int iForceUpdate);
-typedef int (*ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET) (int iAdapterIndex, int iDisplayIndex, int iMaxNumOfOverrides, ADLDisplayModeInfo *lpModeInfoList, int *lpNumOfOverrides);
+typedef int (*ADL2_MAIN_CONTROL_CREATE)(ADL_MAIN_MALLOC_CALLBACK, int, 	ADL_CONTEXT_HANDLE *);
+typedef int (*ADL2_MAIN_CONTROL_DESTROY)(ADL_CONTEXT_HANDLE);
+typedef int (*ADL2_ADAPTER_NUMBEROFADAPTERS_GET) (ADL_CONTEXT_HANDLE, int*);
+typedef int (*ADL2_ADAPTER_ADAPTERINFO_GET) (ADL_CONTEXT_HANDLE, LPAdapterInfo, int);
+typedef int (*ADL2_DISPLAY_DISPLAYINFO_GET) (ADL_CONTEXT_HANDLE, int, int *, ADLDisplayInfo **, int);
+typedef int (*ADL2_DISPLAY_MODETIMINGOVERRIDE_GET) (ADL_CONTEXT_HANDLE, int iAdapterIndex, int iDisplayIndex, ADLDisplayMode *lpModeIn, ADLDisplayModeInfo *lpModeInfoOut);
+typedef int (*ADL2_DISPLAY_MODETIMINGOVERRIDE_SET) (ADL_CONTEXT_HANDLE, int iAdapterIndex, int iDisplayIndex, ADLDisplayModeInfo *lpMode, int iForceUpdate);
+typedef int (*ADL2_DISPLAY_MODETIMINGOVERRIDELIST_GET) (ADL_CONTEXT_HANDLE, int iAdapterIndex, int iDisplayIndex, int iMaxNumOfOverrides, ADLDisplayModeInfo *lpModeInfoList, int *lpNumOfOverrides);
+typedef int (*ADL2_FLUSH_DRIVER_DATA) (ADL_CONTEXT_HANDLE, int iAdapterIndex);
 
 
 class adl_timing : public custom_video
 {
 	public:
 		adl_timing(char *display_name, char *device_key);
-		virtual const char *api_name() { return "ATI ADL"; }
-		virtual bool init();
-		virtual void close();
-		virtual bool get_timing(modeline *m);
-		virtual bool set_timing(modeline *m, int update_mode);
+		~adl_timing();
+		const char *api_name() { return "AMD ADL"; }
+		bool init();
+		void close();
+		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_ADD; }
+
+		bool add_mode(modeline *mode);
+		bool delete_mode(modeline *mode);
+		bool update_mode(modeline *mode);
+
+		bool get_timing(modeline *m);
+		bool set_timing(modeline *m);
 
 	private:
 		int open();
 		bool get_driver_version(char *device_key);
-		bool enum_displays(HINSTANCE h_dll);
-		bool get_device_mapping_from_display_name(int *adapter_index, int *display_index);
+		bool enum_displays();
+		bool get_device_mapping_from_display_name();
 		bool display_mode_info_to_modeline(ADLDisplayModeInfo *dmi, modeline *m);
+		bool get_timing_list();
+		bool get_timing_from_cache(modeline *m);
+		bool set_timing_override(modeline *m, int update_mode);
 
 		char m_display_name[32];
 		char m_device_key[128];
 
-		ADL_ADAPTER_NUMBEROFADAPTERS_GET        ADL_Adapter_NumberOfAdapters_Get;
-		ADL_ADAPTER_ADAPTERINFO_GET             ADL_Adapter_AdapterInfo_Get;
-		ADL_DISPLAY_DISPLAYINFO_GET             ADL_Display_DisplayInfo_Get;
-		ADL_DISPLAY_MODETIMINGOVERRIDE_GET      ADL_Display_ModeTimingOverride_Get;
-		ADL_DISPLAY_MODETIMINGOVERRIDE_SET      ADL_Display_ModeTimingOverride_Set;
-		ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET  ADL_Display_ModeTimingOverrideList_Get;
+		int m_adapter_index = 0;
+		int m_display_index = 0;
+
+		ADL2_ADAPTER_NUMBEROFADAPTERS_GET        ADL2_Adapter_NumberOfAdapters_Get;
+		ADL2_ADAPTER_ADAPTERINFO_GET             ADL2_Adapter_AdapterInfo_Get;
+		ADL2_DISPLAY_DISPLAYINFO_GET             ADL2_Display_DisplayInfo_Get;
+		ADL2_DISPLAY_MODETIMINGOVERRIDE_GET      ADL2_Display_ModeTimingOverride_Get;
+		ADL2_DISPLAY_MODETIMINGOVERRIDE_SET      ADL2_Display_ModeTimingOverride_Set;
+		ADL2_DISPLAY_MODETIMINGOVERRIDELIST_GET  ADL2_Display_ModeTimingOverrideList_Get;
+		ADL2_FLUSH_DRIVER_DATA                   ADL2_Flush_Driver_Data;
 
 		HINSTANCE hDLL;
 		LPAdapterInfo lpAdapterInfo = NULL;
@@ -168,6 +186,12 @@ class adl_timing : public custom_video
 		int iNumberAdapters;
 		int cat_version;
 		int sub_version;
+
+		ADL_CONTEXT_HANDLE m_adl = 0;
+		ADLDisplayModeInfo adl_mode[MAX_MODELINES];
+		int m_num_of_adl_modes = 0;
+
+		resync_handler m_resync;
 
 		int invert_pol(bool on_read) { return ((cat_version <= 12) || (cat_version >= 15 && on_read)); }
 		int interlace_factor(bool interlace, bool on_read) { return interlace && ((cat_version <= 12) || (cat_version >= 15 && on_read))? 2 : 1; }

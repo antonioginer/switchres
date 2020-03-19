@@ -41,29 +41,42 @@ typedef struct
 	} TimingFlags;
 } MonitorTiming;
 
-//============================================================
-//  PROTOTYPES
-//============================================================
-
-int ps_init(int monitor_index, modeline *modeline);
-int ps_reset(int monitor_index);
-int ps_get_modeline(int monitor_index, modeline *modeline);
-int ps_set_modeline(int monitor_index, modeline *modeline);
-int ps_get_monitor_timing(int monitor_index, MonitorTiming *timing);
-int ps_set_monitor_timing(int monitor_index, MonitorTiming *timing);
-int ps_set_monitor_timing_string(int monitor_index, char *in);
-int ps_set_refresh(int monitor_index, double vfreq);
-int ps_best_pclock(int monitor_index, MonitorTiming *timing, int desired_pclock);
-int ps_create_resolution(int monitor_index, modeline *modeline);
-bool ps_read_timing_string(char *in, MonitorTiming *timing);
-void ps_fill_timing_string(char *out, MonitorTiming *timing);
-int ps_modeline_to_pstiming(modeline *modeline, MonitorTiming *timing);
-int ps_pstiming_to_modeline(MonitorTiming *timing, modeline *modeline);
-int ps_monitor_index (const char *display_name);
-
 
 class pstrip_timing : public custom_video
 {
 	public:
-		pstrip_timing(char *device_name, modeline *user_mode, char *ps_timing);
+		pstrip_timing(char *device_name, char *ps_timing);
+		~pstrip_timing();
+		const char *api_name() { return "PowerStrip"; }
+		bool init();
+		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_SCAN_EDITABLE | CUSTOM_VIDEO_CAPS_DESKTOP_EDITABLE; }
+
+		bool update_mode(modeline *mode);
+
+		bool get_timing(modeline *mode);
+		bool set_timing(modeline *m);
+
+	private:
+
+		int ps_reset();
+		int ps_get_modeline(modeline *modeline);
+		int ps_set_modeline(modeline *modeline);
+		int ps_get_monitor_timing(MonitorTiming *timing);
+		int ps_set_monitor_timing(MonitorTiming *timing);
+		int ps_set_monitor_timing_string(char *in);
+		int ps_set_refresh(double vfreq);
+		int ps_best_pclock(MonitorTiming *timing, int desired_pclock);
+		int ps_create_resolution(modeline *modeline);
+		bool ps_read_timing_string(char *in, MonitorTiming *timing);
+		void ps_fill_timing_string(char *out, MonitorTiming *timing);
+		int ps_modeline_to_pstiming(modeline *modeline, MonitorTiming *timing);
+		int ps_pstiming_to_modeline(MonitorTiming *timing, modeline *modeline);
+		int ps_monitor_index (const char *display_name);
+
+		char m_device_name[32];
+		char m_ps_timing[256];
+		int m_monitor_index = 0;
+		modeline m_user_mode = {};
+		MonitorTiming m_timing_backup;
+		HWND hPSWnd;
 };

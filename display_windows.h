@@ -26,8 +26,10 @@
 class windows_display : public display_manager
 {
 	public:
-		windows_display() {};
-		bool init(display_settings *ds);
+		windows_display(display_settings *ds);
+		~windows_display() {};
+		bool init();
+		bool set_mode(modeline *mode);
 
 	private:
 		bool get_desktop_mode();

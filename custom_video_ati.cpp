@@ -13,10 +13,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "custom_video_ati.h"
-
-const auto log_verbose = printf;
-const auto log_info = printf;
-const auto log_error = printf;
+#include "log.h"
 
 
 //============================================================
@@ -95,7 +92,7 @@ bool ati_timing::get_timing(modeline *mode)
 			mode->hfreq = mode->pclock / mode->htotal;
 			mode->vfreq = mode->hfreq / mode->vtotal * (mode->interlace?2:1);
 			mode->refresh_label = refresh_label;
-			mode->type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY | (!(mode->type & MODE_DESKTOP)? V_FREQ_EDITABLE | (mode->width == DUMMY_WIDTH? X_RES_EDITABLE:0):0);
+			mode->type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY;
 
 			int checksum = 65535 - get_DWORD(0, lp_data) - mode->htotal - mode->hactive - mode->hend
 						- mode->vtotal - mode->vactive - mode->vend - mode->pclock/10000;
@@ -162,6 +159,23 @@ bool ati_timing::set_timing(modeline *mode)
 
 	log_info("Failed updating registry entry for mode.\n");
 	return 0;
+}
+
+//============================================================
+//  ati_timing::update_mode
+//============================================================
+
+bool ati_timing::update_mode(modeline *mode)
+{
+	if (!set_timing(mode))
+		return false;
+
+	mode->type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY;
+
+	// ATI needs a call to EnumDisplaySettings to refresh timings
+	refresh_timings();
+
+	return true;
 }
 
 //============================================================

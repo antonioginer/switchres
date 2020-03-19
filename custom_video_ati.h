@@ -11,6 +11,7 @@
 
  **************************************************************/
 
+#include <windows.h>
 #include "custom_video.h"
 
 #define CRTC_DOUBLE_SCAN                    0x0001
@@ -22,8 +23,12 @@ class ati_timing : public custom_video
 {
 	public:
 		ati_timing(char *device_name, char *device_key);
-		virtual const char *api_name() { return "ATI Legacy"; }
+		~ati_timing() {};
+		const char *api_name() { return "ATI Legacy"; }
 		bool init();
+		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_SCAN_EDITABLE; }
+
+		bool update_mode(modeline *mode);
 
 		bool get_timing(modeline *mode);
 		bool set_timing(modeline *mode);
