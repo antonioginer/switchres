@@ -17,7 +17,6 @@
 #if defined(_WIN32)
 #include "display_windows.h"
 #elif defined(__linux__)
-#include <string.h>
 #include "display_linux.h"
 #endif
 #include "log.h"
