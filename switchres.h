@@ -4,10 +4,11 @@
 
    ---------------------------------------------------------
 
-   SwitchRes   Modeline generation engine for emulation
+   Switchres   Modeline generation engine for emulation
 
    License     GPL-2.0+
-   Copyright   2010-2016 - Chris Kennedy, Antonio Giner
+   Copyright   2010-2020 Chris Kennedy, Antonio Giner,
+	                     Alexandre Wodarczyk, Gil Delescluse
 
  **************************************************************/
 
@@ -23,7 +24,7 @@
 //  CONSTANTS
 //============================================================
 
-#define SWITCHRES_VERSION "1.00"
+#define SWITCHRES_VERSION "2.00"
 
 //============================================================
 //  TYPE DEFINITIONS
@@ -40,10 +41,7 @@ class switchres_manager
 public:
 
 	switchres_manager();
-	~switchres_manager()
-	{
-		if (m_display_factory) delete m_display_factory;
-	};
+	~switchres_manager();
 
 	// getters
 	display_manager *display() const { return displays[0]; }

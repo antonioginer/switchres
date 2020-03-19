@@ -7,7 +7,8 @@
    Switchres   Modeline generation engine for emulation
 
    License     GPL-2.0+
-   Copyright   2010-2020 - Chris Kennedy, Antonio Giner
+   Copyright   2010-2020 Chris Kennedy, Antonio Giner,
+	                     Alexandre Wodarczyk, Gil Delescluse
 
  **************************************************************/
 
@@ -100,6 +101,18 @@ switchres_manager::switchres_manager()
 	// Create our display manager
 	m_display_factory = new display_manager();
 }
+
+//============================================================
+//  switchres_manager::~switchres_manager
+//============================================================
+
+switchres_manager::~switchres_manager()
+{
+	if (m_display_factory) delete m_display_factory;
+
+	for (auto &display : displays)
+		delete display;
+};
 
 //============================================================
 //  switchres_manager::add_display

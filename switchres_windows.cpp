@@ -6,11 +6,9 @@
 
    SwitchRes   Modeline generation engine for emulation
 
-   GroovyMAME  Integration of SwitchRes into the MAME project
-               Some reworked patches from SailorSat's CabMAME
-
    License     GPL-2.0+
-   Copyright   2010-2016 - Chris Kennedy, Antonio Giner
+   Copyright   2010-2020 Chris Kennedy, Antonio Giner,
+                         Alexandre Wodarczyk, Gil Delescluse
 
  **************************************************************/
 
