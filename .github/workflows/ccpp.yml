@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: install dependencies
-      run: sudo apt-get install libxrandr-dev
+      run: sudo apt-get install libxrandr-dev libdrm-dev
     - name: make
       run: make
     - name: Upload artifact
@@ -22,7 +22,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: install dependencies
-      run: sudo apt-get install libxrandr-dev
+      run: sudo apt-get install libxrandr-dev libdrm-dev
     - name: make
       run: make libswitchres
     - name: Prepare artifacts
