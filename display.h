@@ -61,7 +61,7 @@ public:
 	modeline user_mode() const { return m_user_mode; }
 	modeline *best_mode() const { return m_best_mode; }
 	bool desktop_is_rotated() const { return m_desktop_is_rotated; }
-	bool monitor_rotateds_cw() const { return m_monitor_rotates_cw; }
+	bool monitor_rotates_cw() const { return m_monitor_rotates_cw; }
 	bool rotation() const { return m_ds.gs.rotation; }
 
 	// setters
