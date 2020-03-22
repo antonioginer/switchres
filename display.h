@@ -62,7 +62,29 @@ public:
 	modeline *best_mode() const { return m_best_mode; }
 	bool desktop_is_rotated() const { return m_desktop_is_rotated; }
 	bool monitor_rotates_cw() const { return m_monitor_rotates_cw; }
-	bool rotation() const { return m_ds.gs.rotation; }
+
+	// getters (display manager)
+	const char *set_monitor() { return (const char*) &m_ds.monitor; }
+	const char *orientation() { return (const char*) &m_ds.orientation; }
+	const char *user_modeline() { return (const char*) &m_ds.modeline; }
+	const char *crt_range(int i) { return (const char*) &m_ds.crt_range[i]; }
+	const char *lcd_range() { return (const char*) &m_ds.lcd_range; }
+	const char *screen() { return (const char*) &m_ds.screen; }
+	const char *api() { return (const char*) &m_ds.api; }
+	bool modeline_generation() { return m_ds.modeline_generation; }
+	bool lock_unsupported_modes() { return m_ds.lock_unsupported_modes; }
+	bool lock_system_modes() { return m_ds.lock_system_modes; }
+	bool refresh_dont_care() { return m_ds.refresh_dont_care; }
+	const char *ps_timing() { return (const char*) &m_ds.ps_timing; }
+
+	// getters (modeline generator)
+	bool interlace() { return m_ds.gs.interlace; }
+	bool doublescan() { return m_ds.gs.doublescan; }
+	double dotclock_min() { return m_ds.gs.pclock_min; }
+	double refresh_tolerance() { return m_ds.gs.refresh_tolerance; }
+	int super_width() { return m_ds.gs.super_width; }
+	bool rotation() { return m_ds.gs.rotation; }
+	double monitor_aspect() { return m_ds.gs.monitor_aspect; }
 
 	// setters
 	void set_factory(custom_video *factory) { m_factory = factory; }
