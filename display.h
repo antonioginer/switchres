@@ -34,7 +34,6 @@ typedef struct display_settings
 	char   modeline[256];
 	char   crt_range[MAX_RANGES][256];
 	char   lcd_range[256];
-	bool   monitor_rotates_cw;
 
 	generator_settings gs;
 } display_settings;
@@ -61,19 +60,23 @@ public:
 	custom_video *video() const { return m_video; }
 	modeline user_mode() const { return m_user_mode; }
 	modeline *best_mode() const { return m_best_mode; }
-	bool desktop_is_rotated() const { return m_desktop_rotated; }
+	bool desktop_is_rotated() const { return m_desktop_is_rotated; }
+	bool monitor_rotateds_cw() const { return m_monitor_rotates_cw; }
+	bool rotation() const { return m_ds.gs.rotation; }
 
 	// setters
-	void set_user_mode(modeline *mode) { m_user_mode = *mode; }
 	void set_factory(custom_video *factory) { m_factory = factory; }
 	void set_custom_video(custom_video *video) { m_video = video; }
+	void set_user_mode(modeline *mode) { m_user_mode = *mode; }
+	void set_desktop_is_rotated(bool value) { m_desktop_is_rotated = value; }
+	void set_monitor_rotates_cw(bool value) { m_monitor_rotates_cw = value; }
+	void set_rotation(bool value) { m_ds.gs.rotation = value; }
 
 	// options
 	display_settings m_ds = {};
-	bool m_desktop_rotated;
 
 	// mode setting interface
-	modeline *get_mode(int width, int height, float refresh, bool interlaced, bool rotated);
+	modeline *get_mode(int width, int height, float refresh, bool interlaced);
 	bool add_mode(modeline *mode);
 	bool delete_mode(modeline *mode);
 	bool update_mode(modeline *mode);
@@ -100,6 +103,9 @@ private:
 
 	modeline m_user_mode = {};
 	modeline *m_best_mode = 0;
+
+	bool m_desktop_is_rotated;
+	bool m_monitor_rotates_cw;
 };
 
 #endif
