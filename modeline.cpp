@@ -118,7 +118,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 
 				// we penalize for the logical lines we need to add in order to meet the user's lower active lines limit
 				int y_min = interlace == 2?range->interlaced_lines_min:range->progressive_lines_min;
-				int tot_rest = (y_min >= y_source_scaled)? y_min % y_source_scaled:0;
+				int tot_rest = (y_min >= y_source_scaled / doublescan)? y_min % int(y_source_scaled / doublescan):0;
 				y_diff += double(tot_rest) / tot_yres * 100;
 			}
 			else
