@@ -61,7 +61,6 @@ public:
 	modeline user_mode() const { return m_user_mode; }
 	modeline *best_mode() const { return m_best_mode; }
 	bool desktop_is_rotated() const { return m_desktop_is_rotated; }
-	bool monitor_rotates_cw() const { return m_monitor_rotates_cw; }
 
 	// getters (display manager)
 	const char *set_monitor() { return (const char*) &m_ds.monitor; }
@@ -91,8 +90,8 @@ public:
 	void set_custom_video(custom_video *video) { m_video = video; }
 	void set_user_mode(modeline *mode) { m_user_mode = *mode; filter_modes(); }
 	void set_desktop_is_rotated(bool value) { m_desktop_is_rotated = value; }
-	void set_monitor_rotates_cw(bool value) { m_monitor_rotates_cw = value; }
 	void set_rotation(bool value) { m_ds.gs.rotation = value; }
+	void set_monitor_aspect(float aspect) { m_ds.gs.monitor_aspect = aspect; }
 
 	// options
 	display_settings m_ds = {};
@@ -127,7 +126,6 @@ private:
 	modeline *m_best_mode = 0;
 
 	bool m_desktop_is_rotated = 0;
-	bool m_monitor_rotates_cw = 0;
 };
 
 #endif
