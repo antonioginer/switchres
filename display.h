@@ -89,7 +89,7 @@ public:
 	// setters
 	void set_factory(custom_video *factory) { m_factory = factory; }
 	void set_custom_video(custom_video *video) { m_video = video; }
-	void set_user_mode(modeline *mode) { m_user_mode = *mode; }
+	void set_user_mode(modeline *mode) { m_user_mode = *mode; filter_modes(); }
 	void set_desktop_is_rotated(bool value) { m_desktop_is_rotated = value; }
 	void set_monitor_rotates_cw(bool value) { m_monitor_rotates_cw = value; }
 	void set_rotation(bool value) { m_ds.gs.rotation = value; }
