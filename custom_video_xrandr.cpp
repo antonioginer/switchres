@@ -567,11 +567,6 @@ bool xrandr_timing::set_timing(modeline *mode)
 	unsigned int width=0;
 	unsigned int height=0;
 
-	int x_offset = pxmode->width - crtc_info->width;
-	int y_offset = pxmode->height - crtc_info->height;
-	int bound_width = crtc_info->x + crtc_info->width;
-	int bound_height = crtc_info->y + crtc_info->height;
-
 	XRRCrtcInfo *global_crtc = new XRRCrtcInfo[resources->ncrtc];
 
 	// caculate necessary screen size and replace the crtc neighbors if they have at least one side aligned with the mode changed crtc 
@@ -597,16 +592,16 @@ bool xrandr_timing::set_timing(modeline *mode)
 			//log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> neighborhood original crtc %d: %04lx %dx%d+%d+%d\n", this, m_desktop_output, c, crtc_info2->mode, crtc_info2->width, crtc_info2->height, crtc_info2->x, crtc_info2->y); // to be deleted in final version
 
 			// relocate crtc impacted by new width
-			if (crtc_info2->x >= bound_width)
+			if (crtc_info2->x >= crtc_info->x + crtc_info->width)
 			{
-				crtc_info2->x += x_offset;
+				crtc_info2->x += pxmode->width - crtc_info->width;
 				crtc_info2->timestamp = 1;
 			}
 
 			// relocate crtc impacted by new  height
-			if (crtc_info2->y >= bound_height)
+			if (crtc_info2->y >= crtc_info->y + crtc_info->height)
 			{
-				crtc_info2->y += y_offset;
+				crtc_info2->y += pxmode->height - crtc_info->height;
 				crtc_info2->timestamp = 1;
 			}
 
