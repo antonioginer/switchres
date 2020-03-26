@@ -25,7 +25,6 @@ class xrandr_timing : public custom_video
 		const char *api_name() { return "XRANDR"; }
 		int caps() { return CUSTOM_VIDEO_CAPS_ADD; }
 		bool init();
-		bool is_available();
 
 		bool add_mode(modeline *mode);
 		bool delete_mode(modeline *mode);

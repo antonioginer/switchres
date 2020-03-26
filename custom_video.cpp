@@ -78,15 +78,15 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 #elif defined(__linux__)
 	if (method == CUSTOM_VIDEO_TIMING_XRANDR || method == 0)
 	{
-		m_custom_video = new xrandr_timing(device_name, s_param);
+		try 
+		{
+			m_custom_video = new xrandr_timing(device_name, s_param);
+		} 
+		catch (...) {};
 		if (m_custom_video)
 		{
-			if (m_custom_video->is_available())
-			{
-			log_info(" **************************** X is available.\n");
-				m_custom_method = CUSTOM_VIDEO_TIMING_XRANDR;
-				return m_custom_video;
-			}
+			m_custom_method = CUSTOM_VIDEO_TIMING_XRANDR;
+			return m_custom_video;
 		}
 	}
 

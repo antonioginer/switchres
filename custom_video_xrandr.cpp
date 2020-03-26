@@ -17,6 +17,10 @@
 #include "custom_video_xrandr.h"
 #include "log.h"
 
+//============================================================
+//  library functions
+//============================================================
+
 #define XRRAddOutputMode p_XRRAddOutputMode
 #define XRRConfigCurrentConfiguration p_XRRConfigCurrentConfiguration
 #define XRRCreateMode p_XRRCreateMode
@@ -74,11 +78,37 @@ xrandr_timing::xrandr_timing(char *device_name, char *param)
 	if ((strlen(device_name)+1) > 32)
 	{
 		strncpy(m_device_name, device_name, 31);
-		log_error("XRANDR: <%p,%d> (xrandr_timing) [ERROR] the devine name is too long it has been trucated to %s\n", this, m_desktop_output,m_device_name);
+		log_error("XRANDR: <%p,%d> (xrandr_timing) [ERROR] the device name is too long it has been trucated to %s\n", this, m_desktop_output, m_device_name);
 	} else {
 		strcpy(m_device_name, device_name);
 	}
+
+	log_verbose("XRANDR: <%p,%d> (xrandr_timing) loading X11 library (early stub)\n", this, m_desktop_output);
+
+	m_x11_handle = dlopen ("libX11.so", RTLD_NOW);
+
+	if (m_x11_handle)
+	{
+		p_XOpenDisplay = (__typeof__(XOpenDisplay))dlsym(m_x11_handle,"XOpenDisplay");
+		if (p_XOpenDisplay == NULL)
+		{
+			log_error("XRANDR: <%p,%d> (xrandr_timing) [ERROR] missing func %s in %s\n", this, m_desktop_output , "XOpenDisplay", "X11_LIBRARY");
+			throw new std::exception();
+		}
+		else
+		{
+			if (!XOpenDisplay(NULL))
+			{
+				log_verbose("XRANDR: <%p,%d> (xrandr_timing) X server not found\n", this, m_desktop_output);
+				throw new std::exception();
+			}
+		}
+	} else {
+		log_error("XRANDR: <%p,%d> (xrandr_timing) [ERROR] missing %s library\n", this, m_desktop_output, "X11_LIBRARY");
+		throw new std::exception();
+	}
 }
+
 //============================================================
 //  xrandr_timing::~xrandr_timing
 //============================================================
@@ -97,42 +127,6 @@ xrandr_timing::~xrandr_timing()
 	if (m_x11_handle)
 		dlclose(m_x11_handle);
 
-}
-
-//============================================================
-//  xrandr_timing::is_available
-//============================================================
-
-bool xrandr_timing::is_available()
-{
-	log_verbose("XRANDR: <%p,%d> (is_available) loading X11 library (early stub)\n", this, m_desktop_output);
-
-	if (!m_x11_handle)
-		m_x11_handle = dlopen ("libX11.so", RTLD_NOW);
-
-	if (m_x11_handle)
-	{
-		p_XOpenDisplay = (__typeof__(XOpenDisplay))dlsym(m_x11_handle,"XOpenDisplay");
-		if (p_XOpenDisplay == NULL)
-		{
-			log_error("XRANDR: <%p,%d> (is_available) [ERROR] missing func %s in %s\n", this, m_desktop_output, "XOpenDisplay", "X11_LIBRARY");
-			return false;
-		}
-	} else {
-		log_error("XRANDR: <%p,%d> (is_available) [ERROR] missing %s library\n", this, m_desktop_output, "X11_LIBRARY");
-		return false;
-	}
-
-	if (!m_pdisplay)
-		m_pdisplay = XOpenDisplay(NULL);
-
-	if (!m_pdisplay)
-	{
-		log_verbose("XRANDR: <%p,%d> (is_available) X server not found\n", this, m_desktop_output);
-		return false;
-	}
-
-	return true;
 }
 
 //============================================================
@@ -363,42 +357,45 @@ bool xrandr_timing::init()
 		{
 			XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[o]);
 			if (!output_info)
-				log_error("XRANDR: <%p,%d> (init) [ERROR] could not get output 0x%x information\n", this, m_desktop_output, (uint) resources->outputs[o]);
-
-			// Check all connected output
-			log_verbose("XRANDR: <%p,%d> (init) check output connector '%s' active %d crtc %d\n", this, m_desktop_output, output_info->name, output_info->connection == RR_Connected?1:0, output_info->crtc?1:0);
-			if (m_desktop_output == -1 && output_info->connection == RR_Connected && output_info->crtc)
 			{
-				if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name,output_info->name) || output_position == screen_pos)
+				log_error("XRANDR: <%p,%d> (init) [ERROR] could not get output 0x%x information\n", this, m_desktop_output, (unsigned int) resources->outputs[o]);
+			}
+			else
+			{
+				// Check all connected output
+				if (m_desktop_output == -1 && output_info->connection == RR_Connected && output_info->crtc)
 				{
-					// store the output connector
-					m_desktop_output = o;
-					log_verbose("XRANDR: <%p,%d> (init) name '%s' id %d selected as primary output\n", this, m_desktop_output, output_info->name, o);
-
-					XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
-					current_rotation = crtc_info->rotation;
-					// identify the current modeline id
-					for (int m = 0;m < resources->nmode && m_desktop_mode.id == 0;m++)
+					if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name,output_info->name) || output_position == screen_pos)
 					{
-						// Get screen mode
-						if (crtc_info->mode == resources->modes[m].id)
+						// store the output connector
+						m_desktop_output = o;
+
+						XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
+						current_rotation = crtc_info->rotation;
+						// identify the current modeline id
+						for (int m = 0;m < resources->nmode && m_desktop_mode.id == 0;m++)
 						{
-							m_desktop_mode = resources->modes[m];
-							m_last_crtc = *crtc_info;
+							// Get screen mode
+							if (crtc_info->mode == resources->modes[m].id)
+							{
+								m_desktop_mode = resources->modes[m];
+								m_last_crtc = *crtc_info;
+							}
+						}
+						XRRFreeCrtcInfo(crtc_info);
+
+						// check screen rotation (left or right)
+						if (current_rotation & 0xe)
+						{
+							m_crtc_flags = MODE_ROTATED;
+							log_verbose("XRANDR: <%p,%d> (init) desktop rotation is %s\n", this, m_desktop_output, (current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
 						}
 					}
-					XRRFreeCrtcInfo(crtc_info);
-
-					// check screen rotation (left or right)
-					if (current_rotation & 0xe)
-					{
-						m_crtc_flags = MODE_ROTATED;
-						log_verbose("XRANDR: <%p,%d> (init) desktop rotation is %s\n", this, m_desktop_output, (current_rotation & 0x2)?"left":((current_rotation & 0x8)?"right":"inverted"));
-					}
+					output_position++;
 				}
-				output_position++;
+				log_verbose("XRANDR: <%p,%d> (init) check output connector '%s' active %d crtc %d %s\n", this, m_desktop_output, output_info->name, output_info->connection == RR_Connected?1:0, output_info->crtc?1:0, m_desktop_output==o?"[SELECTED]":"");
+				XRRFreeOutputInfo(output_info);
 			}
-			XRRFreeOutputInfo(output_info);
 		}
 		XRRFreeScreenResources(resources);
 
@@ -587,9 +584,17 @@ bool xrandr_timing::set_timing(modeline *mode)
 	XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[m_desktop_output]);
 	XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
 
-	if (m_last_crtc.mode != crtc_info->mode)
+	if (m_last_crtc.mode == crtc_info->mode && m_last_crtc.x == crtc_info->x && m_last_crtc.y == crtc_info->y && pxmode->id == crtc_info->mode)
 	{
-			log_error("XRANDR: <%p,%d> (set_timing) [WARNING] screen mode has changed since last switch, forcing crtc replacement (last:[%04lx] now:[%04lx] %ux%u+%d+%d)\n", this, m_desktop_output, m_last_crtc.mode, crtc_info->mode, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y);
+			log_error("XRANDR: <%p,%d> (set_timing) changing mode is not required [%04lx] %ux%u+%d+%d\n", this, m_desktop_output, crtc_info->mode, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y);
+			XRRFreeCrtcInfo(crtc_info);
+			XRRFreeOutputInfo(output_info);
+			XRRFreeScreenResources(resources);
+			return true;
+	}
+	else if (m_last_crtc.mode != crtc_info->mode)
+	{
+			log_error("XRANDR: <%p,%d> (set_timing) [WARNING] screen has changed, forcing crtc modeline (last:[%04lx] now:[%04lx] %ux%u+%d+%d want:[%04lx])\n", this, m_desktop_output, m_last_crtc.mode, crtc_info->mode, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y, pxmode->id);
 			*crtc_info = m_last_crtc;
 	}
 
