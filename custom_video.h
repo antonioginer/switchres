@@ -58,6 +58,7 @@ public:
 	virtual const char *api_name() { return "empty"; }
 	virtual bool init();
 	virtual int caps() { return 0; }
+	virtual bool is_available() { return true; }
 	
 	virtual bool add_mode(modeline *mode);
 	virtual bool delete_mode(modeline *mode);

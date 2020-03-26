@@ -100,6 +100,42 @@ xrandr_timing::~xrandr_timing()
 }
 
 //============================================================
+//  xrandr_timing::is_available
+//============================================================
+
+bool xrandr_timing::is_available()
+{
+	log_verbose("XRANDR: <%p,%d> (is_available) loading X11 library (early stub)\n", this, m_desktop_output);
+
+	if (!m_x11_handle)
+		m_x11_handle = dlopen ("libX11.so", RTLD_NOW);
+
+	if (m_x11_handle)
+	{
+		p_XOpenDisplay = (__typeof__(XOpenDisplay))dlsym(m_x11_handle,"XOpenDisplay");
+		if (p_XOpenDisplay == NULL)
+		{
+			log_error("XRANDR: <%p,%d> (is_available) [ERROR] missing func %s in %s\n", this, m_desktop_output, "XOpenDisplay", "X11_LIBRARY");
+			return false;
+		}
+	} else {
+		log_error("XRANDR: <%p,%d> (is_available) [ERROR] missing %s library\n", this, m_desktop_output, "X11_LIBRARY");
+		return false;
+	}
+
+	if (!m_pdisplay)
+		m_pdisplay = XOpenDisplay(NULL);
+
+	if (!m_pdisplay)
+	{
+		log_verbose("XRANDR: <%p,%d> (is_available) X server not found\n", this, m_desktop_output);
+		return false;
+	}
+
+	return true;
+}
+
+//============================================================
 //  xrandr_timing::init
 //============================================================
 
@@ -574,10 +610,10 @@ bool xrandr_timing::set_timing(modeline *mode)
 	{
 		memcpy(&global_crtc[c], XRRGetCrtcInfo(m_pdisplay, resources, resources->crtcs[c]), sizeof(XRRCrtcInfo));
 		XRRCrtcInfo *crtc_info2 = &global_crtc[c];
-		//log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> crtc time information %ld\n", this, m_desktop_output, crtc_info2->timestamp); // to be deleted in final version
+		log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> crtc time information %ld\n", this, m_desktop_output, crtc_info2->timestamp); // to be deleted in final version
 		if (resources->crtcs[c] == output_info->crtc)
 		{
-			//log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> impacted crtc use new mode parameters\n", this, m_desktop_output); // to be deleted in final version
+			log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> impacted crtc use new mode parameters\n", this, m_desktop_output); // to be deleted in final version
 
 			// switchres output, use new mode info
 			if (crtc_info->x + pxmode->width > width)
@@ -589,7 +625,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 			crtc_info2->mode = pxmode->id;
 			crtc_info2->timestamp = 1;
 		} else {
-			//log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> neighborhood original crtc %d: %04lx %dx%d+%d+%d\n", this, m_desktop_output, c, crtc_info2->mode, crtc_info2->width, crtc_info2->height, crtc_info2->x, crtc_info2->y); // to be deleted in final version
+			log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> neighborhood original crtc %d: %04lx %dx%d+%d+%d\n", this, m_desktop_output, c, crtc_info2->mode, crtc_info2->width, crtc_info2->height, crtc_info2->x, crtc_info2->y); // to be deleted in final version
 
 			// relocate crtc impacted by new width
 			if (crtc_info2->x >= crtc_info->x + (int) crtc_info->width)
@@ -611,16 +647,16 @@ bool xrandr_timing::set_timing(modeline *mode)
 			if (crtc_info2->y + crtc_info2->height > height)
 				height=crtc_info2->y + crtc_info2->height;
 
-			//log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> \\___ neighborhood new crtc %d: %04lx %dx%d+%d+%d\n", this, m_desktop_output, c, crtc_info2->mode, crtc_info2->width, crtc_info2->height, crtc_info2->x, crtc_info2->y); // to be deleted in final version
+			log_verbose("****************** XRANDR: <%p,%d> (set_timing) <debug> \\___ neighborhood new crtc %d: %04lx %dx%d+%d+%d\n", this, m_desktop_output, c, crtc_info2->mode, crtc_info2->width, crtc_info2->height, crtc_info2->x, crtc_info2->y); // to be deleted in final version
 		}
-		//log_verbose("XRANDR: <%p,%d> (set_timing) <debug> screen size estimation %d x %d\n", this, m_desktop_output, width, height); // to be deleted in final version
+		log_verbose("++++++++++++++++++ XRANDR: <%p,%d> (set_timing) <debug> screen size estimation %d x %d\n", this, m_desktop_output, width, height); // to be deleted in final version
 	}
 
 	// Disable all CRTC
 	for (int c = 0;c < resources->ncrtc;c++)
 	{
 		XRRCrtcInfo *crtc_info2 = XRRGetCrtcInfo(m_pdisplay, resources, resources->crtcs[c]);
-		//log_verbose("XRANDR: <%p,%d> (set_timing) <debug> disable crtc %d mode id %04lx time %ld/%ld\n", this, m_desktop_output, c, crtc_info2->mode, crtc_info2->timestamp, global_crtc[c].timestamp);
+		log_verbose("++++++++++++++++++ XRANDR: <%p,%d> (set_timing) <debug> disable crtc %d mode id %04lx time %ld/%ld\n", this, m_desktop_output, c, crtc_info2->mode, crtc_info2->timestamp, global_crtc[c].timestamp);
 		// checking mode might not be necessary due to timestamp value 
 		if ( crtc_info2->mode != 0 && global_crtc[c].timestamp == 1)
 		{
@@ -659,7 +695,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 			XSync(m_pdisplay, False);
 			m_xerrors_flag = 0x14;
 			old_error_handler = XSetErrorHandler(error_handler);
-			//log_verbose("XRANDR: <%p,%d> (set_timing) <debug> crtc %d set modeline %04lx\n", this, m_desktop_output, c, crtc_info2->mode);
+			log_verbose("++++++++++++++++++ XRANDR: <%p,%d> (set_timing) <debug> crtc %d set modeline %04lx\n", this, m_desktop_output, c, crtc_info2->mode);
 			XRRSetCrtcConfig(m_pdisplay, resources, resources->crtcs[c], CurrentTime, crtc_info2->x, crtc_info2->y, crtc_info2->mode, crtc_info2->rotation, crtc_info2->outputs, crtc_info2->noutput);
 			XSync(m_pdisplay, False);
 			if (m_xerrors & 0x10)
