@@ -30,7 +30,6 @@ typedef struct display_settings
 	char   ps_timing[256];
 
 	char   monitor[32];
-	char   orientation[32];
 	char   modeline[256];
 	char   crt_range[MAX_RANGES][256];
 	char   lcd_range[256];
@@ -64,7 +63,6 @@ public:
 
 	// getters (display manager)
 	const char *set_monitor() { return (const char*) &m_ds.monitor; }
-	const char *orientation() { return (const char*) &m_ds.orientation; }
 	const char *user_modeline() { return (const char*) &m_ds.modeline; }
 	const char *crt_range(int i) { return (const char*) &m_ds.crt_range[i]; }
 	const char *lcd_range() { return (const char*) &m_ds.lcd_range; }
