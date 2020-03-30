@@ -411,7 +411,7 @@ bool display_manager::auto_specs()
 	// Make sure our current refresh is within range if set to auto
 	if (!strcmp(m_ds.lcd_range, "auto"))
 	{
-		sprintf(m_ds.lcd_range, "%d:%d", desktop_mode.refresh - 1, desktop_mode.refresh + 1);
+		sprintf(m_ds.lcd_range, "%d-%d", desktop_mode.refresh - 1, desktop_mode.refresh + 1);
 		monitor_fill_lcd_range(range, m_ds.lcd_range);
 	}
 
