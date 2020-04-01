@@ -183,10 +183,11 @@ class adl_timing : public custom_video
 
 		HINSTANCE hDLL;
 		LPAdapterInfo lpAdapterInfo = NULL;
-		LPAdapterList lpAdapter;
-		int iNumberAdapters;
-		int cat_version;
-		int sub_version;
+		LPAdapterList lpAdapter = NULL;;
+		int iNumberAdapters = 0;
+		int cat_version = 0;
+		int sub_version = 0;
+		bool is_patched = false;
 
 		ADL_CONTEXT_HANDLE m_adl = 0;
 		ADLDisplayModeInfo adl_mode[MAX_MODELINES];
