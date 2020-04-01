@@ -148,7 +148,7 @@ class adl_timing : public custom_video
 		const char *api_name() { return "AMD ADL"; }
 		bool init();
 		void close();
-		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_ADD; }
+		int caps() { return CUSTOM_VIDEO_CAPS_UPDATE | CUSTOM_VIDEO_CAPS_ADD | CUSTOM_VIDEO_CAPS_DESKTOP_EDITABLE; }
 
 		bool add_mode(modeline *mode);
 		bool delete_mode(modeline *mode);
