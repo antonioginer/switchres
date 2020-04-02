@@ -69,7 +69,7 @@ void display_manager::parse_options()
 		memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 
 		if (!strcmp(m_ds.monitor, "custom"))
-			for (int i = 0; i++ < MAX_RANGES;) monitor_fill_range(&range[i], m_ds.crt_range[i]);
+			for (int i = 0; i < MAX_RANGES; i++) monitor_fill_range(&range[i], m_ds.crt_range[i]);
 
 		else if (!strcmp(m_ds.monitor, "lcd"))
 			monitor_fill_lcd_range(&range[0], m_ds.lcd_range);
