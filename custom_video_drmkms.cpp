@@ -333,7 +333,7 @@ bool drmkms_timing::init()
 			log_verbose("DRM/KMS: <%d> (init) version %d.%d.%d type %s\n", m_id, version->version_major, version->version_minor, version->version_patchlevel, version->name);
 			drmFreeVersion(version);
 
-			long unsigned int check_dumb = 0;
+			uint64_t check_dumb = 0;
 			if (drmGetCap(m_drm_fd, DRM_CAP_DUMB_BUFFER, &check_dumb) < 0)
 			{
 				log_error("DRM/KMS: <%d> (init) [ERROR] ioctl DRM_CAP_DUMB_BUFFER\n", m_id);
