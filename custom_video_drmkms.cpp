@@ -19,6 +19,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/stat.h> 
 #include "custom_video_drmkms.h"
 #include "log.h"
 
@@ -44,7 +45,6 @@
 #define drmIoctl p_drmIoctl
 #define drmGetCap p_drmGetCap
 #define drmIsMaster p_drmIsMaster
-#define drmSetMaster p_drmSetMaster
 
 //============================================================
 //  shared the privileges of the master fd
@@ -414,7 +414,30 @@ bool drmkms_timing::init()
 					}
 					else
 					{
-						log_error("DRM/KMS: <%d> (init) [ERROR] previous DRM object not found\n", m_id);
+						log_verbose("DRM/KMS: <%d> (init) looking for the DRM master\n", m_id);
+						for (int fd = 4; fd < m_drm_fd ; fd++)
+						{
+							struct stat st;
+							if ( !fstat(fd, &st))
+							{
+								if ( S_ISCHR(st.st_mode) )
+								{
+									if ( drmIsMaster(fd) )
+									{
+										close(m_drm_fd);
+										m_drm_fd = fd;
+										drmVersion *version_hook = drmGetVersion(m_drm_fd);
+										if ( m_shared_count[num] == 0 )
+										{
+											m_shared_fd[num] = m_drm_fd;
+											m_shared_id = num;
+											m_shared_count[num] = 1;
+										}
+										log_verbose("DRM/KMS: <%d> (init) DRM hook created version %d.%d.%d type %s\n", m_id, version_hook->version_major, version_hook->version_minor, version_hook->version_patchlevel, version_hook->name);
+									}
+								}
+							}
+						}
 					}
 				}
 				if ( !drmIsMaster(m_drm_fd) )
