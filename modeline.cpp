@@ -671,6 +671,16 @@ int modeline_to_monitor_range(monitor_range *range, modeline *mode)
 }
 
 //============================================================
+//  modeline_is_different
+//============================================================
+
+int modeline_is_different(modeline *n, modeline *p)
+{
+	// Remove on last fields in modeline comparison
+	return memcmp(n, p, sizeof(modeline) - sizeof(uint64_t) - sizeof(mode_result));
+}
+
+//============================================================
 //  monitor_fill_vesa_gtf
 //============================================================
 
