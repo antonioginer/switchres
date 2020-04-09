@@ -98,6 +98,8 @@ public:
 	bool is_stretched() { return m_best_mode != nullptr? m_best_mode->result.weight & R_RES_STRETCH : false; }
 	bool is_refresh_off() { return m_best_mode != nullptr? m_best_mode->result.weight & R_V_FREQ_OFF : false; }
 	bool is_switching_required() { return m_switching_required; }
+	bool is_mode_updated() { return m_best_mode != nullptr? m_best_mode->type & MODE_UPDATED : false; }
+	bool is_mode_new() { return m_best_mode != nullptr? m_best_mode->type & MODE_NEW : false; }
 
 	// setters
 	void set_factory(custom_video *factory) { m_factory = factory; }
