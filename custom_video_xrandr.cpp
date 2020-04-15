@@ -639,6 +639,8 @@ bool xrandr_timing::set_timing(modeline *mode)
 	unsigned int width=0;
 	unsigned int height=0;
 
+	int skip = 0;
+
 	XRRCrtcInfo *global_crtc = new XRRCrtcInfo[resources->ncrtc];
 
 	// caculate necessary screen size and replace the crtc neighbors if they have at least one side aligned with the mode changed crtc 
@@ -676,14 +678,14 @@ bool xrandr_timing::set_timing(modeline *mode)
 		else 
 		{
 			// relocate crtc impacted by new width
-			if (crtc_info2->x >= crtc_info->x + (int) crtc_info->width)
+			if (!skip && crtc_info2->x >= crtc_info->x + (int) crtc_info->width)
 			{
 				crtc_info2->x += pxmode->width - crtc_info->width;
 				crtc_info2->timestamp = 2;
 			}
 
-			// relocate crtc impacted by new  height
-			if (crtc_info2->y >= crtc_info->y + (int) crtc_info->height)
+			// relocate crtc impacted by new height
+			if (!skip && crtc_info2->y >= crtc_info->y + (int) crtc_info->height)
 			{
 				crtc_info2->y += pxmode->height - crtc_info->height;
 				crtc_info2->timestamp = 2;
