@@ -77,7 +77,7 @@ static int static_id = 0;
 //  screen exclusivity array (static)
 //============================================================
 
-static int m_shared_screen[9]={};
+static int m_shared_screen[10]={};
 
 //============================================================
 //  xrandr_timing::xrandr_timing

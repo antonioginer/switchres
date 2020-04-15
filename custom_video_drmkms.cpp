@@ -50,9 +50,9 @@
 //  shared the privileges of the master fd
 //============================================================
 
-static int m_shared_fd[9]={};
+static int m_shared_fd[10]={};
 static int m_shared_id = 0;
-static int m_shared_count[9]={};
+static int m_shared_count[10]={};
 
 //============================================================
 //  list connector types
