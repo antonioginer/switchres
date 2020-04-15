@@ -552,7 +552,7 @@ bool xrandr_timing::add_mode(modeline *mode)
 			XRRDestroyMode(m_pdisplay, gmid);
 		}
 	}
-	log_verbose("XRANDR: <%d> <add_mode> mode %04lx %dx%d refresh %.6f added\n", m_id, gmid, mode->hactive, mode->vactive, mode->vfreq);
+	log_verbose("XRANDR: <%d> (add_mode) mode %04lx %dx%d refresh %.6f added\n", m_id, gmid, mode->hactive, mode->vactive, mode->vfreq);
 
 	return m_xerrors==0;
 }
@@ -923,7 +923,7 @@ bool xrandr_timing::get_timing(modeline *mode)
 				if (m_desktop_mode.id == pxmode->id)
 					mode->type |= MODE_DESKTOP;
 
-				log_verbose("XRANDR: <%d> <get_timing> mode %04lx %dx%d refresh %.6f added\n", m_id, pxmode->id, pxmode->width, pxmode->height, mode->vfreq);
+				log_verbose("XRANDR: <%d> (get_timing) mode %04lx %dx%d refresh %.6f added\n", m_id, pxmode->id, pxmode->width, pxmode->height, mode->vfreq);
 			}
 		} 
 		m_video_modes_position++;
