@@ -119,6 +119,8 @@ bool display_manager::add_mode(modeline *mode)
 		return false;		
 	}
 
+	mode->type &= ~MODE_NEW;
+
 	log_verbose("Switchres: added ");
 	log_mode(mode);
 
@@ -162,6 +164,8 @@ bool display_manager::update_mode(modeline *mode)
 		log_mode(mode);
 		return false;
 	}
+
+	mode->type &= ~MODE_UPDATED;
 
 	log_verbose("Switchres: updated ");
 	log_mode(mode);
