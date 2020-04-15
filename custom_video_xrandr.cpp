@@ -428,6 +428,14 @@ bool xrandr_timing::init()
 	// Handle no screen detected case
 	if(!detected)
 		log_error("XRANDR: <%d> (init) [ERROR] no screen detected\n", m_id);
+	else
+	{
+		log_verbose("XRANDR: <%d> (init) Trigger desktop screen preparation\n", m_id);
+		modeline mode = {};
+		mode.type = MODE_DESKTOP;
+		mode.platform_data = -1;
+		set_timing(&mode);
+	}
 
 	return detected;
 }
@@ -540,7 +548,7 @@ bool xrandr_timing::add_mode(modeline *mode)
 	XSync(m_pdisplay, False);
 	m_xerrors_flag = 0x02;
 	old_error_handler = XSetErrorHandler(error_handler);
-	XRRAddOutputMode(m_pdisplay, resources->outputs[m_desktop_output], gmid);
+	XRRAddOutputMode(m_pdisplay, resources->outputs[m_desktop_output], mode->platform_data);
 	XSync(m_pdisplay, False);
 	XSetErrorHandler(old_error_handler);
 
@@ -551,13 +559,15 @@ bool xrandr_timing::add_mode(modeline *mode)
 		log_error("XRANDR: <%d> (add_mode) [ERROR] in %s\n", m_id, "XRRAddOutputMode");
 
 		// remove unlinked modeline
-		if (gmid) 
+		if (mode->platform_data) 
 		{
-			log_error("XRANDR: <%d> (add_mode) [ERROR] remove mode [%04lx]\n", m_id, gmid);
-			XRRDestroyMode(m_pdisplay, gmid);
+			log_error("XRANDR: <%d> (add_mode) [ERROR] remove mode [%04lx]\n", m_id, mode->platform_data);
+			XRRDestroyMode(m_pdisplay, mode->platform_data);
+			mode->platform_data = 0;
 		}
 	}
-	log_verbose("XRANDR: <%d> (add_mode) mode %04lx %dx%d refresh %.6f added\n", m_id, gmid, mode->hactive, mode->vactive, mode->vfreq);
+	else
+		log_verbose("XRANDR: <%d> (add_mode) mode %04lx %dx%d refresh %.6f added\n", m_id, mode->platform_data, mode->hactive, mode->vactive, mode->vfreq);
 
 	return m_xerrors==0;
 }
@@ -576,8 +586,8 @@ XRRModeInfo *xrandr_timing::find_mode(modeline *mode)
 	{
 		if (mode->platform_data == resources->modes[m].id)
 			pxmode = &resources->modes[m];
-		else if ( mode->pclock == resources->modes[m].dotClock && mode->hactive == resources->modes[m].width && mode->hbegin == resources->modes[m].hSyncStart && mode->hend == resources->modes[m].hSyncEnd && mode->htotal == resources->modes[m].hTotal && mode->vactive == resources->modes[m].height && mode->vbegin == resources->modes[m].vSyncStart && mode->vend == resources->modes[m].vSyncEnd && mode->vtotal == resources->modes[m].vTotal && mode->width == resources->modes[m].width && mode->height == resources->modes[m].height)
-			pxmode = &resources->modes[m];
+		//WIP else if ( mode->pclock == resources->modes[m].dotClock && mode->hactive == resources->modes[m].width && mode->hbegin == resources->modes[m].hSyncStart && mode->hend == resources->modes[m].hSyncEnd && mode->htotal == resources->modes[m].hTotal && mode->vactive == resources->modes[m].height && mode->vbegin == resources->modes[m].vSyncStart && mode->vend == resources->modes[m].vSyncEnd && mode->vtotal == resources->modes[m].vTotal && mode->width == resources->modes[m].width && mode->height == resources->modes[m].height)
+		//WIP	pxmode = &resources->modes[m];
 	}
 
 	XRRFreeScreenResources(resources);
@@ -624,7 +634,14 @@ bool xrandr_timing::set_timing(modeline *mode)
 	XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[m_desktop_output]);
 	XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
 
-	if (m_last_crtc.mode == crtc_info->mode && m_last_crtc.x == crtc_info->x && m_last_crtc.y == crtc_info->y && pxmode->id == crtc_info->mode)
+	int skip_crtc_placement = 1;
+	int super_resolution = 0; //WIP super resolution
+
+	if (super_resolution && mode->platform_data == -1) // super resolution call
+	{
+		log_verbose("XRANDR: <%d> (set_timing) setting the super resolution screen\n", m_id);
+	}
+	else if (m_last_crtc.mode == crtc_info->mode && m_last_crtc.x == crtc_info->x && m_last_crtc.y == crtc_info->y && pxmode->id == crtc_info->mode)
 	{
 			log_error("XRANDR: <%d> (set_timing) changing mode is not required [%04lx] %ux%u+%d+%d\n", m_id, crtc_info->mode, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y);
 			XRRFreeCrtcInfo(crtc_info);
@@ -646,10 +663,8 @@ bool xrandr_timing::set_timing(modeline *mode)
 	unsigned int width=0;
 	unsigned int height=0;
 
-	int skip = 0;
-
 	if (mode->type & MODE_DESKTOP)
-		skip = 1;
+		skip_crtc_placement = 1;
 
 	XRRCrtcInfo *global_crtc = new XRRCrtcInfo[resources->ncrtc];
 
@@ -677,8 +692,23 @@ bool xrandr_timing::set_timing(modeline *mode)
 
 			if (mode->type & MODE_DESKTOP)
 			{
-				crtc_info2->x = m_pos_x;
-				crtc_info2->y = m_pos_y;
+				if (super_resolution && mode->platform_data == -1)
+				{
+					// super resolution placement, vertical stacking
+					crtc_info2->x = 0; //2560 - crtc_info2->width; 
+					crtc_info2->y = (m_id-1)*1024;
+
+					if (2560 > width)
+						width=2560;
+
+					if (crtc_info2->y + 1024 > height)
+						height=crtc_info2->y + 1024;
+				}
+				else
+				{
+					crtc_info2->x = m_pos_x;
+					crtc_info2->y = m_pos_y;
+				}
 			}
 			else
 			{
@@ -698,14 +728,14 @@ bool xrandr_timing::set_timing(modeline *mode)
 		else 
 		{
 			// relocate crtc impacted by new width
-			if ((!skip || crtc_info2->timestamp == 1) && crtc_info2->x >= crtc_info->x + (int) crtc_info->width)
+			if ((!skip_crtc_placement || crtc_info2->timestamp == 1) && crtc_info2->x >= crtc_info->x + (int) crtc_info->width)
 			{
 				crtc_info2->x += pxmode->width - crtc_info->width;
 				crtc_info2->timestamp = 2;
 			}
 
 			// relocate crtc impacted by new height
-			if ((!skip || crtc_info2->timestamp == 1) && crtc_info2->y >= crtc_info->y + (int) crtc_info->height)
+			if ((!skip_crtc_placement || crtc_info2->timestamp == 1) && crtc_info2->y >= crtc_info->y + (int) crtc_info->height)
 			{
 				crtc_info2->y += pxmode->height - crtc_info->height;
 				crtc_info2->timestamp = 2;
@@ -728,7 +758,6 @@ bool xrandr_timing::set_timing(modeline *mode)
 	for (int c = 0;c < resources->ncrtc;c++)
 	{
 		XRRCrtcInfo *crtc_info2 = XRRGetCrtcInfo(m_pdisplay, resources, resources->crtcs[c]);
-		// checking mode might not be necessary due to timestamp value 
 		if ( global_crtc[c].timestamp == 1 || global_crtc[c].timestamp == 2 )
 		{
 			if (XRRSetCrtcConfig(m_pdisplay, resources, resources->crtcs[c], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0) != RRSetConfigSuccess)
