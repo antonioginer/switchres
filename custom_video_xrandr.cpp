@@ -74,12 +74,18 @@ static int error_handler(Display *dpy, XErrorEvent *err)
 static int static_id = 0;
 
 //============================================================
+//  screen exclusivity array (static)
+//============================================================
+
+static int m_shared_screen[9]={};
+
+//============================================================
 //  xrandr_timing::xrandr_timing
 //============================================================
 
 xrandr_timing::xrandr_timing(char *device_name, char *param)
 {
-	m_id = static_id++;
+	m_id = ++static_id;
 
 	log_verbose("XRANDR: <%d> (xrandr_timing) creation (%s,%s)\n", m_id, device_name, param);
 	// Copy screen device name and limit size
@@ -378,6 +384,12 @@ bool xrandr_timing::init()
 						// store the output connector
 						m_desktop_output = o;
 
+						if (m_shared_screen[m_desktop_output] == 0)
+						{
+							m_shared_screen[m_desktop_output] = m_id;
+							m_managed = 1;
+						}
+
 						XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
 						current_rotation = crtc_info->rotation;
 						// identify the current modeline id
@@ -401,7 +413,7 @@ bool xrandr_timing::init()
 					}
 					output_position++;
 				}
-				log_verbose("XRANDR: <%d> (init) check output connector '%s' active %d crtc %d %s\n", m_id, output_info->name, output_info->connection == RR_Connected?1:0, output_info->crtc?1:0, m_desktop_output==o?"[SELECTED]":"");
+				log_verbose("XRANDR: <%d> (init) check output connector '%s' active %d crtc %d %s\n", m_id, output_info->name, output_info->connection == RR_Connected?1:0, output_info->crtc?1:0, m_desktop_output==o?(m_managed?"[SELECTED]":"[UNMANAGED]"):"");
 				XRRFreeOutputInfo(output_info);
 			}
 		}
@@ -461,6 +473,12 @@ bool xrandr_timing::add_mode(modeline *mode)
 	if (m_desktop_output == -1)
 	{
 		log_error("XRANDR: <%d> (add_mode) [ERROR] no screen detected\n", m_id);
+		return false;
+	}
+
+	if (!m_managed)
+	{
+		log_error("XRANDR: <%d> (add_mode) [WARNING] this screen is managed by <%d>\n", m_id, m_shared_screen[m_desktop_output]);
 		return false;
 	}
 
@@ -570,6 +588,12 @@ bool xrandr_timing::set_timing(modeline *mode)
 	if (m_desktop_output == -1)
 	{
 		log_error("XRANDR: <%d> (set_timing) [ERROR] no screen detected\n", m_id);
+		return false;
+	}
+
+	if (!m_managed)
+	{
+		log_error("XRANDR: <%d> (set_timing) [WARNING] this screen is managed by <%d>\n", m_id, m_shared_screen[m_desktop_output]);
 		return false;
 	}
 
@@ -778,6 +802,12 @@ bool xrandr_timing::delete_mode(modeline *mode)
 	if (m_desktop_output == -1)
 	{
 		log_error("XRANDR: <%d> (delete_mode) [ERROR] no screen detected\n", m_id);
+		return false;
+	}
+
+	if (!m_managed)
+	{
+		log_error("XRANDR: <%d> (delete_mode) [WARNING] this screen is managed by <%d>\n", m_id, m_shared_screen[m_desktop_output]);
 		return false;
 	}
 
