@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <dlfcn.h>
+#include <limits.h>
 #include "custom_video_xrandr.h"
 #include "log.h"
 
@@ -433,7 +434,7 @@ bool xrandr_timing::init()
 		log_verbose("XRANDR: <%d> (init) Trigger desktop screen preparation\n", m_id);
 		modeline mode = {};
 		mode.type = MODE_DESKTOP;
-		mode.platform_data = -1;
+		mode.platform_data = ULONG_MAX;
 		set_timing(&mode);
 	}
 
@@ -637,7 +638,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 	int skip_crtc_placement = 1;
 	int super_resolution = 0; //WIP super resolution
 
-	if (super_resolution && mode->platform_data == -1) // super resolution call
+	if (super_resolution && mode->platform_data == ULONG_MAX) // super resolution call
 	{
 		log_verbose("XRANDR: <%d> (set_timing) setting the super resolution screen\n", m_id);
 	}
@@ -692,7 +693,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 
 			if (mode->type & MODE_DESKTOP)
 			{
-				if (super_resolution && mode->platform_data == -1)
+				if (super_resolution && mode->platform_data == ULONG_MAX)
 				{
 					// super resolution placement, vertical stacking
 					crtc_info2->x = 0; //2560 - crtc_info2->width; 
@@ -701,7 +702,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 					if (2560 > width)
 						width=2560;
 
-					if (crtc_info2->y + 1024 > height)
+					if (crtc_info2->y + 1024 > (int) height)
 						height=crtc_info2->y + 1024;
 				}
 				else
