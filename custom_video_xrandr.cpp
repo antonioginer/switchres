@@ -484,9 +484,12 @@ bool xrandr_timing::add_mode(modeline *mode)
 		return false;
 	}
 
-	if (find_mode(mode) != NULL)
+	XRRModeInfo *pxmode = find_mode(mode);
+	if (pxmode != NULL)
 	{
-		log_error("XRANDR: <%d> (add_mode) [ERROR] mode already exist\n", m_id);
+		log_error("XRANDR: <%d> (add_mode) [WARNING] mode already exist\n", m_id);
+		mode->platform_data = pxmode->id;
+		return true;
 	}
 
 	// Create specific mode name
@@ -572,6 +575,8 @@ XRRModeInfo *xrandr_timing::find_mode(modeline *mode)
 	for (int m = 0;m < resources->nmode && !pxmode;m++)
 	{
 		if (mode->platform_data == resources->modes[m].id)
+			pxmode = &resources->modes[m];
+		else if ( mode->pclock == resources->modes[m].dotClock && mode->hactive == resources->modes[m].width && mode->hbegin == resources->modes[m].hSyncStart && mode->hend == resources->modes[m].hSyncEnd && mode->htotal == resources->modes[m].hTotal && mode->vactive == resources->modes[m].height && mode->vbegin == resources->modes[m].vSyncStart && mode->vend == resources->modes[m].vSyncEnd && mode->vtotal == resources->modes[m].vTotal && mode->width == resources->modes[m].width && mode->height == resources->modes[m].height)
 			pxmode = &resources->modes[m];
 	}
 
