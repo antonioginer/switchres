@@ -53,6 +53,8 @@ class xrandr_timing : public custom_video
 		int m_crtc_flags = 0;
 
 		XRRCrtcInfo m_last_crtc = {};
+		int m_pos_x = 0;
+		int m_pos_y = 0;
 
 		void *m_xrandr_handle = 0;
 

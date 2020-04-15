@@ -400,6 +400,8 @@ bool xrandr_timing::init()
 							{
 								m_desktop_mode = resources->modes[m];
 								m_last_crtc = *crtc_info;
+								m_pos_x = crtc_info->x;
+								m_pos_y = crtc_info->y;
 							}
 						}
 						XRRFreeCrtcInfo(crtc_info);
@@ -641,6 +643,9 @@ bool xrandr_timing::set_timing(modeline *mode)
 
 	int skip = 0;
 
+	if (mode->type & MODE_DESKTOP)
+		skip = 1;
+
 	XRRCrtcInfo *global_crtc = new XRRCrtcInfo[resources->ncrtc];
 
 	// caculate necessary screen size and replace the crtc neighbors if they have at least one side aligned with the mode changed crtc 
@@ -664,8 +669,18 @@ bool xrandr_timing::set_timing(modeline *mode)
 			crtc_info2->mode = pxmode->id;
 			crtc_info2->width = pxmode->width;
 			crtc_info2->height = pxmode->height;
-			crtc_info2->x = crtc_info->x;
-			crtc_info2->y = crtc_info->y;
+
+			if (mode->type & MODE_DESKTOP)
+			{
+				crtc_info2->x = m_pos_x;
+				crtc_info2->y = m_pos_y;
+			}
+			else
+			{
+				crtc_info2->x = crtc_info->x;
+				crtc_info2->y = crtc_info->y;
+			}
+
 			if (crtc_info0->mode != crtc_info2->mode || crtc_info0->width != crtc_info2->width || crtc_info0->height != crtc_info2->height || crtc_info0->x != crtc_info2->x || crtc_info0->y != crtc_info2->y)
 				crtc_info2->timestamp = 1;
 			else
@@ -678,14 +693,14 @@ bool xrandr_timing::set_timing(modeline *mode)
 		else 
 		{
 			// relocate crtc impacted by new width
-			if (!skip && crtc_info2->x >= crtc_info->x + (int) crtc_info->width)
+			if ((!skip || crtc_info2->timestamp == 1) && crtc_info2->x >= crtc_info->x + (int) crtc_info->width)
 			{
 				crtc_info2->x += pxmode->width - crtc_info->width;
 				crtc_info2->timestamp = 2;
 			}
 
 			// relocate crtc impacted by new height
-			if (!skip && crtc_info2->y >= crtc_info->y + (int) crtc_info->height)
+			if ((!skip || crtc_info2->timestamp == 1) && crtc_info2->y >= crtc_info->y + (int) crtc_info->height)
 			{
 				crtc_info2->y += pxmode->height - crtc_info->height;
 				crtc_info2->timestamp = 2;
