@@ -27,56 +27,76 @@ int main(int argc, char **argv)
 
 	// Get display index
 	int display_index = 0;
-	if (argc > 1)
-	{
-		sscanf(argv[1], "%d", &display_index);
 
-		int num_displays = SDL_GetNumVideoDisplays();
+	// Array for displays
+	int display_array[10] = {};
+	int display_total = 0;
+
+	int num_displays = SDL_GetNumVideoDisplays();
+
+	for (int arg=1;arg < argc;arg++)
+	{
+		sscanf(argv[arg], "%d", &display_index);
+
 		if (display_index < 0 || display_index > num_displays - 1)
 		{
 			printf("error, bad display_index: %d\n", display_index);
 			return 1;
 		}
+
+		display_array[display_total]=display_index;
+		display_total++;
 	}
 	
-	// Get target display size
-	SDL_DisplayMode dm;
-	SDL_GetCurrentDisplayMode(display_index, &dm);
-	int width = dm.w;
-	int height = dm.h;
+	// Array for windows
+	SDL_Window* win_array[10];
 
-	// Create window
-	SDL_Window* win = SDL_CreateWindow("Switchres test", SDL_WINDOWPOS_CENTERED_DISPLAY(display_index), SDL_WINDOWPOS_CENTERED, width, height, 0);
-	SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN_DESKTOP);
-
-	// Create renderer
-	SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-	SDL_RenderClear(renderer);
-
-	// Draw outer rectangle
-	SDL_Rect rect {0, 0, width, height};
-	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-	SDL_RenderDrawRect(renderer, &rect);
-
-	// Draw grid
-	for (int i = 0;  i < width / 16; i++)
+	for (int disp=0;disp<display_total;disp++)
 	{
-		for (int j = 0; j < height / 16; j++)
+		display_index = display_array[disp];
+
+		// Get target display size
+		SDL_DisplayMode dm;
+		SDL_GetCurrentDisplayMode(display_index, &dm);
+		int width = dm.w;
+		int height = dm.h;
+
+		// Create window
+		SDL_Window* win = SDL_CreateWindow("Switchres test", SDL_WINDOWPOS_CENTERED_DISPLAY(display_index), SDL_WINDOWPOS_CENTERED, width, height, 0);
+		win_array[disp] = win;
+
+		// DZR fullscreen disabled to address all crtcs
+		//SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN_DESKTOP);
+
+		// Create renderer
+		SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+		SDL_RenderClear(renderer);
+
+		// Draw outer rectangle
+		SDL_Rect rect {0, 0, width, height};
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+		SDL_RenderDrawRect(renderer, &rect);
+
+		// Draw grid
+		for (int i = 0;  i < width / 16; i++)
 		{
-			if (i == 0 || j == 0 || i == (width / 16) - 1 || j == (height / 16) - 1)
-				SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-			else
-				SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			for (int j = 0; j < height / 16; j++)
+			{
+				if (i == 0 || j == 0 || i == (width / 16) - 1 || j == (height / 16) - 1)
+					SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+				else
+					SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
-			rect = {i * 16, j * 16, 16, 16};
-			SDL_RenderDrawRect(renderer, &rect);
+				rect = {i * 16, j * 16, 16, 16};
+				SDL_RenderDrawRect(renderer, &rect);
 
-			rect = {i * 16 + 7, j * 16 + 7, 2, 2};
-			SDL_RenderDrawRect(renderer, &rect);
+				rect = {i * 16 + 7, j * 16 + 7, 2, 2};
+				SDL_RenderDrawRect(renderer, &rect);
+			}
 		}
-	}
 
-	SDL_RenderPresent(renderer);
+		SDL_RenderPresent(renderer);
+	}
 
 	// Wait for escape key
 	bool close = false;
@@ -106,7 +126,12 @@ int main(int argc, char **argv)
 		}
 	}
 
-	SDL_DestroyWindow(win);
+	//destroy all windows
+	for (int disp=0;disp<display_total;disp++)
+	{
+		SDL_DestroyWindow(win_array[disp]);
+	}
+
 	SDL_Quit();
 
 	return 0; 
