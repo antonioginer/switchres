@@ -81,7 +81,6 @@ void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
 	}
 
 	SDL_RenderPresent(renderer);
-	SDL_RenderPresent(renderer);
 }
 
 //============================================================
@@ -142,10 +141,15 @@ int main(int argc, char **argv)
 		// Create window
 		display_array[disp].window = SDL_CreateWindow("Switchres test grid", SDL_WINDOWPOS_CENTERED_DISPLAY(display_array[disp].index), SDL_WINDOWPOS_CENTERED, dm.w, dm.h, 0);
 
+		// Set fullscreen
+		SDL_SetWindowFullscreen(display_array[disp].window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
+
 		// Create renderer
 		display_array[disp].renderer = SDL_CreateRenderer(display_array[disp].window, -1, SDL_RENDERER_ACCELERATED);
 
 		// Draw grid
+		draw_grid(0, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
 		draw_grid(0, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
 	}
 
