@@ -84,6 +84,7 @@ public:
 	bool rotation() { return m_ds.gs.rotation; }
 	double monitor_aspect() { return m_ds.gs.monitor_aspect; }
 	int v_shift_correct() { return m_ds.gs.v_shift_correct; }
+	int pixel_precision() { return m_ds.gs.pixel_precision; }
 
 	// getters (modeline result)
 	bool got_mode() { return (m_best_mode != nullptr); }
@@ -110,6 +111,7 @@ public:
 	void set_rotation(bool value) { m_ds.gs.rotation = value; }
 	void set_monitor_aspect(float aspect) { m_ds.gs.monitor_aspect = aspect; }
 	void set_v_shift_correct(int value) { m_ds.gs.v_shift_correct = value; }
+	void set_pixel_precision(int value) { m_ds.gs.pixel_precision = value; }
 
 	// options
 	display_settings m_ds = {};

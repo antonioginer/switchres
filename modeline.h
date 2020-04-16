@@ -112,6 +112,7 @@ typedef struct generator_settings
 	double   refresh_tolerance;
 	int      super_width;
 	int      v_shift_correct;
+	int      pixel_precision;
 } generator_settings;
 
 //============================================================

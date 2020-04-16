@@ -25,7 +25,7 @@
 //  PROTOTYPES
 //============================================================
 
-int get_line_params(modeline *mode, monitor_range *range);
+int get_line_params(modeline *mode, monitor_range *range, int char_size);
 int scale_into_range (int value, int lower_limit, int higher_limit);
 int scale_into_range (double value, double lower_limit, double higher_limit);
 int scale_into_aspect (int source_res, int tot_res, double original_monitor_aspect, double users_monitor_aspect, double *best_diff);
@@ -234,7 +234,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 		horizontal_values:
 
 		// Fill horizontal part of modeline
-		get_line_params(t_mode, range);
+		get_line_params(t_mode, range, cs->pixel_precision? 1 : 8);
 
 		// Calculate pixel clock
 		t_mode->pclock = t_mode->htotal * t_mode->hfreq;
@@ -289,7 +289,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 //  get_line_params
 //============================================================
 
-int get_line_params(modeline *mode, monitor_range *range)
+int get_line_params(modeline *mode, monitor_range *range, int char_size)
 {
 	int hhi, hhf, hht;
 	int hh, hs, he, ht;
@@ -302,7 +302,7 @@ int get_line_params(modeline *mode, monitor_range *range)
 
 	line_time = 1 / mode->hfreq * 1000000;
 
-	hh = round(mode->hactive / 8);
+	hh = round(mode->hactive / char_size);
 	hs = he = ht = 1;
 
 	do {
@@ -322,9 +322,9 @@ int get_line_params(modeline *mode, monitor_range *range)
 		new_char_time = line_time / (hh + hs + he + ht);
 	} while (new_char_time != char_time);
 
-	hhi = (hh + hs) * 8;
-	hhf = (hh + hs + he) * 8;
-	hht = (hh + hs + he + ht) * 8;
+	hhi = (hh + hs) * char_size;
+	hhf = (hh + hs + he) * char_size;
+	hht = (hh + hs + he + ht) * char_size;
 
 	mode->hbegin  = hhi;
 	mode->hend    = hhf;
