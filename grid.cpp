@@ -81,6 +81,7 @@ void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
 	}
 
 	SDL_RenderPresent(renderer);
+	SDL_RenderPresent(renderer);
 }
 
 //============================================================
