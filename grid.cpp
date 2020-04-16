@@ -16,6 +16,20 @@
 #define NUM_GRIDS 2
 
 #include <SDL2/SDL.h> 
+
+typedef struct grid_display
+{
+	int index;
+	int width;
+	int height;
+
+	SDL_Window *window;
+	SDL_Renderer *renderer;
+} GRID_DISPLAY;
+
+//============================================================
+//  draw_grid
+//============================================================
 	
 void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
 {
@@ -69,8 +83,16 @@ void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
 	SDL_RenderPresent(renderer);
 }
 
+//============================================================
+//  main
+//============================================================
+
 int main(int argc, char **argv)
 { 
+	SDL_Window* win_array[10] = {};
+	GRID_DISPLAY display_array[10] = {};
+	int display_total = 0;
+
 	// Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{ 
@@ -78,43 +100,36 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// Get display index
-	int display_index = 0;
-
-	typedef struct grid_display
+	// Get target displays
+	if (argc > 1)
 	{
-        	int     index;
-	        int     width;
-        	int     height;
+		// Parse command line for display indexes
+		int display_index = 0;
+		int num_displays = SDL_GetNumVideoDisplays();
 
-	        SDL_Window *window;
-		SDL_Renderer *renderer;
-	} GRID_DISPLAY;
-
-	// Array for displays
-	GRID_DISPLAY display_array[10] = {};
-	int display_total = 0;
-
-	int num_displays = SDL_GetNumVideoDisplays();
-
-	for (int arg=1;arg < argc;arg++)
-	{
-		sscanf(argv[arg], "%d", &display_index);
-
-		if (display_index < 0 || display_index > num_displays - 1)
+		for (int arg = 1; arg < argc; arg++)
 		{
-			printf("error, bad display_index: %d\n", display_index);
-			return 1;
+			sscanf(argv[arg], "%d", &display_index);
+
+			if (display_index < 0 || display_index > num_displays - 1)
+			{
+				printf("error, bad display_index: %d\n", display_index);
+				return 1;
+			}
+
+			display_array[display_total].index = display_index;
+			display_total++;
 		}
-
-		display_array[display_total].index=display_index;
-		display_total++;
 	}
-	
-	// Array for windows
-	SDL_Window* win_array[10];
+	else
+	{
+		// No display specified, use default
+		display_array[0].index = 0;
+		display_total = 1;
+	}
 
-	for (int disp=0;disp<display_total;disp++)
+	// Create windows
+	for (int disp = 0; disp < display_total; disp++)
 	{
 		// Get target display size
 		SDL_DisplayMode dm;
@@ -124,15 +139,12 @@ int main(int argc, char **argv)
 		display_array[disp].height = dm.h;
 
 		// Create window
-		display_array[disp].window = SDL_CreateWindow("Switchres test", SDL_WINDOWPOS_CENTERED_DISPLAY(display_array[disp].index), SDL_WINDOWPOS_CENTERED, dm.w, dm.h, 0);
-
-		// Fullscreen window
-		SDL_SetWindowFullscreen(display_array[disp].window, SDL_WINDOW_FULLSCREEN);
+		display_array[disp].window = SDL_CreateWindow("Switchres test grid", SDL_WINDOWPOS_CENTERED_DISPLAY(display_array[disp].index), SDL_WINDOWPOS_CENTERED, dm.w, dm.h, 0);
 
 		// Create renderer
 		display_array[disp].renderer = SDL_CreateRenderer(display_array[disp].window, -1, SDL_RENDERER_ACCELERATED);
 
-		// DRaw grid
+		// Draw grid
 		draw_grid(0, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
 	}
 
@@ -161,10 +173,8 @@ int main(int argc, char **argv)
 
 						case SDL_SCANCODE_TAB:
 							num_grid ++;
-							for (int disp=0;disp<display_total;disp++)
-							{
+							for (int disp = 0; disp < display_total; disp++)
 								draw_grid(num_grid % NUM_GRIDS, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
-							}
 							break; 
 
 						default:
@@ -174,11 +184,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	//destroy all windows
-	for (int disp=0;disp<display_total;disp++)
-	{
+	// Destroy all windows
+	for (int disp = 0; disp < display_total; disp++)
 		SDL_DestroyWindow(display_array[disp].window);
-	}
 
 	SDL_Quit();
 
