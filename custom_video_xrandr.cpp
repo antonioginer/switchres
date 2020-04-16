@@ -498,13 +498,20 @@ bool xrandr_timing::add_mode(modeline *mode)
 	if (pxmode != NULL)
 	{
 		log_error("XRANDR: <%d> (add_mode) [WARNING] mode already exist\n", m_id);
-		mode->platform_data = pxmode->id;
 		return true;
 	}
 
 	// Create specific mode name
 	char name[48];
 	sprintf(name, "SR-%d_%dx%d_%f", m_id, mode->hactive, mode->vactive, mode->vfreq);
+
+	pxmode = find_mode_by_name(name);
+	if (pxmode != NULL)
+	{
+		log_error("XRANDR: <%d> (add_mode) [WARNING] mode already exist (duplicate)\n", m_id);
+		mode->platform_data = pxmode->id;
+		return true;
+	}
 
 	log_verbose("XRANDR: <%d> (add_mode) create mode %s\n", m_id, name);
 
@@ -572,6 +579,27 @@ bool xrandr_timing::add_mode(modeline *mode)
 		log_verbose("XRANDR: <%d> (add_mode) mode %04lx %dx%d refresh %.6f added\n", m_id, mode->platform_data, mode->hactive, mode->vactive, mode->vfreq);
 
 	return m_xerrors==0;
+}
+
+//============================================================
+//  xrandr_timing::find_mode_by_name
+//============================================================
+
+XRRModeInfo *xrandr_timing::find_mode_by_name(char *name)
+{
+	XRRModeInfo *pxmode=NULL;
+	XRRScreenResources *resources = XRRGetScreenResourcesCurrent(m_pdisplay, m_root);
+
+	// use SR name to return the mode
+	for (int m = 0;m < resources->nmode && !pxmode;m++)
+	{
+		if (strcmp(resources->modes[m].name, name) == 0)
+			pxmode = &resources->modes[m];
+	}
+
+	XRRFreeScreenResources(resources);
+
+	return pxmode;
 }
 
 //============================================================
