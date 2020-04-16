@@ -53,7 +53,7 @@
 
 int xrandr_timing::m_xerrors = 0;
 int xrandr_timing::m_xerrors_flag = 0;
-int (*old_error_handler)(Display *, XErrorEvent *);
+static int (*old_error_handler)(Display *, XErrorEvent *);
 
 static __typeof__(XGetErrorText) *p_XGetErrorText;
 #define XGetErrorText p_XGetErrorText
@@ -65,6 +65,7 @@ static int error_handler(Display *dpy, XErrorEvent *err)
 	buf[0]='\0';
 	xrandr_timing::m_xerrors|=xrandr_timing::m_xerrors_flag;
 	log_error("XRANDR: <-> (error_handler) [ERROR] %s error code %d flags %02x\n", buf, err->error_code, xrandr_timing::m_xerrors);
+	old_error_handler(dpy, err);
 	return 0;
 }
 
@@ -696,7 +697,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 				if (super_resolution && mode->platform_data == ULONG_MAX)
 				{
 					// super resolution placement, vertical stacking
-					crtc_info2->x = 0; //2560 - crtc_info2->width; 
+					crtc_info2->x = 0; //WIP 2560 - crtc_info2->width; 
 					crtc_info2->y = (m_id-1)*1024;
 
 					if (2560 > width)
@@ -798,6 +799,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 			old_error_handler = XSetErrorHandler(error_handler);
 			XRRSetCrtcConfig(m_pdisplay, resources, resources->crtcs[c], CurrentTime, crtc_info2->x, crtc_info2->y, crtc_info2->mode, crtc_info2->rotation, crtc_info2->outputs, crtc_info2->noutput);
 			XSync(m_pdisplay, False);
+			XSetErrorHandler(old_error_handler);
 			if (m_xerrors & 0x10)
 			{
 				log_error("XRANDR: <%d> (set_timing) [ERROR] in %s crtc %d set modeline %04lx\n", m_id, "XRRSetCrtcConfig", c, crtc_info2->mode);
@@ -810,20 +812,19 @@ bool xrandr_timing::set_timing(modeline *mode)
 	// Release X server, events can be processed now
 	XUngrabServer(m_pdisplay);
 
-	XRRFreeCrtcInfo(crtc_info);
-
 	if (m_xerrors & m_xerrors_flag)
 		log_error("XRANDR: <%d> (set_timing) [ERROR] in %s\n", m_id, "XRRSetCrtcConfig");
 
 	// Recall the impacted crtc to settle parameters
+	XRRFreeCrtcInfo(crtc_info);
 	crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
 
-	// save last crtc
-	m_last_crtc = *crtc_info;
-
-	// log crtc config modeline change fail 
+	// crtc config modeline change fail 
 	if (crtc_info->mode == 0)
 		log_error("XRANDR: <%d> (set_timing) [ERROR] switching resolution, no modeline\n", m_id);
+	else
+		// save last crtc
+		m_last_crtc = *crtc_info;
 
 	// Verify current active mode
 	/*
@@ -841,7 +842,7 @@ bool xrandr_timing::set_timing(modeline *mode)
 	XRRFreeOutputInfo(output_info);
 	XRRFreeScreenResources(resources);
 
-	return m_xerrors==0;
+	return (m_xerrors==0 && crtc_info->mode != 0);
 }
 
 //============================================================
