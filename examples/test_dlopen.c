@@ -44,13 +44,19 @@ int main(int argc, char** argv) {
 	printf("Init a new switchres_manager object:\n");
 	SRobj->init();
 
-	// Go for a static call
-	printf("Testing simple_test()\n");
-	SRobj->simple_test();
+	// Call mode + get result values
+	int w = 320, h = 180;
+	double rr = 59.84;
+	unsigned char interlace = 0;
+	printf("Orignial resolution expected: %dx%dx%f-%d\n", w, h, rr, interlace);
+	SRobj->sr_get_mode(&w, &h, &rr, &interlace);
+	printf("Got resolution: %dx%dx%f-%d\n", w, h, rr, interlace);
 
-	// Testing the function
-	printf("simple_test_with_params:\n");
-	SRobj->simple_test_with_params(320, 240, 60.0, 0, 0);
+	printf("Press Any Key to switch to new mode\n");
+	getchar();
+	SRobj->sr_switch_to_mode(&w, &h, &rr, &interlace);
+	printf("Press Any Key to quit.\n");
+	getchar();
 
 	// Clean the mess
 	printf("Say goodnight:\n");
