@@ -13,9 +13,62 @@
  **************************************************************/
 
 #define SDL_MAIN_HANDLED
+#define NUM_GRIDS 2
 
 #include <SDL2/SDL.h> 
 	
+void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
+{
+	// Clean the surface
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+	SDL_RenderClear(renderer);
+
+	// Draw outer rectangle
+	SDL_Rect rect {0, 0, width, height};
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	SDL_RenderDrawRect(renderer, &rect);
+
+	switch (num_grid)
+	{
+		case 0:
+			// cps2 grid
+			for (int i = 0;  i < width / 16; i++)
+			{
+				for (int j = 0; j < height / 16; j++)
+				{
+					if (i == 0 || j == 0 || i == (width / 16) - 1 || j == (height / 16) - 1)
+						SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+					else
+						SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+					rect = {i * 16, j * 16, 16, 16};
+					SDL_RenderDrawRect(renderer, &rect);
+
+					rect = {i * 16 + 7, j * 16 + 7, 2, 2};
+					SDL_RenderDrawRect(renderer, &rect);
+				}
+			}
+			break;
+
+		case 1:
+			// 16 x 12 squares
+			for (int i = 0;  i < width / 16; i++)
+			{
+				int x_pos = floor(i * float(width) / 16);
+				SDL_RenderDrawLine(renderer, x_pos, 0, x_pos, height - 1);
+			}
+
+			for (int i = 0;  i < height / 12; i++)
+			{
+				int y_pos = floor(i * float(height) / 12);
+				SDL_RenderDrawLine(renderer, 0, y_pos, width - 1, y_pos);
+			}
+			break;
+	}
+
+	SDL_RenderPresent(renderer);
+}
+
 int main(int argc, char **argv)
 { 
 	// Initialize SDL
@@ -28,8 +81,18 @@ int main(int argc, char **argv)
 	// Get display index
 	int display_index = 0;
 
+	typedef struct grid_display
+	{
+        	int     index;
+	        int     width;
+        	int     height;
+
+	        SDL_Window *window;
+		SDL_Renderer *renderer;
+	} GRID_DISPLAY;
+
 	// Array for displays
-	int display_array[10] = {};
+	GRID_DISPLAY display_array[10] = {};
 	int display_total = 0;
 
 	int num_displays = SDL_GetNumVideoDisplays();
@@ -44,7 +107,7 @@ int main(int argc, char **argv)
 			return 1;
 		}
 
-		display_array[display_total]=display_index;
+		display_array[display_total].index=display_index;
 		display_total++;
 	}
 	
@@ -53,53 +116,30 @@ int main(int argc, char **argv)
 
 	for (int disp=0;disp<display_total;disp++)
 	{
-		display_index = display_array[disp];
-
 		// Get target display size
 		SDL_DisplayMode dm;
-		SDL_GetCurrentDisplayMode(display_index, &dm);
-		int width = dm.w;
-		int height = dm.h;
+		SDL_GetCurrentDisplayMode(display_array[disp].index, &dm);
+
+		display_array[disp].width = dm.w;
+		display_array[disp].height = dm.h;
 
 		// Create window
-		SDL_Window* win = SDL_CreateWindow("Switchres test", SDL_WINDOWPOS_CENTERED_DISPLAY(display_index), SDL_WINDOWPOS_CENTERED, width, height, 0);
-		win_array[disp] = win;
+		display_array[disp].window = SDL_CreateWindow("Switchres test", SDL_WINDOWPOS_CENTERED_DISPLAY(display_array[disp].index), SDL_WINDOWPOS_CENTERED, dm.w, dm.h, 0);
 
-		// DZR fullscreen disabled to address all crtcs
-		//SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		// Fullscreen window
+		SDL_SetWindowFullscreen(display_array[disp].window, SDL_WINDOW_FULLSCREEN);
 
 		// Create renderer
-		SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-		SDL_RenderClear(renderer);
+		display_array[disp].renderer = SDL_CreateRenderer(display_array[disp].window, -1, SDL_RENDERER_ACCELERATED);
 
-		// Draw outer rectangle
-		SDL_Rect rect {0, 0, width, height};
-		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-		SDL_RenderDrawRect(renderer, &rect);
-
-		// Draw grid
-		for (int i = 0;  i < width / 16; i++)
-		{
-			for (int j = 0; j < height / 16; j++)
-			{
-				if (i == 0 || j == 0 || i == (width / 16) - 1 || j == (height / 16) - 1)
-					SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-				else
-					SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-
-				rect = {i * 16, j * 16, 16, 16};
-				SDL_RenderDrawRect(renderer, &rect);
-
-				rect = {i * 16 + 7, j * 16 + 7, 2, 2};
-				SDL_RenderDrawRect(renderer, &rect);
-			}
-		}
-
-		SDL_RenderPresent(renderer);
+		// DRaw grid
+		draw_grid(0, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
 	}
 
 	// Wait for escape key
 	bool close = false;
+	int  num_grid = 0;
+
 	while (!close)
 	{ 
 		SDL_Event event;
@@ -119,6 +159,14 @@ int main(int argc, char **argv)
 							close = true;
 							break; 
 
+						case SDL_SCANCODE_TAB:
+							num_grid ++;
+							for (int disp=0;disp<display_total;disp++)
+							{
+								draw_grid(num_grid % NUM_GRIDS, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
+							}
+							break; 
+
 						default:
 							break;
 					}
@@ -129,7 +177,7 @@ int main(int argc, char **argv)
 	//destroy all windows
 	for (int disp=0;disp<display_total;disp++)
 	{
-		SDL_DestroyWindow(win_array[disp]);
+		SDL_DestroyWindow(display_array[disp].window);
 	}
 
 	SDL_Quit();
