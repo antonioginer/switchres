@@ -3,7 +3,6 @@
 #ifdef __cplusplus
 #include <cstring> // required for strcpy
 #endif
-#include "cross_dlopen.h"
 
 #ifdef __linux__
 #define LIBSWR "libswitchres.so"
@@ -45,16 +44,21 @@ int main(int argc, char** argv) {
 	SRobj->init();
 
 	// Call mode + get result values
-	int w = 320, h = 180;
-	double rr = 59.84;
+	int w = 384, h = 224;
+	//int w = 1200, h = 1024;
+	double rr = 59.583393;
 	unsigned char interlace = 0;
+	sr_mode srm;
 	printf("Orignial resolution expected: %dx%dx%f-%d\n", w, h, rr, interlace);
-	SRobj->sr_get_mode(&w, &h, &rr, &interlace);
-	printf("Got resolution: %dx%dx%f-%d\n", w, h, rr, interlace);
+	unsigned char ret = SRobj->sr_get_mode(w, h, rr, interlace, &srm);
+	printf("Got resolution: %dx%d%c@%f\n", srm.width, srm.height, srm.interlace, srm.refresh);
+
+	ret = SRobj->sr_add_mode(w, h, rr, interlace, &srm);
+	ret = SRobj->sr_add_mode(srm.width, srm.height, rr, srm.interlace, &srm);
 
 	printf("Press Any Key to switch to new mode\n");
 	getchar();
-	SRobj->sr_switch_to_mode(&w, &h, &rr, &interlace);
+	SRobj->sr_switch_to_mode(srm.width, srm.height, rr, srm.interlace, &srm);
 	printf("Press Any Key to quit.\n");
 	getchar();
 

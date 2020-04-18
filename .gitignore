@@ -1,3 +1,8 @@
 *.o
 *.exe
+*.a
+*.so
+*.lib
+*.dll
 switchres_main
+grid
