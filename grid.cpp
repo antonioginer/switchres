@@ -135,6 +135,8 @@ int main(int argc, char **argv)
 		SDL_DisplayMode dm;
 		SDL_GetCurrentDisplayMode(display_array[disp].index, &dm);
 
+		SDL_ShowCursor(SDL_DISABLE);
+
 		display_array[disp].width = dm.w;
 		display_array[disp].height = dm.h;
 
@@ -149,7 +151,6 @@ int main(int argc, char **argv)
 		display_array[disp].renderer = SDL_CreateRenderer(display_array[disp].window, -1, SDL_RENDERER_ACCELERATED);
 
 		// Draw grid
-		draw_grid(0, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
 		draw_grid(0, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
 	}
 
