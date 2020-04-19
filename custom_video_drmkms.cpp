@@ -45,14 +45,15 @@
 #define drmIoctl p_drmIoctl
 #define drmGetCap p_drmGetCap
 #define drmIsMaster p_drmIsMaster
+#define drmSetMaster p_drmSetMaster
+#define drmDropMaster p_drmDropMaster
 
 //============================================================
 //  shared the privileges of the master fd
 //============================================================
 
-static int m_shared_fd[10]={};
-static int m_shared_id = 0;
-static int m_shared_count[10]={};
+static int s_shared_fd[10]={};
+static int s_shared_count[10]={};
 
 //============================================================
 //  list connector types
@@ -138,7 +139,7 @@ drmkms_timing::~drmkms_timing()
 
 	if (m_drm_fd>0)
 	{
-		if (!--m_shared_count[m_shared_id])
+		if (!--s_shared_count[m_card_id])
 		{
 			close(m_drm_fd);
 		}
@@ -308,6 +309,20 @@ bool drmkms_timing::init()
                         log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmIsMaster", "DRM_LIBRARY");
                         return false;
                 }
+
+                p_drmSetMaster = (__typeof__(drmSetMaster))dlsym(mp_drm_handle, "drmSetMaster");
+                if (p_drmSetMaster == NULL)
+                {
+                        log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmSetMaster", "DRM_LIBRARY");
+                        return false;
+                }
+
+                p_drmDropMaster = (__typeof__(drmDropMaster))dlsym(mp_drm_handle, "drmDropMaster");
+                if (p_drmDropMaster == NULL)
+                {
+                        log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmDropMaster", "DRM_LIBRARY");
+                        return false;
+                }
 	} else {
 		log_error("DRM/KMS: <%d> (init) [ERROR] missing %s library\n", m_id, "DRM/KMS_LIBRARY");
 		return false;
@@ -361,6 +376,7 @@ bool drmkms_timing::init()
 						if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name, connector_name) || output_position == screen_pos)
 						{
 							m_desktop_output = p_connector->connector_id;
+							m_card_id = num;
 							log_verbose("DRM/KMS: <%d> (init) card %d connector %d id %d name %s selected as primary output\n", m_id, num, i,  m_desktop_output, connector_name);
 
 							drmModeEncoder *p_encoder = drmModeGetEncoder(m_drm_fd, p_connector->encoder_id);
@@ -399,44 +415,28 @@ bool drmkms_timing::init()
 			{
 				if ( drmIsMaster(m_drm_fd) )
 				{
-					m_shared_fd[num] = m_drm_fd;
-					m_shared_id = num;
-					m_shared_count[num] = 1; 
+					s_shared_fd[m_card_id] = m_drm_fd;
+					s_shared_count[m_card_id] = 1; 
 				}
 				else
 				{
-					if ( m_shared_count[num] > 0 )
+					if ( s_shared_count[m_card_id] > 0 )
 					{
 						close(m_drm_fd);
-						m_drm_fd = m_shared_fd[num];
-						m_shared_id = num;
-						m_shared_count[num]++; 
+						m_drm_fd = s_shared_fd[m_card_id];
+						s_shared_count[m_card_id]++; 
 					}
 					else
 					{
 						log_verbose("DRM/KMS: <%d> (init) looking for the DRM master\n", m_id);
-						for (int fd = 4; fd < m_drm_fd ; fd++)
+						int fd = drm_master_hook(m_drm_fd);
+						if (fd)
 						{
-							struct stat st;
-							if ( !fstat(fd, &st) )
-							{
-								// in case of multiple video cards, it wouldd be better to compare dri number
-								if ( S_ISCHR(st.st_mode) )
-								{
-									if ( drmIsMaster(fd) )
-									{
-										close(m_drm_fd);
-										m_drm_fd = fd;
-										m_shared_fd[num] = m_drm_fd;
-										m_shared_id = num;
-										// start at 2 to disable closing the fd
-										m_shared_count[num] = 2;
-										drmVersion *version_hook = drmGetVersion(m_drm_fd);
-										log_verbose("DRM/KMS: <%d> (init) DRM hook created version %d.%d.%d type %s\n", m_id, version_hook->version_major, version_hook->version_minor, version_hook->version_patchlevel, version_hook->name);
-										drmFreeVersion(version_hook);
-									}
-								}
-							}
+							close(m_drm_fd);
+							m_drm_fd = fd;
+							s_shared_fd[m_card_id] = m_drm_fd;
+							// start at 2 to disable closing the fd
+							s_shared_count[m_card_id] = 2;
 						}
 					}
 				}
@@ -465,6 +465,33 @@ bool drmkms_timing::init()
 	}
 
 	return true;
+}
+
+//============================================================
+//  drmkms_timing::drm_master_hook
+//============================================================
+
+int drmkms_timing::drm_master_hook(int last_fd)
+{
+	for (int fd = 4; fd < last_fd ; fd++)
+	{
+		struct stat st;
+		if ( !fstat(fd, &st) )
+		{
+			// in case of multiple video cards, it wouldd be better to compare dri number
+			if ( S_ISCHR(st.st_mode) )
+			{
+				if ( drmIsMaster(fd) )
+				{
+					drmVersion *version_hook = drmGetVersion(m_drm_fd);
+					log_verbose("DRM/KMS: <%d> (init) DRM hook created version %d.%d.%d type %s\n", m_id, version_hook->version_major, version_hook->version_minor, version_hook->version_patchlevel, version_hook->name);
+					drmFreeVersion(version_hook);
+					return fd;
+				}
+			}
+		}
+	}
+	return 0;
 }
 
 //============================================================
