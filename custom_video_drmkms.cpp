@@ -417,6 +417,7 @@ bool drmkms_timing::init()
 				{
 					s_shared_fd[m_card_id] = m_drm_fd;
 					s_shared_count[m_card_id] = 1; 
+					drmDropMaster(m_drm_fd);
 				}
 				else
 				{
@@ -426,7 +427,7 @@ bool drmkms_timing::init()
 						m_drm_fd = s_shared_fd[m_card_id];
 						s_shared_count[m_card_id]++; 
 					}
-					else
+					else if (m_id == 1)
 					{
 						log_verbose("DRM/KMS: <%d> (init) looking for the DRM master\n", m_id);
 						int fd = drm_master_hook(m_drm_fd);
@@ -567,6 +568,8 @@ bool drmkms_timing::set_timing(modeline *mode)
 		return false;
 	}
 
+	drmSetMaster(m_drm_fd);
+
 	// Setup the DRM mode structure
 	drmModeModeInfo dmode = {};
 
@@ -621,7 +624,9 @@ bool drmkms_timing::set_timing(modeline *mode)
 		//drmModeFreePlaneResources(pplanes);
 
 		unsigned int framebuffer_id = mp_crtc_desktop->buffer_id;
-		if (pframebuffer->width < dmode.hdisplay || pframebuffer->height < dmode.vdisplay)
+
+		//if (pframebuffer->width < dmode.hdisplay || pframebuffer->height < dmode.vdisplay)
+		if (1)
 		{
 			log_verbose("DRM/KMS: <%d> (add_mode) <debug> creating new frame buffer with size %dx%d\n", m_id, dmode.hdisplay, dmode.vdisplay);
 
@@ -662,11 +667,15 @@ bool drmkms_timing::set_timing(modeline *mode)
 				log_verbose("DRM/KMS: <%d> (add_mode) [ERROR] failed to map frame buffer %p\n", m_id, map);
 			}
 		}
+		else
+		{
+			log_verbose("DRM/KMS: <%d> (add_mode) <debug> use existing frame buffer\n", m_id);
+		}
 
 		drmModeFreeFB(pframebuffer);
 
 		pframebuffer = drmModeGetFB(m_drm_fd, framebuffer_id);
-		log_verbose("DRM/KMS: <%d> (add_mode) <debug> new frame buffer id %d size %dx%d bpp %d\n", m_id, framebuffer_id, pframebuffer->width, pframebuffer->height, pframebuffer->bpp);
+		log_verbose("DRM/KMS: <%d> (add_mode) <debug> frame buffer id %d size %dx%d bpp %d\n", m_id, framebuffer_id, pframebuffer->width, pframebuffer->height, pframebuffer->bpp);
 		drmModeFreeFB(pframebuffer);
 
 		// set the mode on the crtc
@@ -693,6 +702,7 @@ bool drmkms_timing::set_timing(modeline *mode)
 			m_framebuffer_id = framebuffer_id;
 		}
 	}
+	drmDropMaster(m_drm_fd);
 
 	return true;
 }
