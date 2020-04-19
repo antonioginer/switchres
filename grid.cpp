@@ -143,8 +143,7 @@ int main(int argc, char **argv)
 		// Create window
 		display_array[disp].window = SDL_CreateWindow("Switchres test grid", SDL_WINDOWPOS_CENTERED_DISPLAY(display_array[disp].index), SDL_WINDOWPOS_CENTERED, dm.w, dm.h, SDL_WINDOW_FULLSCREEN_DESKTOP);
 
-		// Set fullscreen
-		SDL_SetWindowFullscreen(display_array[disp].window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		// Required by Window multi-monitor
 		SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 
 		// Create renderer
