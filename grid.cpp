@@ -15,7 +15,7 @@
 #define SDL_MAIN_HANDLED
 #define NUM_GRIDS 2
 
-#include <SDL2/SDL.h> 
+#include <SDL2/SDL.h>
 
 typedef struct grid_display
 {
@@ -30,22 +30,66 @@ typedef struct grid_display
 //============================================================
 //  draw_grid
 //============================================================
-	
+
 void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
 {
 	// Clean the surface
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_RenderClear(renderer);
 
-	// Draw outer rectangle
 	SDL_Rect rect {0, 0, width, height};
-	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-	SDL_RenderDrawRect(renderer, &rect);
 
 	switch (num_grid)
 	{
 		case 0:
+			// 16 x 12 squares
+			{
+				// Fill the screen with red
+				rect = {0, 0, width, height};
+				SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+				SDL_RenderFillRect(renderer, &rect);
+
+				// Draw white rectangle
+				rect = {width / 32, height / 24 , width - width / 16, height - height / 12};
+				SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+				SDL_RenderFillRect(renderer, &rect);
+
+				// Draw grid using black rectangles
+				SDL_Rect rects[16 * 12];
+
+				// Set the thickness of horizontal and vertical lines based on the screen resolution
+				int line_w = round(float(width) / 320.0);
+				int line_h = round(float(height) / 240.0);
+				if ( line_w < 1 ) line_w = 1;
+				if ( line_h < 1 ) line_h = 1;
+
+				float rect_w = (width - line_w * 17) / 16.0;
+				float rect_h = (height - line_h * 13) / 12.0;
+
+				for (int i = 0; i < 16; i++)
+				{
+					int x_pos1 = ceil(i * rect_w);
+					int x_pos2 = ceil((i+1) * rect_w);
+					for (int j = 0; j < 12; j++)
+					{
+						int y_pos1 = ceil(j * rect_h);
+						int y_pos2 = ceil((j+1) * rect_h);
+						rects[i + j * 16] = {x_pos1 + (i+1) * line_w , y_pos1 + (j+1) * line_h, x_pos2 - x_pos1, y_pos2 - y_pos1};
+					}
+				}
+
+				SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+				SDL_RenderFillRects(renderer, rects, 16 * 12);
+			}
+			break;
+
+		case 1:
 			// cps2 grid
+
+			// Draw outer rectangle
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			SDL_RenderDrawRect(renderer, &rect);
+
 			for (int i = 0;  i < width / 16; i++)
 			{
 				for (int j = 0; j < height / 16; j++)
@@ -63,21 +107,6 @@ void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
 				}
 			}
 			break;
-
-		case 1:
-			// 16 x 12 squares
-			for (int i = 0;  i < width / 16; i++)
-			{
-				int x_pos = floor(i * float(width) / 16);
-				SDL_RenderDrawLine(renderer, x_pos, 0, x_pos, height - 1);
-			}
-
-			for (int i = 0;  i < height / 12; i++)
-			{
-				int y_pos = floor(i * float(height) / 12);
-				SDL_RenderDrawLine(renderer, 0, y_pos, width - 1, y_pos);
-			}
-			break;
 	}
 
 	SDL_RenderPresent(renderer);
@@ -88,14 +117,14 @@ void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
 //============================================================
 
 int main(int argc, char **argv)
-{ 
+{
 	SDL_Window* win_array[10] = {};
 	GRID_DISPLAY display_array[10] = {};
 	int display_total = 0;
 
 	// Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
-	{ 
+	{
 		printf("error initializing SDL: %s\n", SDL_GetError());
 		return 1;
 	}
@@ -158,29 +187,29 @@ int main(int argc, char **argv)
 	int  num_grid = 0;
 
 	while (!close)
-	{ 
+	{
 		SDL_Event event;
 
 		while (SDL_PollEvent(&event))
-		{ 
+		{
 			switch (event.type)
-			{ 
+			{
 				case SDL_QUIT:
 					close = true;
-					break; 
+					break;
 
-				case SDL_KEYDOWN: 
+				case SDL_KEYDOWN:
 					switch (event.key.keysym.scancode)
 					{
 						case SDL_SCANCODE_ESCAPE:
 							close = true;
-							break; 
+							break;
 
 						case SDL_SCANCODE_TAB:
 							num_grid ++;
 							for (int disp = 0; disp < display_total; disp++)
 								draw_grid(num_grid % NUM_GRIDS, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
-							break; 
+							break;
 
 						default:
 							break;
@@ -195,5 +224,5 @@ int main(int argc, char **argv)
 
 	SDL_Quit();
 
-	return 0; 
-} 
+	return 0;
+}
