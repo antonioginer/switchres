@@ -213,7 +213,7 @@ bool display_manager::restore_modes()
 		video_modes[i].type = backup_modes[i].type = 0;
 		video_modes[i].range = backup_modes[i].range = 0;
 
-		if (memcmp(&video_modes[i], &backup_modes[i], sizeof(modeline) - sizeof(mode_result)) != 0)
+		if (modeline_is_different(&video_modes[i], &backup_modes[i]))
 		{
 			video_modes[i] = backup_modes[i];
 			if (!video()->update_mode(&video_modes[i]))
