@@ -30,10 +30,8 @@ MODULE_API void sr_set_monitor(const char *preset) {
 	swr->set_monitor(preset);
 }
 
-unsigned char disp_best_mode_to_sr_mode(display_manager* disp, sr_mode* srm)
+void disp_best_mode_to_sr_mode(display_manager* disp, sr_mode* srm)
 {
-	if (!disp->got_mode()) return 0;
-
 	srm->width = disp->width();
 	srm->height = disp->height();
 	srm->refresh = disp->refresh();
@@ -42,69 +40,97 @@ unsigned char disp_best_mode_to_sr_mode(display_manager* disp, sr_mode* srm)
 	srm->x_scale = disp->x_scale();
 	srm->y_scale = disp->y_scale();
 	srm->interlace = (disp->is_interlaced() ? 105 : 0);
-
-	return 1;
 }
 
-MODULE_API unsigned char sr_get_mode(int width, int height, double refresh, unsigned char interlace, sr_mode *return_mode) {
-	bool linterlace = (interlace > 0) ? true : false;
 
-	display_manager *disp = swr->display();
-	printf("Modeline parameters: %dx%d@%f\n", width, height, refresh);
-	modeline *mode = disp->get_mode(width, height, refresh, linterlace);
-	return disp_best_mode_to_sr_mode(disp, return_mode);
+bool sr_refresh_display(display_manager *disp)
+{
+	if (disp->is_mode_updated())
+	{
+		if (disp->update_mode(disp->best_mode()))
+		{
+			printf("sr_refresh_display: mode was updated\n");
+			return true;
+		}
+	}
+	else if (disp->is_mode_new())
+	{
+		if (disp->add_mode(disp->best_mode()))
+		{
+			printf("sr_refresh_display: mode was added\n");
+			return true;
+		}
+	}
+	else
+	{
+		printf("sr_refresh_display: no refresh required\n");
+		return true;
+	}
+
+	printf("sr_refresh_display: error refreshing display\n");
+	return false;
 }
 
 
 MODULE_API unsigned char sr_add_mode(int width, int height, double refresh, unsigned char interlace, sr_mode *return_mode) {
-	bool linterlace = (interlace > 0) ? true : false;
 
-	printf("Inside sr_add_mode\n");
+	printf("Inside sr_add_mode(%dx%d@%f%s)\n", width, height, refresh, interlace > 0? "i":"");
 	display_manager *disp = swr->display();
-	printf("Got a display\n");
-	printf("Modeline parameters: %dx%d@%f\n", width, height, refresh);
-	modeline *mode = disp->get_mode(width, height, refresh, linterlace);
-	printf("Got a mode\n");
-	if (!disp_best_mode_to_sr_mode(disp, return_mode)) return 0;
-	for (auto &display : swr->displays)
+	if (disp == nullptr)
 	{
-		mode = display->get_mode(width, height, refresh, linterlace);
-		if (!mode) continue;
-		if (mode->type & MODE_UPDATED) {
-			printf("sr_get_mode: required mode updated\n");
-			disp->update_mode(mode);
-		}
-		else if (mode->type & MODE_NEW)
-		{
-			printf("sr_get_mode: required mode was added\n");
-			disp->add_mode(mode);
-		}
+		printf("sr_add_mode: error, didn't get a display\n");
+		return 0;
 	}
-	return 1;
+
+	disp->get_mode(width, height, refresh, (interlace > 0? true : false));
+	if (disp->got_mode())
+	{
+		printf("sr_add_mode: got mode %dx%d@%f type(%x)\n", disp->width(), disp->height(), disp->v_freq(), disp->best_mode()->type);
+		if (return_mode != nullptr) disp_best_mode_to_sr_mode(disp, return_mode);
+		if (sr_refresh_display(disp))
+			return 1;
+	}
+
+	printf("sr_add_mode: error adding mode\n");
+	return 0;
 }
 
 
 MODULE_API unsigned char sr_switch_to_mode(int width, int height, double refresh, unsigned char interlace, sr_mode *return_mode) {
-	bool linterlace = (interlace > 0) ? true : false;
 
-	printf("Inside sr_switch_to_mode\n");
+	printf("Inside sr_switch_to_mode(%dx%d@%f%s)\n", width, height, refresh, interlace > 0? "i":"");
 	display_manager *disp = swr->display();
-	modeline *mode = disp->get_mode(width, height, refresh, linterlace);
-	if (!disp_best_mode_to_sr_mode(disp, return_mode)) return 0;
-	printf("mode type: %d\n", mode->type);
-	if (mode->type & MODE_UPDATED) {
-		printf("sr_switch_to_mode: Required mode updated\n");
-		disp->update_mode(mode);
-	}
-	else if (mode->type & MODE_NEW) 
+	if (disp == nullptr)
 	{
-		printf("sr_switch_to_mode: Warning: required mode had to be added\n");
-		disp->add_mode(mode);
-	}
-	if (disp->set_mode(mode))
-		return 1;
-	else
+		printf("sr_switch_to_mode: error, didn't get a display\n");
 		return 0;
+	}
+
+	disp->get_mode(width, height, refresh, (interlace > 0? true : false));
+	if (disp->got_mode())
+	{
+		printf("sr_switch_to_mode: got mode %dx%d@%f type(%x)\n", disp->width(), disp->height(), disp->v_freq(), disp->best_mode()->type);
+		if (return_mode != nullptr) disp_best_mode_to_sr_mode(disp, return_mode);
+		if (!sr_refresh_display(disp))
+			return 0;
+	}
+
+	if (disp->is_switching_required())
+	{
+		if (disp->set_mode(disp->best_mode()))
+		{
+			printf("sr_switch_to_mode: successfully switched to %dx%d@%f\n", disp->width(), disp->height(), disp->v_freq());
+			return 1;
+		}
+	}
+	else
+	{
+		printf("sr_switch_to_mode: switching not required\n");
+		return 1;
+	}
+
+	printf("sr_switch_to_mode: error switching to mode\n");
+	return 0;
 }
 
 
@@ -113,32 +139,25 @@ MODULE_API void simple_test() {
 	swr->set_log_verbose_fn((void*)printf);
 	swr->set_monitor("generic_15");
 	swr->add_display();
-	modeline *mode = swr->display()->get_mode(384, 288, 50.0, false);
+	sr_add_mode(384, 288, 50.0, false, 0);
 }
 
 
 MODULE_API void simple_test_with_params(int width, int height, double refresh, unsigned char interlace, unsigned char rotate) {
-	bool linterlace = false, lrotate = false;
-
-	if (interlace > 0)
-		linterlace = true;
-
-	if (rotate > 0)
-		lrotate = true;
 
 	printf("Inside simple_test_with_params\n");
 	swr->set_log_verbose_fn((void*)printf);
 	swr->set_monitor("generic_15");
 	swr->add_display();
-	modeline *mode = swr->display()->get_mode(width, height, refresh, linterlace);
+	swr->set_rotation(rotate > 0? true : false);
+	sr_add_mode(width, height, refresh, interlace > 0? true : false, 0);
 }
 
 
 MODULE_API srAPI srlib = { 
-	sr_init, 
-	sr_deinit, 
-	sr_get_mode, 
-	sr_add_mode, 
+	sr_init,
+	sr_deinit,
+	sr_add_mode,
 	sr_switch_to_mode
 };
 
