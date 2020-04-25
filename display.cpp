@@ -288,7 +288,6 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	modeline s_mode = {};
 	modeline t_mode = {};
 	modeline best_mode = {};
-	modeline *prev_mode = m_best_mode;
 	char result[256]={'\x00'};
 
 	log_verbose("Switchres: Calculating best video mode for %dx%d@%.6f%s orientation: %s\n",
@@ -395,7 +394,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	}
 
 	// Check if new best mode is different than previous one
-	m_switching_required = (prev_mode != m_best_mode || best_mode.type & MODE_UPDATED);
+	m_switching_required = (m_current_mode != m_best_mode || best_mode.type & MODE_UPDATED);
 
 	if (m_switching_required) *m_best_mode = best_mode;
 	return m_best_mode;

@@ -79,8 +79,11 @@ bool linux_display::init()
 
 bool linux_display::set_mode(modeline *mode)
 {
-	if (mode) return set_desktop_mode(mode, 0);
-
+	if (mode && set_desktop_mode(mode, 0));
+	{
+		set_current_mode(mode);
+		return true;
+	}
 	return false;
 }
 
@@ -93,7 +96,7 @@ bool linux_display::get_desktop_mode()
 	if (video() == NULL) 
 		return false;
 
-        return true;
+	return true;
 }
 
 
@@ -112,7 +115,7 @@ bool linux_display::set_desktop_mode(modeline *mode, int flags)
 	if (flags != 0)
 		log_info("Set desktop mode flags value is 0x%x.\n", flags);
 
-        return video()->set_timing(mode);
+	return video()->set_timing(mode);
 }
 
 //============================================================
@@ -124,7 +127,7 @@ bool linux_display::restore_desktop_mode()
 	if (video() == NULL) 
 		return false;
 
-        return video()->set_timing(&desktop_mode);
+	return video()->set_timing(&desktop_mode);
 }
 
 //============================================================
@@ -148,7 +151,11 @@ int linux_display::get_available_video_modes()
 
 		// set the desktop mode
 		if (mode.type & MODE_DESKTOP)
+		{
 			memcpy(&desktop_mode, &mode, sizeof(modeline));
+			if (current_mode() == nullptr)
+				set_current_mode(&mode);
+		}
 
 		video_modes.push_back(mode);
 		backup_modes.push_back(mode);
