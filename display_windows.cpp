@@ -28,6 +28,16 @@ windows_display::windows_display(display_settings *ds)
 }
 
 //============================================================
+//  windows_display::~windows_display
+//============================================================
+
+windows_display::~windows_display()
+{
+	// Restore previous settings
+	ChangeDisplaySettingsExA(m_device_name, NULL, NULL, 0, 0);
+}
+
+//============================================================
 //  windows_display::init
 //============================================================
 
@@ -160,10 +170,14 @@ bool windows_display::set_desktop_mode(modeline *mode, int flags)
 		lpDevMode.dmDisplayFlags = mode->interlace? DM_INTERLACED : 0;
 		lpDevMode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY | DM_DISPLAYFLAGS;
 
-		if (ChangeDisplaySettingsExA(m_device_name, &lpDevMode, NULL, flags, 0) == DISP_CHANGE_SUCCESSFUL)
-			return true;
-	}
+		log_info("set_desktop_mode: %s (%dx%d@%d) flags(%x)\n", m_device_name, (int)lpDevMode.dmPelsWidth, (int)lpDevMode.dmPelsHeight, (int)lpDevMode.dmDisplayFrequency, (int)lpDevMode.dmDisplayFlags);
 
+		int result = ChangeDisplaySettingsExA(m_device_name, &lpDevMode, NULL, flags, 0);
+		if (result == DISP_CHANGE_SUCCESSFUL)
+			return true;
+
+		log_error("ChangeDisplaySettingsExA error(%x)\n", (int)result);
+	}
 	return false;
 }
 
