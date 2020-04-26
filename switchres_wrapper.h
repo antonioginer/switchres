@@ -1,4 +1,18 @@
-#ifdef __cplusplus
+/**************************************************************
+
+   log.h - Simple logging for Switchres
+
+   ---------------------------------------------------------
+
+   Switchres   Modeline generation engine for emulation
+
+   License     GPL-2.0+
+   Copyright   2010-2020 Chris Kennedy, Antonio Giner,
+                         Alexandre Wodarczyk, Gil Delescluse
+
+ **************************************************************/
+ 
+ #ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -59,17 +73,11 @@ typedef struct MODULE_API {
     unsigned char interlace;
 } sr_mode;
 
-// Instanciate a new switchres_manager object, read a switchres_ini file
 MODULE_API void sr_init();
 MODULE_API void sr_deinit();
 MODULE_API unsigned char sr_add_mode(int, int, double, unsigned char, sr_mode*);
 MODULE_API unsigned char sr_switch_to_mode(int, int, double, unsigned char, sr_mode*);
 MODULE_API void sr_set_monitor(const char*);
-
-
-MODULE_API void simple_test();
-MODULE_API void simple_test_with_params(int width, int height, double refresh, unsigned char interlace, unsigned char rotate);
-
 
 
 // Inspired by https://stackoverflow.com/a/1067684

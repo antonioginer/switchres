@@ -1,6 +1,21 @@
+/**************************************************************
+
+   log.h - Simple logging for Switchres
+
+   ---------------------------------------------------------
+
+   Switchres   Modeline generation engine for emulation
+
+   License     GPL-2.0+
+   Copyright   2010-2020 Chris Kennedy, Antonio Giner,
+                         Alexandre Wodarczyk, Gil Delescluse
+
+ **************************************************************/
+
 #define MODULE_API_EXPORTS
 #include "switchres.h"
 #include "switchres_wrapper.h"
+#include "log.h"
 #include <stdio.h>
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +64,7 @@ bool sr_refresh_display(display_manager *disp)
 	{
 		if (disp->update_mode(disp->best_mode()))
 		{
-			printf("sr_refresh_display: mode was updated\n");
+			log_info("sr_refresh_display: mode was updated\n");
 			return true;
 		}
 	}
@@ -57,35 +72,35 @@ bool sr_refresh_display(display_manager *disp)
 	{
 		if (disp->add_mode(disp->best_mode()))
 		{
-			printf("sr_refresh_display: mode was added\n");
+			log_info("sr_refresh_display: mode was added\n");
 			return true;
 		}
 	}
 	else
 	{
-		printf("sr_refresh_display: no refresh required\n");
+		log_info("sr_refresh_display: no refresh required\n");
 		return true;
 	}
 
-	printf("sr_refresh_display: error refreshing display\n");
+	log_error("sr_refresh_display: error refreshing display\n");
 	return false;
 }
 
 
 MODULE_API unsigned char sr_add_mode(int width, int height, double refresh, unsigned char interlace, sr_mode *return_mode) {
 
-	printf("Inside sr_add_mode(%dx%d@%f%s)\n", width, height, refresh, interlace > 0? "i":"");
+	log_verbose("Inside sr_add_mode(%dx%d@%f%s)\n", width, height, refresh, interlace > 0? "i":"");
 	display_manager *disp = swr->display();
 	if (disp == nullptr)
 	{
-		printf("sr_add_mode: error, didn't get a display\n");
+		log_error("sr_add_mode: error, didn't get a display\n");
 		return 0;
 	}
 
 	disp->get_mode(width, height, refresh, (interlace > 0? true : false));
 	if (disp->got_mode())
 	{
-		printf("sr_add_mode: got mode %dx%d@%f type(%x)\n", disp->width(), disp->height(), disp->v_freq(), disp->best_mode()->type);
+		log_verbose("sr_add_mode: got mode %dx%d@%f type(%x)\n", disp->width(), disp->height(), disp->v_freq(), disp->best_mode()->type);
 		if (return_mode != nullptr) disp_best_mode_to_sr_mode(disp, return_mode);
 		if (sr_refresh_display(disp))
 			return 1;
@@ -98,18 +113,18 @@ MODULE_API unsigned char sr_add_mode(int width, int height, double refresh, unsi
 
 MODULE_API unsigned char sr_switch_to_mode(int width, int height, double refresh, unsigned char interlace, sr_mode *return_mode) {
 
-	printf("Inside sr_switch_to_mode(%dx%d@%f%s)\n", width, height, refresh, interlace > 0? "i":"");
+	log_verbose("Inside sr_switch_to_mode(%dx%d@%f%s)\n", width, height, refresh, interlace > 0? "i":"");
 	display_manager *disp = swr->display();
 	if (disp == nullptr)
 	{
-		printf("sr_switch_to_mode: error, didn't get a display\n");
+		log_error("sr_switch_to_mode: error, didn't get a display\n");
 		return 0;
 	}
 
 	disp->get_mode(width, height, refresh, (interlace > 0? true : false));
 	if (disp->got_mode())
 	{
-		printf("sr_switch_to_mode: got mode %dx%d@%f type(%x)\n", disp->width(), disp->height(), disp->v_freq(), disp->best_mode()->type);
+		log_verbose("sr_switch_to_mode: got mode %dx%d@%f type(%x)\n", disp->width(), disp->height(), disp->v_freq(), disp->best_mode()->type);
 		if (return_mode != nullptr) disp_best_mode_to_sr_mode(disp, return_mode);
 		if (!sr_refresh_display(disp))
 			return 0;
@@ -119,38 +134,18 @@ MODULE_API unsigned char sr_switch_to_mode(int width, int height, double refresh
 	{
 		if (disp->set_mode(disp->best_mode()))
 		{
-			printf("sr_switch_to_mode: successfully switched to %dx%d@%f\n", disp->width(), disp->height(), disp->v_freq());
+			log_info("sr_switch_to_mode: successfully switched to %dx%d@%f\n", disp->width(), disp->height(), disp->v_freq());
 			return 1;
 		}
 	}
 	else
 	{
-		printf("sr_switch_to_mode: switching not required\n");
+		log_info("sr_switch_to_mode: switching not required\n");
 		return 1;
 	}
 
-	printf("sr_switch_to_mode: error switching to mode\n");
+	log_error("sr_switch_to_mode: error switching to mode\n");
 	return 0;
-}
-
-
-MODULE_API void simple_test() {
-	printf("Inside simple_test\n");
-	swr->set_log_verbose_fn((void*)printf);
-	swr->set_monitor("generic_15");
-	swr->add_display();
-	sr_add_mode(384, 288, 50.0, false, 0);
-}
-
-
-MODULE_API void simple_test_with_params(int width, int height, double refresh, unsigned char interlace, unsigned char rotate) {
-
-	printf("Inside simple_test_with_params\n");
-	swr->set_log_verbose_fn((void*)printf);
-	swr->set_monitor("generic_15");
-	swr->add_display();
-	swr->set_rotation(rotate > 0? true : false);
-	sr_add_mode(width, height, refresh, interlace > 0? true : false, 0);
 }
 
 
