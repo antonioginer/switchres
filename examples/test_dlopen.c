@@ -45,25 +45,34 @@ int main(int argc, char** argv) {
 
 	// Call mode + get result values
 	int w = 384, h = 224;
-	//int w = 1200, h = 1024;
 	double rr = 59.583393;
-	unsigned char interlace = 0;
+	unsigned char interlace = 0, ret;
 	sr_mode srm;
-	printf("Orignial resolution expected: %dx%dx%f-%d\n", w, h, rr, interlace);
-	unsigned char ret = SRobj->sr_get_mode(w, h, rr, interlace, &srm);
-	printf("Got resolution: %dx%d%c@%f\n", srm.width, srm.height, srm.interlace, srm.refresh);
+
+	printf("Orignial resolution expected: %dx%d@%f-%d\n", w, h, rr, interlace);
 
 	ret = SRobj->sr_add_mode(w, h, rr, interlace, &srm);
-	ret = SRobj->sr_add_mode(srm.width, srm.height, rr, srm.interlace, &srm);
-
+	if(!ret) 
+	{
+		printf("ERROR: couldn't add the required mode. Exiting!\n");
+		SRobj->deinit();
+		exit(1);
+	}
+	printf("Got resolution: %dx%d%c@%f\n", srm.width, srm.height, srm.interlace, srm.refresh);
 	printf("Press Any Key to switch to new mode\n");
 	getchar();
-	SRobj->sr_switch_to_mode(srm.width, srm.height, rr, srm.interlace, &srm);
+	
+	ret = SRobj->sr_switch_to_mode(srm.width, srm.height, rr, srm.interlace, &srm);
+	if(!ret) 
+	{
+		printf("ERROR: couldn't switch to the required mode. Exiting!\n");
+		SRobj->deinit();
+		exit(1);
+	}
 	printf("Press Any Key to quit.\n");
 	getchar();
 
-	// Clean the mess
-	printf("Say goodnight:\n");
+	// Clean the mess, kiss goodnight SR
 	SRobj->deinit();
 
 	// We're done, let's closer
