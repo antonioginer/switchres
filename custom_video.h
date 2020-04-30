@@ -15,7 +15,7 @@
 #ifndef __CUSTOM_VIDEO__
 #define __CUSTOM_VIDEO__
 
-
+#include <cstring>
 #include "modeline.h"
 
 #define CUSTOM_VIDEO_TIMING_MASK        0x00000ff0
@@ -39,6 +39,13 @@
 #define TIMING_UPDATE      0x004
 #define TIMING_UPDATE_LIST 0x008 
 
+typedef struct custom_video_settings
+{
+	bool screen_compositing;
+	bool screen_reordering;
+	bool allow_hardware_refresh;
+	char custom_timing[256];
+} custom_video_settings;
 
 class custom_video
 {
@@ -65,6 +72,15 @@ public:
 
 	virtual bool get_timing(modeline *mode);
 	virtual bool set_timing(modeline *mode);
+
+	// getters
+	const char *custom_timing() { return (const char*) &m_cs.custom_timing; }
+
+	// setters
+	void set_custom_timing(const char *custom_timing) { strncpy(m_cs.custom_timing, custom_timing, sizeof(m_cs.custom_timing)-1); }
+
+	// options
+	custom_video_settings m_cs = {};
 
 	modeline m_user_mode = {};
 	modeline m_backup_mode = {};

@@ -101,7 +101,7 @@ bool windows_display::init()
 	if(!strcmp(m_ds.api, "powerstrip"))
 		method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
 
-	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&m_ds.ps_timing : m_device_key;
+	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&m_ds.vs.custom_timing : m_device_key;
 
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(m_device_name, m_device_id, method, s_param));
