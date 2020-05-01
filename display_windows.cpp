@@ -97,14 +97,12 @@ bool windows_display::init()
 	
 	// Initialize custom video
 	int method = CUSTOM_VIDEO_TIMING_AUTO;
+	if(!strcmp(m_ds.api, "powerstrip"))	method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
+	strcpy(m_ds.vs.device_reg_key, m_device_key);
 
-	if(!strcmp(m_ds.api, "powerstrip"))
-		method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
-
-	char *s_param = (method == CUSTOM_VIDEO_TIMING_POWERSTRIP)? (char *)&m_ds.vs.custom_timing : m_device_key;
-
+	// Create custom video backend
 	set_factory(new custom_video);
-	set_custom_video(factory()->make(m_device_name, m_device_id, method, s_param));
+	set_custom_video(factory()->make(m_device_name, m_device_id, method, &m_ds.vs));
 	if (video()) video()->init();
 
 	// Build our display's mode list

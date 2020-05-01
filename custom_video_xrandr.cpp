@@ -93,24 +93,29 @@ static XRRCrtcInfo *sp_desktop_crtc = NULL;
 //  xrandr_timing::xrandr_timing
 //============================================================
 
-xrandr_timing::xrandr_timing(char *device_name, char *param)
+xrandr_timing::xrandr_timing(char *device_name, custom_video_settings *vs)
 {
+	m_vs = *vs;
+
 	// Increment id for each new screen
 	m_id = ++s_id;
 
-	log_verbose("XRANDR: <%d> (xrandr_timing) creation (%s,%s)\n", m_id, device_name, param);
+	log_verbose("XRANDR: <%d> (xrandr_timing) creation (%s)\n", m_id, device_name);
 	// Copy screen device name and limit size
 	if ((strlen(device_name)+1) > 32)
 	{
 		strncpy(m_device_name, device_name, 31);
 		log_error("XRANDR: <%d> (xrandr_timing) [ERROR] the device name is too long it has been trucated to %s\n", m_id, m_device_name);
-	} else {
+	}
+	else
+	{
 		strcpy(m_device_name, device_name);
 	}
 
-	if (m_id == 1 && !strncmp(param, "xrandr_screen_reordering", 24))
+	if (m_id == 1 && m_vs.screen_reordering)
 		m_enable_screen_reordering = 1;
-	else if(!strcmp(param, "xrandr_screen_compositing"))
+
+	else if(m_vs.screen_compositing)
 		m_enable_screen_compositing = 1;
 
 	log_verbose("XRANDR: <%d> (xrandr_timing) checking X availability (early stub)\n", m_id);
@@ -133,7 +138,9 @@ xrandr_timing::xrandr_timing(char *device_name, char *param)
 				throw new std::exception();
 			}
 		}
-	} else {
+	}
+	else
+	{
 		log_error("XRANDR: <%d> (xrandr_timing) [ERROR] missing %s library\n", m_id, "X11_LIBRARY");
 		throw new std::exception();
 	}
@@ -292,7 +299,9 @@ bool xrandr_timing::init()
 			log_error("XRANDR: <%d> (init) [ERROR] missing func %s in %s", m_id, "XRRSetScreenSize", "XRANDR_LIBRARY");
 			return false;
 		}
-	} else {
+	}
+	else
+	{
 		log_error("XRANDR: <%d> (init) [ERROR] missing %s library\n", m_id, "XRANDR_LIBRARY");
 		return false;
 	}
@@ -350,7 +359,9 @@ bool xrandr_timing::init()
 			log_error("XRANDR: <%d> (init) [ERROR] missing func %s in %s\n", m_id, "XGetErrorText", "X11_LIBRARY");
 			return false;
 		}
-	} else {
+	}
+	else
+	{
 		log_error("XRANDR: <%d> (init) [ERROR] missing %s library\n", m_id, "X11_LIBRARY");
 		return false;
 	}
@@ -469,6 +480,7 @@ bool xrandr_timing::init()
 
 	if(!detected)
 		log_error("XRANDR: <%d> (init) [ERROR] no screen detected\n", m_id);
+
 	else if(m_enable_screen_reordering)
 	{
 		// Global screen placement 
@@ -878,7 +890,7 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 	}
 
 	// Set the framebuffer screen size to enable all crtc 
-        if (ms_xerrors == 0)
+	if (ms_xerrors == 0)
 	{
 		log_verbose("XRANDR: <%d> (set_timing) changing size to %d x %d\n", m_id, width, height);
 		XSync(m_pdisplay, False);
@@ -1072,7 +1084,9 @@ bool xrandr_timing::get_timing(modeline *mode)
 			}
 		}
 		m_video_modes_position++;
-	} else {
+	}
+	else
+	{
 		// Inititalise the position for the modeline list
 		m_video_modes_position = 0;
 	}

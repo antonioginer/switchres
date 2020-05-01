@@ -47,18 +47,16 @@ bool linux_display::init()
 	// Initialize custom video
 	int method = CUSTOM_VIDEO_TIMING_AUTO;
 
-	if(!strncmp(m_ds.api, "xrandr", 6))
+	if(!strcmp(m_ds.api, "xrandr"))
 		method = CUSTOM_VIDEO_TIMING_XRANDR;
 	else if(!strcmp(m_ds.api, "drmkms"))
 		method = CUSTOM_VIDEO_TIMING_DRMKMS;
 
-        if (!strcmp(m_ds.api, "xrandr_screen_reordering_keep"))
+	if (!strcmp(m_ds.api, "xrandr_screen_reordering_keep"))
 		m_restore_desktop_mode_at_exit = false;
 
-	char *s_param = m_ds.api;
-
 	set_factory(new custom_video);
-	set_custom_video(factory()->make(m_ds.screen, NULL, method, s_param));
+	set_custom_video(factory()->make(m_ds.screen, NULL, method, &m_ds.vs));
 	if (video()) video()->init();
 
         // Build our display's mode list
@@ -79,7 +77,7 @@ bool linux_display::init()
 
 bool linux_display::set_mode(modeline *mode)
 {
-	if (mode && set_desktop_mode(mode, 0));
+	if (mode && set_desktop_mode(mode, 0))
 	{
 		set_current_mode(mode);
 		return true;

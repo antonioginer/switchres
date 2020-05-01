@@ -42,7 +42,7 @@
 class xrandr_timing : public custom_video
 {
 	public:
-		xrandr_timing(char *device_name, char *param);
+		xrandr_timing(char *device_name, custom_video_settings *vs);
 		~xrandr_timing();
 		const char *api_name() { return "XRANDR"; }
 		int caps() { return CUSTOM_VIDEO_CAPS_ADD; }
