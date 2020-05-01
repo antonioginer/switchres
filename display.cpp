@@ -396,7 +396,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	// Check if new best mode is different than previous one
 	m_switching_required = (m_current_mode != m_best_mode || best_mode.type & MODE_UPDATED);
 
-	if (m_switching_required) *m_best_mode = best_mode;
+	*m_best_mode = best_mode;
 	return m_best_mode;
 }
 
