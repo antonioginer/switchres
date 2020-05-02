@@ -58,10 +58,11 @@ bool linux_display::init()
 		method = CUSTOM_VIDEO_TIMING_DRMKMS;
 	}
 
-	if (!strcmp(m_ds.api, "xrandr_screen_reordering_keep"))
-	{
-		m_restore_desktop_mode_at_exit = false;
-	}
+	// TODO: Disabled, api name usage is not possible
+	//if (!strcmp(m_ds.api, "xrandr_screen_reordering_keep"))
+	//{
+	//	m_restore_desktop_mode_at_exit = false;
+	//}
 
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(m_ds.screen, NULL, method, &m_ds.vs));
