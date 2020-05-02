@@ -74,12 +74,13 @@ int main(int argc, char **argv)
 			{"force",       required_argument, 0, 'f'},
 			{"ini",         required_argument, 0, 'i'},
 			{"verbose",     no_argument,       0, 'v'},
-			{"backend",      required_argument, 0, 'b'},
+			{"backend",     required_argument, 0, 'b'},
+			{"keep",        no_argument,       0, 'k'},
 			{0, 0, 0, 0}
 		};
 
 		int option_index = 0;
-		int c = getopt_long(argc, argv, "vhcsl:m:a:rd:f:i:b:", long_options, &option_index);
+		int c = getopt_long(argc, argv, "vhcsl:m:a:rd:f:i:b:k", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -145,6 +146,10 @@ int main(int argc, char **argv)
 
 			case 'b':
 				switchres.set_api(optarg);
+				break;
+
+			case 'k':
+				switchres.set_keep_changes(true);
 				break;
 
 			default:
@@ -265,8 +270,9 @@ int show_usage()
 		"  -r  --rotated                     Original mode's native orientation is rotated\n"
 		"  -d, --display <OS_display_name>   Use target display (Windows: \\\\.\\DISPLAY1, ... Linux: VGA-0, ...)\n"
 		"  -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list\n"
-		"  -i, --ini <file.ini>              Specify a ini file\n"
+		"  -i, --ini <file.ini>              Specify an ini file\n"
 		"  -b, --backend <api_name>          Specify the api name\n"
+		"  -k, --keep                        Keep changes on exit (warning: this disables cleanup)\n"
 	};
 
 	log_info("%s", usage);

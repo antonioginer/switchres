@@ -64,6 +64,7 @@ public:
 	void set_lock_unsupported_modes(bool value) { ds.lock_unsupported_modes = value; }
 	void set_lock_system_modes(bool value) { ds.lock_system_modes = value; }
 	void set_refresh_dont_care(bool value) { ds.refresh_dont_care = value; }
+	void set_keep_changes(bool value) { ds.keep_changes = value; }
 
 	// setters (modeline generator)
 	void set_interlace(bool value) { ds.gs.interlace = value; }

@@ -27,6 +27,7 @@ typedef struct display_settings
 	bool   lock_unsupported_modes;
 	bool   lock_system_modes;
 	bool   refresh_dont_care;
+	bool   keep_changes;
 	char   monitor[32];
 	char   modeline[256];
 	char   crt_range[MAX_RANGES][256];
@@ -44,7 +45,7 @@ public:
 	display_manager() {};
 	virtual ~display_manager()
 	{
-		restore_modes();
+		if (!m_ds.keep_changes) restore_modes();
 		if (m_factory) delete m_factory;
 	};
 
@@ -73,6 +74,7 @@ public:
 	bool lock_unsupported_modes() { return m_ds.lock_unsupported_modes; }
 	bool lock_system_modes() { return m_ds.lock_system_modes; }
 	bool refresh_dont_care() { return m_ds.refresh_dont_care; }
+	bool keep_changes() { return m_ds.keep_changes; }
 
 	// getters (modeline generator)
 	bool interlace() { return m_ds.gs.interlace; }

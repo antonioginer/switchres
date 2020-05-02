@@ -34,7 +34,7 @@ windows_display::windows_display(display_settings *ds)
 windows_display::~windows_display()
 {
 	// Restore previous settings
-	ChangeDisplaySettingsExA(m_device_name, NULL, NULL, 0, 0);
+	if (!m_ds.keep_changes) ChangeDisplaySettingsExA(m_device_name, NULL, NULL, 0, 0);
 }
 
 //============================================================
@@ -122,7 +122,7 @@ bool windows_display::init()
 
 bool windows_display::set_mode(modeline *mode)
 {
-	if (mode && set_desktop_mode(mode, CDS_FULLSCREEN | CDS_RESET))
+	if (mode && set_desktop_mode(mode, (m_ds.keep_changes? CDS_UPDATEREGISTRY : CDS_FULLSCREEN) | CDS_RESET))
 	{
 		set_current_mode(mode);
 		return true;

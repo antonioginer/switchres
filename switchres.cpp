@@ -248,6 +248,9 @@ bool switchres_manager::parse_config(const char *file_name)
 				case s2i("refresh_dont_care"):
 					set_refresh_dont_care(atoi(value.c_str()));
 					break;
+				case s2i("keep_changes"):
+					set_keep_changes(atoi(value.c_str()));
+					break;
 
 				// Modeline generation options
 				case s2i("interlace"):
