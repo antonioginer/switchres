@@ -110,21 +110,15 @@ xrandr_timing::xrandr_timing(char *device_name, custom_video_settings *vs)
 		          m_id, m_device_name);
 	}
 	else
-	{
 		strcpy(m_device_name, device_name);
-	}
 
 	if (m_vs.screen_reordering)
 	{
 		if (m_id == 1)
-		{
 			m_enable_screen_reordering = 1;
-		}
 	}
 	else if (m_vs.screen_compositing)
-	{
 		m_enable_screen_compositing = 1;
-	}
 
 	log_verbose("XRANDR: <%d> (xrandr_timing) checking X availability (early stub)\n",
 	            m_id);
@@ -167,34 +161,24 @@ xrandr_timing::~xrandr_timing()
 {
 	// Free the display
 	if (m_pdisplay != NULL)
-	{
 		XCloseDisplay(m_pdisplay);
-	}
 
 	// close Xrandr library
 	if (m_xrandr_handle)
-	{
 		dlclose(m_xrandr_handle);
-	}
 
 	// close X11 library
 	if (m_x11_handle)
-	{
 		dlclose(m_x11_handle);
-	}
 
 	s_total_managed_screen--;
 	if (s_total_managed_screen == 0)
 	{
 		if (sp_desktop_crtc)
-		{
 			delete[] sp_desktop_crtc;
-		}
 
 		if (sp_shared_screen_manager)
-		{
 			delete[] sp_shared_screen_manager;
-		}
 	}
 }
 
@@ -206,9 +190,7 @@ bool xrandr_timing::init()
 {
 	log_verbose("XRANDR: <%d> (init) loading Xrandr library\n", m_id);
 	if (!m_xrandr_handle)
-	{
 		m_xrandr_handle = dlopen("libXrandr.so", RTLD_NOW);
-	}
 	if (m_xrandr_handle)
 	{
 		p_XRRAddOutputMode = (__typeof__(XRRAddOutputMode))dlsym(m_xrandr_handle,
@@ -364,9 +346,7 @@ bool xrandr_timing::init()
 
 	log_verbose("XRANDR: <%d> (init) loading X11 library\n", m_id);
 	if (!m_x11_handle)
-	{
 		m_x11_handle = dlopen("libX11.so", RTLD_NOW);
-	}
 	if (m_x11_handle)
 	{
 		p_XCloseDisplay = (__typeof__(XCloseDisplay))dlsym(m_x11_handle,
@@ -440,9 +420,7 @@ bool xrandr_timing::init()
 	// Select current display and root window
 	// m_pdisplay is global to reduce open/close calls, resource is freed when class is destroyed
 	if (!m_pdisplay)
-	{
 		m_pdisplay = XOpenDisplay(NULL);
-	}
 
 	if (!m_pdisplay)
 	{
@@ -464,14 +442,10 @@ bool xrandr_timing::init()
 	// Handle the screen name, "auto", "screen[0-9]" and XRANDR device name
 	if (strlen(m_device_name) == 7 && !strncmp(m_device_name, "screen", 6)
 	        && m_device_name[6] >= '0' && m_device_name[6] <= '9')
-	{
 		screen_pos = m_device_name[6] - '0';
-	}
 	else if (strlen(m_device_name) == 1 && m_device_name[0] >= '0'
 	         && m_device_name[0] <= '9')
-	{
 		screen_pos = m_device_name[0] - '0';
-	}
 
 	if (ScreenCount(m_pdisplay) > 1)
 	{
@@ -492,9 +466,7 @@ bool xrandr_timing::init()
 			// Prepare the shared screen array
 			sp_shared_screen_manager = new int[resources->noutput];
 			for (int o = 0; o < resources->noutput; o++)
-			{
 				sp_shared_screen_manager[o] = 0;
-			}
 
 			// Save all active crtc positions
 			sp_desktop_crtc = new XRRCrtcInfo[resources->ncrtc];
@@ -578,9 +550,7 @@ bool xrandr_timing::init()
 	}
 
 	if (!detected)
-	{
 		log_error("XRANDR: <%d> (init) [ERROR] no screen detected\n", m_id);
-	}
 
 	else if (m_enable_screen_reordering)
 	{
@@ -600,9 +570,7 @@ bool xrandr_timing::init()
 bool xrandr_timing::update_mode(modeline *mode)
 {
 	if (!mode)
-	{
 		return false;
-	}
 
 	// Handle no screen detected case
 	if (m_desktop_output == -1)
@@ -634,9 +602,7 @@ bool xrandr_timing::update_mode(modeline *mode)
 bool xrandr_timing::add_mode(modeline *mode)
 {
 	if (!mode)
-	{
 		return false;
-	}
 
 	// Handle no screen detected case
 	if (m_desktop_output == -1)
@@ -806,9 +772,7 @@ XRRModeInfo *xrandr_timing::find_mode(modeline *mode)
 bool xrandr_timing::set_timing(modeline *mode)
 {
 	if (m_enable_screen_compositing)
-	{
 		return set_timing(mode, 0);
-	}
 
 	return set_timing(mode, XRANDR_DISABLE_CRTC_RELOCATION);
 }
@@ -841,13 +805,9 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 	XRRModeInfo *pxmode = NULL;
 
 	if (mode->type & MODE_DESKTOP)
-	{
 		pxmode = &m_desktop_mode;
-	}
 	else
-	{
 		pxmode = find_mode(mode);
-	}
 
 	if (pxmode == NULL)
 	{
@@ -864,9 +824,7 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 	                                        output_info->crtc);
 
 	if (flags & XRANDR_DISABLE_CRTC_RELOCATION)
-	{
 		log_verbose("XRANDR: <%d> (set_timing) DISABLE crtc relocation\n", m_id);
-	}
 
 	if (flags & XRANDR_ENABLE_SCREEN_REORDERING)
 	{
@@ -927,13 +885,9 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 				crtc_info1->x = 0;
 				crtc_info1->y = reordering_last_y;
 				if (crtc_info1->height > XRANDR_REORDERING_MAXIMUM_HEIGHT)
-				{
 					reordering_last_y += crtc_info1->height;
-				}
 				else
-				{
 					reordering_last_y += XRANDR_REORDERING_MAXIMUM_HEIGHT;
-				}
 				crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_REORDERING;
 				active_crtc++;
 			}
@@ -967,9 +921,7 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 				        || crtc_info0->width != crtc_info1->width
 				        || crtc_info0->height != crtc_info1->height || crtc_info0->x != crtc_info1->x
 				        || crtc_info0->y != crtc_info1->y)
-				{
 					crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_DESKTOP_CRTC;
-				}
 			}
 			else if (mode->type & MODE_DESKTOP && m_enable_screen_reordering
 			         && (crtc_info1->x != sp_desktop_crtc[c].x
@@ -1013,14 +965,10 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 
 			// Calculate overall screen size based on crtcs placement
 			if (crtc_info1->x + crtc_info1->width > width)
-			{
 				width = crtc_info1->x + crtc_info1->width;
-			}
 
 			if (crtc_info1->y + crtc_info1->height > height)
-			{
 				height = crtc_info1->y + crtc_info1->height;
-			}
 
 			if (crtc_info1->timestamp & XRANDR_SETMODE_UPDATE_MASK)
 			{
@@ -1133,9 +1081,7 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 	}
 	else
 		// save last crtc
-	{
 		m_last_crtc = *crtc_info;
-	}
 
 	XRRFreeCrtcInfo(crtc_info);
 	XRRFreeOutputInfo(output_info);
@@ -1165,9 +1111,7 @@ bool xrandr_timing::delete_mode(modeline *mode)
 	}
 
 	if (!mode)
-	{
 		return false;
-	}
 
 	XRRScreenResources *resources = XRRGetScreenResourcesCurrent(m_pdisplay,
 	                                m_root);
@@ -1288,9 +1232,7 @@ bool xrandr_timing::get_timing(modeline *mode)
 
 				// Add the desktop flag to desktop modeline
 				if (m_desktop_mode.id == pxmode->id)
-				{
 					mode->type |= MODE_DESKTOP;
-				}
 
 				log_verbose("XRANDR: <%d> (get_timing) mode %04lx %dx%d refresh %.6f added\n",
 				            m_id, pxmode->id, pxmode->width, pxmode->height, mode->vfreq);

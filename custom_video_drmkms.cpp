@@ -128,9 +128,7 @@ drmkms_timing::drmkms_timing(char *device_name, custom_video_settings *vs)
 		          m_id, m_device_name);
 	}
 	else
-	{
 		strcpy(m_device_name, device_name);
-	}
 }
 
 //============================================================
@@ -141,16 +139,12 @@ drmkms_timing::~drmkms_timing()
 {
 	// close DRM/KMS library
 	if (mp_drm_handle)
-	{
 		dlclose(mp_drm_handle);
-	}
 
 	if (m_drm_fd > 0)
 	{
 		if (!--s_shared_count[m_card_id])
-		{
 			close(m_drm_fd);
-		}
 	}
 }
 
@@ -385,14 +379,10 @@ bool drmkms_timing::init()
 	// Handle the screen name, "auto", "screen[0-9]" and device name
 	if (strlen(m_device_name) == 7 && !strncmp(m_device_name, "screen", 6)
 	        && m_device_name[6] >= '0' && m_device_name[6] <= '9')
-	{
 		screen_pos = m_device_name[6] - '0';
-	}
 	else if (strlen(m_device_name) == 1 && m_device_name[0] >= '0'
 	         && m_device_name[0] <= '9')
-	{
 		screen_pos = m_device_name[0] - '0';
-	}
 
 	char drm_name[15] = "/dev/dri/card_";
 	drmModeRes *p_res;
@@ -414,14 +404,10 @@ bool drmkms_timing::init()
 
 			uint64_t check_dumb = 0;
 			if (drmGetCap(m_drm_fd, DRM_CAP_DUMB_BUFFER, &check_dumb) < 0)
-			{
 				log_error("DRM/KMS: <%d> (init) [ERROR] ioctl DRM_CAP_DUMB_BUFFER\n", m_id);
-			}
 
 			if (! check_dumb)
-			{
 				log_error("DRM/KMS: <%d> (init) [ERROR] dumb buffer not supported\n", m_id);
-			}
 
 			p_res = drmModeGetResources(m_drm_fd);
 
@@ -468,9 +454,7 @@ bool drmkms_timing::init()
 								}
 							}
 							if (!mp_crtc_desktop)
-							{
 								log_error("DRM/KMS: <%d> (init) [ERROR] no crtc found\n", m_id);
-							}
 							drmModeFreeEncoder(p_encoder);
 						}
 						output_position++;
@@ -485,9 +469,7 @@ bool drmkms_timing::init()
 			}
 			drmModeFreeResources(p_res);
 			if (!m_desktop_output)
-			{
 				close(m_drm_fd);
-			}
 			else
 			{
 				if (drmIsMaster(m_drm_fd))
@@ -585,9 +567,7 @@ int drmkms_timing::drm_master_hook(int last_fd)
 bool drmkms_timing::update_mode(modeline *mode)
 {
 	if (!mode)
-	{
 		return false;
-	}
 
 	if (!m_desktop_output)
 	{
@@ -618,9 +598,7 @@ bool drmkms_timing::update_mode(modeline *mode)
 bool drmkms_timing::add_mode(modeline *mode)
 {
 	if (!mode)
-	{
 		return false;
-	}
 
 	// Handle no screen detected case
 	if (!m_desktop_output)
@@ -636,9 +614,7 @@ bool drmkms_timing::add_mode(modeline *mode)
 	}
 
 	if (!mode)
-	{
 		return false;
-	}
 
 	return true;
 }
@@ -650,9 +626,7 @@ bool drmkms_timing::add_mode(modeline *mode)
 bool drmkms_timing::set_timing(modeline *mode)
 {
 	if (!mode)
-	{
 		return false;
-	}
 
 	// Handle no screen detected case
 	if (!m_desktop_output)
@@ -711,9 +685,7 @@ bool drmkms_timing::set_timing(modeline *mode)
 		if (m_framebuffer_id && m_framebuffer_id != mp_crtc_desktop->buffer_id)
 		{
 			if (drmModeRmFB(m_drm_fd, m_framebuffer_id))
-			{
 				log_verbose("DRM/KMS: <%d> (add_mode) [ERROR] remove frame buffer\n", m_id);
-			}
 			m_framebuffer_id = 0;
 		}
 	}
@@ -752,13 +724,9 @@ bool drmkms_timing::set_timing(modeline *mode)
 
 			if (drmModeAddFB(m_drm_fd, dmode.hdisplay, dmode.vdisplay, pframebuffer->depth,
 			                 pframebuffer->bpp, create_dumb.pitch, create_dumb.handle, &framebuffer_id))
-			{
 				log_error("DRM/KMS: <%d> (add_mode) [ERROR] cannot add frame buffer\n", m_id);
-			}
 			else
-			{
 				m_dumb_handle = create_dumb.handle;
-			}
 
 			drm_mode_map_dumb map_dumb = {};
 			map_dumb.handle = create_dumb.handle;
@@ -840,9 +808,7 @@ bool drmkms_timing::set_timing(modeline *mode)
 bool drmkms_timing::delete_mode(modeline *mode)
 {
 	if (!mode)
-	{
 		return false;
-	}
 
 	// Handle no screen detected case
 	if (!m_desktop_output)
