@@ -871,10 +871,6 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 		log_verbose("XRANDR: <%d> (set_timing) GLOBAL desktop screen preparation\n",
 		            m_id);
 	}
-	else if (flags & XRANDR_ENABLE_DESKTOP_PREPARATION)
-	{
-		log_verbose("XRANDR: <%d> (set_timing) DESKTOP screen preparation\n", m_id);
-	}
 	else if (m_last_crtc.mode == crtc_info->mode && m_last_crtc.x == crtc_info->x
 	         && m_last_crtc.y == crtc_info->y && pxmode->id == crtc_info->mode)
 	{
@@ -939,14 +935,7 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 
 				if (mode->type & MODE_DESKTOP)
 				{
-					if (flags & XRANDR_ENABLE_DESKTOP_PREPARATION)
-					{
-						// Super resolution placement, vertical stacking, reserved XRANDR_REORDERING_MAXIMUM_HEIGHT pixels
-						crtc_info1->x = 0;
-						crtc_info1->y = (m_id - 1) * XRANDR_REORDERING_MAXIMUM_HEIGHT;
-						crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_PREPARE_DESKTOP;
-					}
-					else if (!m_enable_screen_compositing && (crtc_info1->x != sp_desktop_crtc[c].x
+					if (!m_enable_screen_compositing && (crtc_info1->x != sp_desktop_crtc[c].x
 					         || crtc_info1->y != sp_desktop_crtc[c].y))
 					{
 						// Restore original desktop position
