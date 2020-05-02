@@ -114,11 +114,13 @@ xrandr_timing::xrandr_timing(char *device_name, custom_video_settings *vs)
 		strcpy(m_device_name, device_name);
 	}
 
-	if (m_id == 1 && m_vs.screen_reordering)
+	if (m_vs.screen_reordering)
 	{
-		m_enable_screen_reordering = 1;
+		if (m_id == 1)
+		{
+			m_enable_screen_reordering = 1;
+		}
 	}
-
 	else if (m_vs.screen_compositing)
 	{
 		m_enable_screen_compositing = 1;
