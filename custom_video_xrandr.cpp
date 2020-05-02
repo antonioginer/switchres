@@ -894,6 +894,8 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 
 	unsigned int active_crtc = 0;
 
+	unsigned int reordering_last_y = 0;
+
 	ms_xerrors = 0;
 
 	XRRCrtcInfo *global_crtc = new XRRCrtcInfo[resources->ncrtc];
@@ -921,7 +923,15 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 				// Relocate all crtcs
 				// Super resolution placement, vertical stacking, reserved XRANDR_REORDERING_MAXIMUM_HEIGHT pixels
 				crtc_info1->x = 0;
-				crtc_info1->y = (active_crtc) * XRANDR_REORDERING_MAXIMUM_HEIGHT;
+				crtc_info1->y = reordering_last_y;
+				if (crtc_info1->height > XRANDR_REORDERING_MAXIMUM_HEIGHT)
+				{
+					reordering_last_y += crtc_info1->height;
+				}
+				else
+				{
+					reordering_last_y += XRANDR_REORDERING_MAXIMUM_HEIGHT;
+				}
 				crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_REORDERING;
 				active_crtc++;
 			}
@@ -936,7 +946,7 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 				if (mode->type & MODE_DESKTOP)
 				{
 					if (!m_enable_screen_compositing && (crtc_info1->x != sp_desktop_crtc[c].x
-					         || crtc_info1->y != sp_desktop_crtc[c].y))
+					                                     || crtc_info1->y != sp_desktop_crtc[c].y))
 					{
 						// Restore original desktop position
 						crtc_info1->x = sp_desktop_crtc[c].x;
