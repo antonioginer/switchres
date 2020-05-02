@@ -85,9 +85,7 @@ int main(int argc, char **argv)
 		                    &option_index);
 
 		if (c == -1)
-		{
 			break;
-		}
 
 		if (version_flag)
 		{
@@ -128,10 +126,7 @@ int main(int argc, char **argv)
 
 			case 'd':
 				// Add new display in multi-monitor case
-				if (index > 0)
-				{
-					switchres.add_display();
-				}
+				if (index > 0) switchres.add_display();
 				index ++;
 				switchres.set_screen(optarg);
 				break;
@@ -144,9 +139,7 @@ int main(int argc, char **argv)
 				force_flag = true;
 				if (sscanf(optarg, "%dx%d@%d", &user_mode.width, &user_mode.height,
 				           &user_mode.refresh) < 1)
-				{
 					log_error("Error: use format --force <w>x<h>@<r>\n");
-				}
 				break;
 
 			case 'i':
@@ -169,9 +162,7 @@ int main(int argc, char **argv)
 	}
 
 	if (help_flag)
-	{
 		goto usage;
-	}
 
 	// Get user video mode information from command line
 	if ((argc - optind) < 3)
@@ -193,29 +184,21 @@ int main(int argc, char **argv)
 
 		char scan_mode = argv[optind + 2][strlen(argv[optind + 2]) - 1];
 		if (scan_mode == 'i')
-		{
 			interlaced_flag = true;
-		}
 	}
 
 	if (user_ini_flag)
-	{
 		switchres.parse_config(ini_file.c_str());
-	}
 
 	switchres.add_display();
 
 	if (force_flag)
-	{
 		switchres.display()->set_user_mode(&user_mode);
-	}
 
 	if (!calculate_flag)
 	{
 		for (auto &display : switchres.displays)
-		{
 			display->init();
-		}
 	}
 
 	if (resolution_flag)
@@ -226,20 +209,14 @@ int main(int argc, char **argv)
 			if (mode)
 			{
 				if (mode->type & MODE_UPDATED)
-				{
 					display->update_mode(mode);
-				}
 				else if (mode->type & MODE_NEW)
-				{
 					display->add_mode(mode);
-				}
 			}
 		}
 
 		if (switch_flag) for (auto &display : switchres.displays)
-			{
 				display->set_mode(display->best_mode());
-			}
 
 		if (switch_flag && !launch_flag && !keep_changes_flag)
 		{
