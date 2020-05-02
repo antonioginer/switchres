@@ -34,8 +34,8 @@ int main(int argc, char **argv)
 	switchres_manager switchres;
 
 	// Init logging
-	switchres.set_log_info_fn((void*)printf);
-	switchres.set_log_error_fn((void*)printf);
+	switchres.set_log_info_fn((void *)printf);
+	switchres.set_log_error_fn((void *)printf);
 
 	switchres.parse_config("switchres.ini");
 
@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 	bool force_flag = false;
 	bool interlaced_flag = false;
 	bool user_ini_flag = false;
+	bool keep_changes_flag = false;
 
 	string ini_file;
 	string launch_command;
@@ -80,10 +81,13 @@ int main(int argc, char **argv)
 		};
 
 		int option_index = 0;
-		int c = getopt_long(argc, argv, "vhcsl:m:a:rd:f:i:b:k", long_options, &option_index);
+		int c = getopt_long(argc, argv, "vhcsl:m:a:rd:f:i:b:k", long_options,
+		                    &option_index);
 
 		if (c == -1)
+		{
 			break;
+		}
 
 		if (version_flag)
 		{
@@ -94,7 +98,7 @@ int main(int argc, char **argv)
 		switch (c)
 		{
 			case 'v':
-				switchres.set_log_verbose_fn((void*)printf);
+				switchres.set_log_verbose_fn((void *)printf);
 				break;
 
 			case 'h':
@@ -124,7 +128,10 @@ int main(int argc, char **argv)
 
 			case 'd':
 				// Add new display in multi-monitor case
-				if (index > 0) switchres.add_display();
+				if (index > 0)
+				{
+					switchres.add_display();
+				}
 				index ++;
 				switchres.set_screen(optarg);
 				break;
@@ -135,8 +142,11 @@ int main(int argc, char **argv)
 
 			case 'f':
 				force_flag = true;
-				if (sscanf(optarg, "%dx%d@%d", &user_mode.width, &user_mode.height, &user_mode.refresh) < 1)
+				if (sscanf(optarg, "%dx%d@%d", &user_mode.width, &user_mode.height,
+				           &user_mode.refresh) < 1)
+				{
 					log_error("Error: use format --force <w>x<h>@<r>\n");
+				}
 				break;
 
 			case 'i':
@@ -149,6 +159,7 @@ int main(int argc, char **argv)
 				break;
 
 			case 'k':
+				keep_changes_flag = true;
 				switchres.set_keep_changes(true);
 				break;
 
@@ -158,7 +169,9 @@ int main(int argc, char **argv)
 	}
 
 	if (help_flag)
+	{
 		goto usage;
+	}
 
 	// Get user video mode information from command line
 	if ((argc - optind) < 3)
@@ -178,23 +191,31 @@ int main(int argc, char **argv)
 		height = atoi(argv[optind + 1]);
 		refresh = atof(argv[optind + 2]);
 
-		char scan_mode = argv[optind + 2][strlen(argv[optind + 2]) -1];
+		char scan_mode = argv[optind + 2][strlen(argv[optind + 2]) - 1];
 		if (scan_mode == 'i')
+		{
 			interlaced_flag = true;
+		}
 	}
 
 	if (user_ini_flag)
+	{
 		switchres.parse_config(ini_file.c_str());
+	}
 
 	switchres.add_display();
 
 	if (force_flag)
+	{
 		switchres.display()->set_user_mode(&user_mode);
-	
+	}
+
 	if (!calculate_flag)
 	{
 		for (auto &display : switchres.displays)
+		{
 			display->init();
+		}
 	}
 
 	if (resolution_flag)
@@ -204,15 +225,23 @@ int main(int argc, char **argv)
 			modeline *mode = display->get_mode(width, height, refresh, interlaced_flag);
 			if (mode)
 			{
-				if (mode->type & MODE_UPDATED) display->update_mode(mode);
-
-				else if (mode->type & MODE_NEW) display->add_mode(mode);
+				if (mode->type & MODE_UPDATED)
+				{
+					display->update_mode(mode);
+				}
+				else if (mode->type & MODE_NEW)
+				{
+					display->add_mode(mode);
+				}
 			}
 		}
 
-		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->best_mode());
+		if (switch_flag) for (auto &display : switchres.displays)
+			{
+				display->set_mode(display->best_mode());
+			}
 
-		if (switch_flag && !launch_flag)
+		if (switch_flag && !launch_flag && !keep_changes_flag)
 		{
 			log_info("Press ENTER to exit...\n");
 			cin.get();
