@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 	bool force_flag = false;
 	bool interlaced_flag = false;
 	bool user_ini_flag = false;
+	bool keep_changes_flag = false;
 
 	string ini_file;
 	string launch_command;
@@ -149,6 +150,7 @@ int main(int argc, char **argv)
 				break;
 
 			case 'k':
+				keep_changes_flag = true;
 				switchres.set_keep_changes(true);
 				break;
 
@@ -212,7 +214,7 @@ int main(int argc, char **argv)
 
 		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->best_mode());
 
-		if (switch_flag && !launch_flag)
+		if (switch_flag && !launch_flag && !keep_changes_flag)
 		{
 			log_info("Press ENTER to exit...\n");
 			cin.get();
