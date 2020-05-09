@@ -889,11 +889,11 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 	// Set the framebuffer screen size to enable all crtc
 	if (ms_xerrors == 0)
 	{
-		log_verbose("XRANDR: <%d> (set_timing) changing size to %d x %d\n", m_id, width, height);
+		log_verbose("XRANDR: <%d> (set_timing) setting screen size to %d x %d\n", m_id, width, height);
 		XSync(m_pdisplay, False);
 		ms_xerrors_flag = 0x02;
 		old_error_handler = XSetErrorHandler(error_handler);
-		XRRSetScreenSize(m_pdisplay, m_root, width, height, (25.4 * width) / 96.0, (25.4 * height) / 96.0);
+		XRRSetScreenSize(m_pdisplay, m_root, width, height, (int) ((25.4 * width) / 96.0), (int) ((25.4 * height) / 96.0));
 		XSync(m_pdisplay, False);
 		XSetErrorHandler(old_error_handler);
 		if (ms_xerrors & ms_xerrors_flag)
