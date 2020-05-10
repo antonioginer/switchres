@@ -417,7 +417,7 @@ bool xrandr_timing::init()
 	XRRQueryVersion(m_pdisplay, &major_version, &minor_version);
 	log_verbose("XRANDR: <%d> (init) version %d.%d\n", m_id, major_version, minor_version);
 
-	if (major_version < 1 || minor_version < 2)
+	if (major_version < 1 || (major_version == 1 && minor_version < 2))
 	{
 		log_error("XRANDR: <%d> (init) [ERROR] Xrandr version 1.2 or above is required\n", m_id);
 		return false;
