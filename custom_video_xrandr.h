@@ -77,6 +77,7 @@ class xrandr_timing : public custom_video
 
 		Display *m_pdisplay = NULL;
 		Window m_root;
+		int m_screen;
 
 		int m_desktop_output = -1;
 		XRRModeInfo m_desktop_mode = {};
@@ -112,6 +113,9 @@ class xrandr_timing : public custom_video
 		__typeof__(XSync) *p_XSync;
 		__typeof__(XUngrabServer) *p_XUngrabServer;
 		__typeof__(XSetErrorHandler) *p_XSetErrorHandler;
+		__typeof__(XClearWindow) *p_XClearWindow;
+		__typeof__(XFillRectangle) *p_XFillRectangle;
+		__typeof__(XCreateGC) *p_XCreateGC;
 };
 
 #endif
