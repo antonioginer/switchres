@@ -70,6 +70,10 @@ class xrandr_timing : public custom_video
 		int m_video_modes_position = 0;
 		char m_device_name[32];
 		Rotation m_desktop_rotation;
+		unsigned int m_min_width;
+		unsigned int m_max_width;
+		unsigned int m_min_height;
+		unsigned int m_max_height;
 
 		Display *m_pdisplay = NULL;
 		Window m_root;
@@ -98,6 +102,7 @@ class xrandr_timing : public custom_video
 		__typeof__(XRRQueryVersion) *p_XRRQueryVersion;
 		__typeof__(XRRSetCrtcConfig) *p_XRRSetCrtcConfig;
 		__typeof__(XRRSetScreenSize) *p_XRRSetScreenSize;
+		__typeof__(XRRGetScreenSizeRange) *p_XRRGetScreenSizeRange;
 
 		void *m_x11_handle = 0;
 
