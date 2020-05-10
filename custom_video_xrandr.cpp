@@ -454,7 +454,15 @@ bool xrandr_timing::init()
 					m_desktop_output = o;
 
 					// store screen minium and maximum resolutions
-					XRRGetScreenSizeRange (m_pdisplay, m_root, &m_min_width, &m_min_height, &m_max_width, &m_max_height); 
+					int min_width;
+					int max_width;
+					int min_height;
+					int max_height;
+					XRRGetScreenSizeRange (m_pdisplay, m_root, &min_width, &min_height, &max_width, &max_height); 
+					m_min_width = min_width;
+					m_max_width = max_width;
+					m_min_height = min_height;
+					m_max_height = max_height;
 
 					if (sp_shared_screen_manager[m_desktop_output] == 0)
 					{
