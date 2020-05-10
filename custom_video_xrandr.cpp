@@ -39,6 +39,7 @@
 #define XRRQueryVersion p_XRRQueryVersion
 #define XRRSetCrtcConfig p_XRRSetCrtcConfig
 #define XRRSetScreenSize p_XRRSetScreenSize
+#define XRRGetScreenSizeRange p_XRRGetScreenSizeRange
 
 #define XCloseDisplay p_XCloseDisplay
 #define XGrabServer p_XGrabServer
@@ -299,6 +300,13 @@ bool xrandr_timing::init()
 			log_error("XRANDR: <%d> (init) [ERROR] missing func %s in %s", m_id, "XRRSetScreenSize", "XRANDR_LIBRARY");
 			return false;
 		}
+
+		p_XRRGetScreenSizeRange = (__typeof__(XRRGetScreenSizeRange)) dlsym(m_xrandr_handle, "XRRGetScreenSizeRange");
+		if (p_XRRGetScreenSizeRange == NULL)
+		{
+			log_error("XRANDR: <%d> (init) [ERROR] missing func %s in %s", m_id, "XRRSetScreenSize", "XRRGetScreenSizeRange");
+			return false;
+		}
 	}
 	else
 	{
@@ -382,6 +390,12 @@ bool xrandr_timing::init()
 	XRRQueryVersion(m_pdisplay, &major_version, &minor_version);
 	log_verbose("XRANDR: <%d> (init) version %d.%d\n", m_id, major_version, minor_version);
 
+	if (major_version < 1 || minor_version < 2)
+	{
+		log_error("XRANDR: <%d> (init) [ERROR] Xrandr version 1.2 or above is required\n", m_id);
+		return false;
+	}
+
 	// screen_pos defines screen position, 0 is default first screen position and equivalent to 'auto'
 	int screen_pos = -1;
 	bool detected = false;
@@ -438,6 +452,9 @@ bool xrandr_timing::init()
 				{
 					// store the output connector
 					m_desktop_output = o;
+
+					// store screen minium and maximum resolutions
+					XRRGetScreenSizeRange (m_pdisplay, m_root, &m_min_width, &m_min_height, &m_max_width, &m_max_height); 
 
 					if (sp_shared_screen_manager[m_desktop_output] == 0)
 					{
@@ -748,8 +765,8 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 	// Grab X server to prevent unwanted interaction from the window manager
 	XGrabServer(m_pdisplay);
 
-	unsigned int width = 0;
-	unsigned int height = 0;
+	unsigned int width = m_min_width;
+	unsigned int height = m_min_height;
 
 	unsigned int active_crtc = 0;
 
@@ -859,6 +876,18 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 
 			if (crtc_info1->y + crtc_info1->height > height)
 				height = crtc_info1->y + crtc_info1->height;
+
+			if (width > m_max_width)
+			{
+				log_error("XRANDR: <%d> (set_timing) [ERROR] width is above allowed maximum (%d > %d)\n", m_id, width, m_max_width);
+				width = m_max_width;
+			}
+
+			if (height > m_max_height)
+			{
+				log_error("XRANDR: <%d> (set_timing) [ERROR] height is above allowed maximum (%d > %d)\n", m_id, height, m_max_height);
+				height = m_max_height;
+			}
 
 			if (crtc_info1->timestamp & XRANDR_SETMODE_UPDATE_MASK)
 				log_verbose("XRANDR: <%d> (set_timing) crtc %d%s [%04lx] %ux%u+%d+%d --> [%04lx] %ux%u+%d+%d flags [%02lx]\n", m_id, c, crtc_info1->timestamp & 1 ? "*" : " ", crtc_info0->mode, crtc_info0->width, crtc_info0->height, crtc_info0->x, crtc_info0->y, crtc_info1->mode, crtc_info1->width, crtc_info1->height, crtc_info1->x, crtc_info1->y, crtc_info1->timestamp);
