@@ -6,3 +6,5 @@
 *.dll
 switchres_main
 grid
+switchres
+switchres.pc
