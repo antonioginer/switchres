@@ -50,7 +50,7 @@ endif
 %.o : %.cpp
 	$(FINAL_CXX) -c $(CPPFLAGS) $< -o $@
 
-all: $(SRC:.cpp=.o) $(MAIN).cpp $(TARGET_LIB) $(GRID)
+all: $(SRC:.cpp=.o) $(MAIN).cpp $(TARGET_LIB)
 	@echo $(OSFLAG)
 	$(FINAL_CXX) $(CPPFLAGS) $(CXXFLAGS) $(SRC:.cpp=.o) $(MAIN).cpp $(LIBS) -o $(STANDALONE)
 
