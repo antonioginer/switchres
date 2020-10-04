@@ -1,0 +1,10 @@
+prefix=@prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libswitchres
+Description: A basic switchres implementation
+Version: 2.00
+
+Libs: -L${libdir} -ldl -lswitchres
+Cflags: -I${includedir}/switchres
