@@ -157,6 +157,8 @@ class adl_timing : public custom_video
 		bool get_timing(modeline *m);
 		bool set_timing(modeline *m);
 
+		bool process_modelist(std::vector<modeline> &mode);
+
 	private:
 		int open();
 		bool get_driver_version(char *device_key);
