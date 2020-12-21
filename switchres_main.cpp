@@ -213,9 +213,9 @@ int main(int argc, char **argv)
 			}
 		}
 
-//		switchres.display()->get_mode(720, 512, 55, 0);
-//		switchres.display()->get_mode(652, 496, 57, 0);
-//		switchres.display()->flush_modes();
+		switchres.display()->get_mode(720, 512, 55, 0);
+		switchres.display()->get_mode(652, 496, 57, 0);
+		switchres.display()->flush_modes();
 
 		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->best_mode());
 

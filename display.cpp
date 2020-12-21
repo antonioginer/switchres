@@ -243,6 +243,21 @@ bool display_manager::flush_modes()
 			if (mode.type & MODE_ERROR)
 				error = true;
 		}
+
+		// Update our internal mode table to reflect the changes
+		for (unsigned i = video_modes.size(); i-- > 0; )
+		{
+			if (video_modes[i].type & MODE_ERROR)
+				continue;
+
+			if (video_modes[i].type & MODE_DELETE)
+			{
+				video_modes.erase(video_modes.begin() + i);
+				m_best_mode = 0;
+			}
+			else
+				video_modes[i].type &= ~(MODE_UPDATE | MODE_ADD);
+		}
 	}
 
 	return !error;

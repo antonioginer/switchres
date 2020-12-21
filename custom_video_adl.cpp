@@ -522,7 +522,7 @@ bool adl_timing::process_modelist(std::vector<modeline> &modelist)
 		}
 		else
 		{
-			//mode.type &= ~(MODE_ERROR | MODE_DELETE | MODE_ADD | MODE_UPDATE);
+			mode.type &= ~MODE_ERROR;
 			mode.type |= CUSTOM_VIDEO_TIMING_ATI_ADL;
 		}
 	}
