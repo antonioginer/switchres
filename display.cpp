@@ -222,12 +222,12 @@ bool display_manager::restore_modes()
 bool display_manager::flush_modes()
 {
 	bool error = false;
-	std::vector<modeline> modified_modes = {};
+	std::vector<modeline *> modified_modes = {};
 
 	// Loop through our mode table to collect all pending changes
 	for (auto &mode : video_modes)
 		if (mode.type & (MODE_UPDATE | MODE_ADD | MODE_DELETE))
-			modified_modes.push_back(mode);
+			modified_modes.push_back(&mode);
 
 	// Flush pending changes to driver
 	if (modified_modes.size() > 0)
@@ -237,10 +237,10 @@ bool display_manager::flush_modes()
 		// Log error/success result for each mode
 		for (auto &mode : modified_modes)
 		{
-			log_verbose("Switchres: %s %s mode ", mode.type & MODE_ERROR? "error" : "success", mode.type & MODE_DELETE? "deleting" : mode.type & MODE_ADD? "adding" : "updating");
-			log_mode(&mode);
+			log_verbose("Switchres: %s %s mode ", mode->type & MODE_ERROR? "error" : "success", mode->type & MODE_DELETE? "deleting" : mode->type & MODE_ADD? "adding" : "updating");
+			log_mode(mode);
 
-			if (mode.type & MODE_ERROR)
+			if (mode->type & MODE_ERROR)
 				error = true;
 		}
 

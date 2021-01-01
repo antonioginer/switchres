@@ -199,21 +199,21 @@ void ati_timing::refresh_timings(void)
 //  adl_timing::process_modelist
 //============================================================
 
-bool ati_timing::process_modelist(std::vector<modeline> &modelist)
+bool ati_timing::process_modelist(std::vector<modeline *> modelist)
 {
 	bool error = false;
 
 	for (auto &mode : modelist)
 	{
-		if (!set_timing(&mode))
+		if (!set_timing(mode))
 		{
-			mode.type |= MODE_ERROR;
+			mode->type |= MODE_ERROR;
 			error = true;
 		}
 		else
 		{
-			mode.type &= ~MODE_ERROR;
-			mode.type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY;
+			mode->type &= ~MODE_ERROR;
+			mode->type |= CUSTOM_VIDEO_TIMING_ATI_LEGACY;
 		}
 	}
 

@@ -157,7 +157,7 @@ class adl_timing : public custom_video
 		bool get_timing(modeline *m);
 		bool set_timing(modeline *m);
 
-		bool process_modelist(std::vector<modeline> &mode);
+		bool process_modelist(std::vector<modeline *>);
 
 	private:
 		int open();

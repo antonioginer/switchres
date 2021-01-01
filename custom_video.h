@@ -75,7 +75,7 @@ public:
 	virtual bool get_timing(modeline *mode);
 	virtual bool set_timing(modeline *mode);
 
-	virtual bool process_modelist(std::vector<modeline> &mode);
+	virtual bool process_modelist(std::vector<modeline *>);
 
 	// getters
 	bool screen_compositing() { return m_vs.screen_compositing; }
