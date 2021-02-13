@@ -191,6 +191,9 @@ bool switchres_manager::parse_config(const char *file_name)
 			switch (s2i(key.c_str()))
 			{
 				// Switchres options
+				case s2i("verbose"):
+					if (atoi(value.c_str())) set_log_verbose_fn((void*)printf);
+					break;
 				case s2i("monitor"):
 					transform(value.begin(), value.end(), value.begin(), ::tolower);
 					set_monitor(value.c_str());
