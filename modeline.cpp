@@ -588,47 +588,48 @@ int modeline_parse(const char *user_modeline, modeline *mode)
 {
 	char modeline_txt[256]={'\x00'};
 
-	if (strcmp(user_modeline, "auto"))
+	if (!strcmp(user_modeline, "auto"))
+		return false;
+
+	// Remove quotes
+	char *quote_start, *quote_end;
+	quote_start = strstr((char*)user_modeline, "\"");
+	if (quote_start)
 	{
-		// Remove quotes
-		char *quote_start, *quote_end;
-		quote_start = strstr((char*)user_modeline, "\"");
-		if (quote_start)
-		{
-			quote_start++;
-			quote_end = strstr(quote_start, "\"");
-			if (!quote_end || *quote_end++ == 0)
-				return false;
-			user_modeline = quote_end;
-		}
-
-		// Get timing flags
-		mode->interlace = strstr(user_modeline, "interlace")?1:0;
-		mode->doublescan = strstr(user_modeline, "doublescan")?1:0;
-		mode->hsync = strstr(user_modeline, "+hsync")?1:0;
-		mode->vsync = strstr(user_modeline, "+vsync")?1:0;
-
-		// Get timing values
-		double pclock;
-		int e = sscanf(user_modeline, " %lf %d %d %d %d %d %d %d %d",
-			&pclock,
-			&mode->hactive, &mode->hbegin, &mode->hend, &mode->htotal,
-			&mode->vactive, &mode->vbegin, &mode->vend, &mode->vtotal);
-
-		if (e != 9)
-		{
-			log_error("SwitchRes: missing parameter in user modeline\n  %s\n", user_modeline);
-			memset(mode, 0, sizeof(struct modeline));
+		quote_start++;
+		quote_end = strstr(quote_start, "\"");
+		if (!quote_end || *quote_end++ == 0)
 			return false;
-		}
-
-		// Calculate timings
-		mode->pclock = pclock * 1000000.0;
-		mode->hfreq = mode->pclock / mode->htotal;
-		mode->vfreq = mode->hfreq / mode->vtotal * (mode->interlace?2:1);
-		mode->refresh = mode->vfreq;
-		log_verbose("SwitchRes: user modeline %s\n", modeline_print(mode, modeline_txt, MS_FULL));
+		user_modeline = quote_end;
 	}
+
+	// Get timing flags
+	mode->interlace = strstr(user_modeline, "interlace")?1:0;
+	mode->doublescan = strstr(user_modeline, "doublescan")?1:0;
+	mode->hsync = strstr(user_modeline, "+hsync")?1:0;
+	mode->vsync = strstr(user_modeline, "+vsync")?1:0;
+
+	// Get timing values
+	double pclock;
+	int e = sscanf(user_modeline, " %lf %d %d %d %d %d %d %d %d",
+		&pclock,
+		&mode->hactive, &mode->hbegin, &mode->hend, &mode->htotal,
+		&mode->vactive, &mode->vbegin, &mode->vend, &mode->vtotal);
+
+	if (e != 9)
+	{
+		log_error("SwitchRes: missing parameter in user modeline\n  %s\n", user_modeline);
+		memset(mode, 0, sizeof(struct modeline));
+		return false;
+	}
+
+	// Calculate timings
+	mode->pclock = pclock * 1000000.0;
+	mode->hfreq = mode->pclock / mode->htotal;
+	mode->vfreq = mode->hfreq / mode->vtotal * (mode->interlace?2:1);
+	mode->refresh = mode->vfreq;
+	log_verbose("SwitchRes: user modeline %s\n", modeline_print(mode, modeline_txt, MS_FULL));
+
 	return true;
 }
 

@@ -21,6 +21,7 @@
 
 typedef struct display_settings
 {
+	modeline user_mode;
 	char   screen[32];
 	char   api[32];
 	bool   modeline_generation;

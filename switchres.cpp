@@ -198,9 +198,6 @@ bool switchres_manager::parse_config(const char *file_name)
 					transform(value.begin(), value.end(), value.begin(), ::tolower);
 					set_monitor(value.c_str());
 					break;
-				case s2i("modeline"):
-					set_modeline(value.c_str());
-					break;
 				case s2i("crt_range0"):
 					set_crt_range(0, value.c_str());
 					break;
@@ -234,6 +231,21 @@ bool switchres_manager::parse_config(const char *file_name)
 				case s2i("lcd_range"):
 					set_lcd_range(value.c_str());
 					break;
+				case s2i("modeline"):
+					set_modeline(value.c_str());
+					break;
+				case s2i("user_mode"):
+				{
+					if (strcmp(value.c_str(), "auto"))
+					{
+						modeline user_mode = {};
+						if (sscanf(value.c_str(), "%dx%d@%d", &user_mode.width, &user_mode.height, &user_mode.refresh) < 1)
+							log_error("Error: use format resolution <w>x<h>@<r>\n");
+						else
+							set_user_mode(&user_mode);
+					}
+					break;
+				}
 
 				// Display options
 				case s2i("display"):

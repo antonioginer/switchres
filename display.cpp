@@ -45,7 +45,10 @@ display_manager *display_manager::make(display_settings *ds)
 
 void display_manager::parse_options()
 {
-	// Get user defined modeline
+	// Get user_mode as <w>x<h>@<r>
+	set_user_mode(&m_ds.user_mode);
+
+	// Get user defined modeline (overrides user_mode)
 	modeline user_mode = {};
 	if (m_ds.modeline_generation)
 	{
