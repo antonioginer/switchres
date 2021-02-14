@@ -198,6 +198,9 @@ bool switchres_manager::parse_config(const char *file_name)
 					transform(value.begin(), value.end(), value.begin(), ::tolower);
 					set_monitor(value.c_str());
 					break;
+				case s2i("modeline"):
+					set_modeline(value.c_str());
+					break;
 				case s2i("crt_range0"):
 					set_crt_range(0, value.c_str());
 					break;
