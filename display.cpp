@@ -224,6 +224,9 @@ bool display_manager::flush_modes()
 	bool error = false;
 	std::vector<modeline *> modified_modes = {};
 
+	if (video() == nullptr)
+		return false;
+
 	// Loop through our mode table to collect all pending changes
 	for (auto &mode : video_modes)
 		if (mode.type & (MODE_UPDATE | MODE_ADD | MODE_DELETE))
