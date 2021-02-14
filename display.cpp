@@ -372,12 +372,13 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 					if (t_mode.type & Y_RES_EDITABLE)
 						t_mode.vactive = m_user_mode.height? m_user_mode.height : s_mode.vactive;
 
-					if (mode.type & V_FREQ_EDITABLE)
-						t_mode.vfreq = s_mode.vfreq;
+					if (t_mode.type & V_FREQ_EDITABLE)
+						t_mode.vfreq = m_user_mode.vfreq? m_user_mode.vfreq : s_mode.vfreq;
 
 					// lock resolution fields if required
 					if (m_user_mode.width) t_mode.type &= ~X_RES_EDITABLE;
 					if (m_user_mode.height) t_mode.type &= ~Y_RES_EDITABLE;
+					if (m_user_mode.vfreq) t_mode.type &= ~V_FREQ_EDITABLE;
 
 					modeline_create(&s_mode, &t_mode, &range[i], &m_ds.gs);
 					t_mode.range = i;

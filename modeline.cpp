@@ -628,6 +628,8 @@ int modeline_parse(const char *user_modeline, modeline *mode)
 	mode->hfreq = mode->pclock / mode->htotal;
 	mode->vfreq = mode->hfreq / mode->vtotal * (mode->interlace?2:1);
 	mode->refresh = mode->vfreq;
+	mode->width = mode->hactive;
+	mode->height = mode->vactive;
 	log_verbose("SwitchRes: user modeline %s\n", modeline_print(mode, modeline_txt, MS_FULL));
 
 	return true;
