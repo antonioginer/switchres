@@ -52,7 +52,7 @@ void display_manager::parse_options()
 	modeline user_mode = {};
 	if (m_ds.modeline_generation)
 	{
-		if (modeline_parse(m_ds.modeline, &user_mode))
+		if (modeline_parse(m_ds.user_modeline, &user_mode))
 		{
 			user_mode.type |= MODE_USER_DEF;
 			set_user_mode(&user_mode);
