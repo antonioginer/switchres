@@ -49,7 +49,7 @@ jobs:
       uses: actions/upload-artifact@v1.0.0
       with:
         name: switchres win32 x86_64 binary
-        path: switchres
+        path: switchres.exe
 
   win32-build-x86_64-lib:
 
@@ -87,7 +87,7 @@ jobs:
       uses: actions/upload-artifact@v1.0.0
       with:
         name: switchres win32 i686 binary
-        path: switchres
+        path: switchres.exe
 
   win32-build-i686-lib:
 
