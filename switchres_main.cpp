@@ -239,7 +239,7 @@ int show_version()
 	{
 		"Switchres " SWITCHRES_VERSION "\n"
 		"Modeline generation engine for emulation\n"
-		"Copyright (C) 2010-2020 - Chris Kennedy, Antonio Giner, Alexandre Wodarczyk, Gil Delescluse\n"
+		"Copyright (C) 2010-2021 - Chris Kennedy, Antonio Giner, Alexandre Wodarczyk, Gil Delescluse\n"
 		"License GPL-2.0+\n"
 		"This is free software: you are free to change and redistribute it.\n"
 		"There is NO WARRANTY, to the extent permitted by law.\n"
