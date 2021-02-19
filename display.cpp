@@ -373,7 +373,13 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 						t_mode.vactive = m_user_mode.height? m_user_mode.height : s_mode.vactive;
 
 					if (t_mode.type & V_FREQ_EDITABLE)
-						t_mode.vfreq = m_user_mode.vfreq? m_user_mode.vfreq : s_mode.vfreq;
+					{
+						// If user's vfreq is defined, it means we have an user modeline, so force it
+						if (m_user_mode.vfreq)
+							t_mode = m_user_mode;
+						else
+							t_mode.vfreq = s_mode.vfreq;
+					}
 
 					// lock resolution fields if required
 					if (m_user_mode.width) t_mode.type &= ~X_RES_EDITABLE;
@@ -413,7 +419,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	log_verbose("%s\n", modeline_result(&best_mode, result));
 
 	// Copy the new modeline to our mode list
-	if (m_ds.modeline_generation && (best_mode.type & V_FREQ_EDITABLE))
+	if (m_ds.modeline_generation)
 	{
 		if (best_mode.type & MODE_ADD)
 		{
