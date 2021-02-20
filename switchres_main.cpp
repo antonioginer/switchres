@@ -49,6 +49,7 @@ int main(int argc, char **argv)
 	bool help_flag = false;
 	bool resolution_flag = false;
 	bool calculate_flag = false;
+	bool edid_flag = false;
 	bool switch_flag = false;
 	bool launch_flag = false;
 	bool force_flag = false;
@@ -70,6 +71,7 @@ int main(int argc, char **argv)
 			{"launch",      required_argument, 0, 'l'},
 			{"monitor",     required_argument, 0, 'm'},
 			{"aspect",      required_argument, 0, 'a'},
+			{"edid",        no_argument,       0, 'e'},
 			{"rotated",     no_argument,       0, 'r'},
 			{"display",     required_argument, 0, 'd'},
 			{"force",       required_argument, 0, 'f'},
@@ -81,7 +83,7 @@ int main(int argc, char **argv)
 		};
 
 		int option_index = 0;
-		int c = getopt_long(argc, argv, "vhcsl:m:a:rd:f:i:b:k", long_options, &option_index);
+		int c = getopt_long(argc, argv, "vhcsl:m:a:erd:f:i:b:k", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -132,6 +134,10 @@ int main(int argc, char **argv)
 
 			case 'a':
 				switchres.set_monitor_aspect(optarg);
+				break;
+
+			case 'e':
+				edid_flag = true;
 				break;
 
 			case 'f':
@@ -193,7 +199,7 @@ int main(int argc, char **argv)
 	if (force_flag)
 		switchres.display()->set_user_mode(&user_mode);
 	
-	if (!calculate_flag)
+	if (!calculate_flag && !edid_flag)
 	{
 		for (auto &display : switchres.displays)
 			display->init();
@@ -205,6 +211,28 @@ int main(int argc, char **argv)
 		{
 			modeline *mode = display->get_mode(width, height, refresh, interlaced_flag);
 			if (mode) display->flush_modes();
+		}
+
+		if (edid_flag)
+		{
+			edid_block edid = {};
+			modeline *mode = switchres.display()->best_mode();
+			if (mode)
+			{
+				monitor_range *range = &switchres.display()->range[mode->range];
+				edid_from_modeline(mode, range, switchres.ds.monitor, &edid);
+
+				char file_name[32];
+				sprintf(file_name, "%s.bin", switchres.ds.monitor);
+
+				FILE *file = fopen(file_name, "wb");
+				if (file)
+				{
+					fwrite(&edid, sizeof(edid), 1, file);
+					fclose (file);
+					log_info("EDID saved as %s\n", file_name);
+				}
+			}
 		}
 
 		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->best_mode());
@@ -269,6 +297,7 @@ int show_usage()
 		"  -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list\n"
 		"  -i, --ini <file.ini>              Specify an ini file\n"
 		"  -b, --backend <api_name>          Specify the api name\n"
+		"  -e, --edid                        Create an EDID binary with calculated video modes\n"
 		"  -k, --keep                        Keep changes on exit (warning: this disables cleanup)\n"
 	};
 

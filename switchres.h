@@ -20,6 +20,7 @@
 #include "monitor.h"
 #include "modeline.h"
 #include "display.h"
+#include "edid.h"
 
 //============================================================
 //  CONSTANTS
