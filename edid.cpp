@@ -148,10 +148,10 @@ int edid_from_modeline(modeline *mode, monitor_range *range, char *name, edid_bl
 	// Bits 3-0 Vertical sync pulse width lines 4 lsbits 0-63)
 	edid->b[64] = ((v_offset & 0x0f) << 4) + (v_pulse & 0x0f);
 
-	// Bits 7-6 	Horizontal sync offset pixels 2 msbits
-	// Bits 5-4 	Horizontal sync pulse width pixels 2 msbits
-	// Bits 3-2 	Vertical sync offset lines 2 msbits
-	// Bits 1-0 	Vertical sync pulse width lines 2 msbits
+	// Bits 7-6     Horizontal sync offset pixels 2 msbits
+	// Bits 5-4     Horizontal sync pulse width pixels 2 msbits
+	// Bits 3-2     Vertical sync offset lines 2 msbits
+	// Bits 1-0     Vertical sync pulse width lines 2 msbits
 	edid->b[65] = (((h_offset >> 8) & 0x03) << 6) +
 			   (((h_pulse >> 8) & 0x03) << 4) +
 			   (((v_offset >> 8) & 0x03) << 2) +

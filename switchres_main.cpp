@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 
 	if (force_flag)
 		switchres.display()->set_user_mode(&user_mode);
-	
+
 	if (!calculate_flag && !edid_flag)
 	{
 		for (auto &display : switchres.displays)

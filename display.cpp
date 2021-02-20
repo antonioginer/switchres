@@ -119,7 +119,7 @@ bool display_manager::add_mode(modeline *mode)
 	{
 		log_verbose("Switchres: error adding mode ");
 		log_mode(mode);
-		return false;		
+		return false;
 	}
 
 	mode->type &= ~MODE_ADD;

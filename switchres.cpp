@@ -71,7 +71,7 @@ bool get_value(const string& line, string& key, string& value)
 
 constexpr unsigned int s2i(const char* str, int h = 0)
 {
-    return !str[h] ? 5381 : (s2i(str, h+1)*33) ^ str[h];
+	return !str[h] ? 5381 : (s2i(str, h+1)*33) ^ str[h];
 }
 
 //============================================================
