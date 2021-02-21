@@ -18,6 +18,10 @@
 #include "switchres.h"
 #include "edid.h"
 
+//============================================================
+//  edid_from_modeline
+//============================================================
+
 int edid_from_modeline(modeline *mode, monitor_range *range, char *name, edid_block *edid)
 {
 	if (!edid) return 0;
@@ -174,7 +178,7 @@ int edid_from_modeline(modeline *mode, monitor_range *range, char *name, edid_bl
 	edid->b[70] = 0;
 
 	// Features bitmap
-	edid->b[71] = (unsigned char)(((mode->interlace & 0x01) << 7) + 0x18 + (mode->vsync << 2) + (mode->hsync << 2));
+	edid->b[71] = ((mode->interlace & 0x01) << 7) + 0x18 + (mode->vsync << 2) + (mode->hsync << 2);
 
 
 	// Descriptor: monitor serial number
@@ -224,7 +228,10 @@ int edid_from_modeline(modeline *mode, monitor_range *range, char *name, edid_bl
 	edid->b[111] = 0xfc;
 	edid->b[112] = 0;
 	snprintf(&edid->b[113], 13, "%s", name);
-	edid->b[89] = 0x0a;
+	edid->b[125] = 0x0a;
+
+	// Extensions to follow
+	edid->b[126] = 0;
 
 	// Compute checksum
 	char checksum = 0;
