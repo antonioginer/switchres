@@ -11,11 +11,13 @@ jobs:
       run: sudo apt-get install libxrandr-dev libdrm-dev
     - name: make
       run: make
+    - name: Prepare artifacts
+      run: mkdir artifacts && cp switchres{,.ini} artifacts/
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: switchres linux binary
-        path: switchres
+        path: artifacts/
 
   linux-build-lib:
     runs-on: ubuntu-latest
@@ -45,11 +47,13 @@ jobs:
       run: sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
     - name: make
       run: make PLATFORM=NT CROSS_COMPILE=x86_64-w64-mingw32-
+    - name: Prepare artifacts
+      run: mkdir artifacts && cp switchres.{exe,ini} artifacts/
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: switchres win32 x86_64 binary
-        path: switchres
+        path: artifacts/
 
   win32-build-x86_64-lib:
 
@@ -83,11 +87,13 @@ jobs:
       run: sudo update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
     - name: make
       run: make PLATFORM=NT CROSS_COMPILE=i686-w64-mingw32-
+    - name: Prepare artifacts
+      run: mkdir artifacts && cp switchres.{exe,ini} artifacts/
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: switchres win32 i686 binary
-        path: switchres
+        path: artifacts/
 
   win32-build-i686-lib:
 

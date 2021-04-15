@@ -29,9 +29,10 @@ typedef struct display_settings
 	bool   refresh_dont_care;
 	bool   keep_changes;
 	char   monitor[32];
-	char   modeline[256];
 	char   crt_range[MAX_RANGES][256];
 	char   lcd_range[256];
+	char   user_modeline[256];
+	modeline user_mode;
 
 	generator_settings gs;
 	custom_video_settings vs;
@@ -65,7 +66,7 @@ public:
 
 	// getters (display manager)
 	const char *set_monitor() { return (const char*) &m_ds.monitor; }
-	const char *user_modeline() { return (const char*) &m_ds.modeline; }
+	const char *user_modeline() { return (const char*) &m_ds.user_modeline; }
 	const char *crt_range(int i) { return (const char*) &m_ds.crt_range[i]; }
 	const char *lcd_range() { return (const char*) &m_ds.lcd_range; }
 	const char *screen() { return (const char*) &m_ds.screen; }
@@ -102,8 +103,8 @@ public:
 	bool is_stretched() { return m_best_mode != nullptr? m_best_mode->result.weight & R_RES_STRETCH : false; }
 	bool is_refresh_off() { return m_best_mode != nullptr? m_best_mode->result.weight & R_V_FREQ_OFF : false; }
 	bool is_switching_required() { return m_switching_required; }
-	bool is_mode_updated() { return m_best_mode != nullptr? m_best_mode->type & MODE_UPDATED : false; }
-	bool is_mode_new() { return m_best_mode != nullptr? m_best_mode->type & MODE_NEW : false; }
+	bool is_mode_updated() { return m_best_mode != nullptr? m_best_mode->type & MODE_UPDATE : false; }
+	bool is_mode_new() { return m_best_mode != nullptr? m_best_mode->type & MODE_ADD : false; }
 
 	// setters
 	void set_factory(custom_video *factory) { m_factory = factory; }
@@ -131,6 +132,7 @@ public:
 	// mode list handling
 	bool filter_modes();
 	bool restore_modes();
+	bool flush_modes();
 	bool auto_specs();
 
 	// mode list

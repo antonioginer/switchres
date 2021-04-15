@@ -81,10 +81,10 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 
 	if (method == CUSTOM_VIDEO_TIMING_XRANDR || method == 0)
 	{
-		try 
+		try
 		{
 			m_custom_video = new xrandr_timing(device_name, vs);
-		} 
+		}
 		catch (...) {};
 		if (m_custom_video)
 		{
@@ -156,6 +156,15 @@ bool custom_video::delete_mode(modeline *)
 //============================================================
 
 bool custom_video::update_mode(modeline *)
+{
+	return false;
+}
+
+//============================================================
+//  custom_video::process_modelist
+//============================================================
+
+bool custom_video::process_modelist(std::vector<modeline *>)
 {
 	return false;
 }

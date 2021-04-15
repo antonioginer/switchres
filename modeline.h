@@ -31,23 +31,25 @@
 #define MS_PARAMS     0x00000004
 #define MS_FULL       MS_LABEL | MS_PARAMS
 
-// Modeline result   
+// Modeline result
 #define R_V_FREQ_OFF    0x00000001
 #define R_RES_STRETCH   0x00000002
 #define R_OUT_OF_RANGE  0x00000004
 
-// Mode types  
+// Mode types
 #define MODE_OK         0x00000000
 #define MODE_DESKTOP    0x01000000
 #define MODE_ROTATED    0x02000000
 #define MODE_DISABLED   0x04000000
 #define MODE_USER_DEF   0x08000000
-#define MODE_UPDATED    0x10000000
-#define MODE_NEW        0x20000000
+#define MODE_UPDATE     0x10000000
+#define MODE_ADD        0x20000000
+#define MODE_DELETE     0x40000000
+#define MODE_ERROR      0x80000000
 #define V_FREQ_EDITABLE 0x00000001
 #define X_RES_EDITABLE  0x00000002
 #define Y_RES_EDITABLE  0x00000004
-#define SCAN_EDITABLE	0x00000008
+#define SCAN_EDITABLE   0x00000008
 #define XYV_EDITABLE   (X_RES_EDITABLE | Y_RES_EDITABLE | V_FREQ_EDITABLE )
 
 #define DUMMY_WIDTH 1234
