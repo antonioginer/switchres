@@ -74,6 +74,7 @@ typedef struct MODULE_API {
 } sr_mode;
 
 MODULE_API void sr_init();
+MODULE_API void sr_load_ini(char* config);
 MODULE_API void sr_deinit();
 MODULE_API void sr_init_disp();
 MODULE_API unsigned char sr_add_mode(int, int, double, unsigned char, sr_mode*);
@@ -84,12 +85,13 @@ MODULE_API void sr_set_rotation(unsigned char);
 
 // Inspired by https://stackoverflow.com/a/1067684
 typedef struct MODULE_API {
-	void (*init)(void);
-	void (*deinit)(void);
-	void (*sr_init_disp)(void);
-	unsigned char (*sr_add_mode)(int, int, double, unsigned char, sr_mode*);
-	unsigned char (*sr_switch_to_mode)(int, int, double, unsigned char, sr_mode*);
-	void (*sr_set_rotation)(unsigned char);
+    void (*init)(void);
+    void (*sr_sr_load_ini)(char*);
+    void (*deinit)(void);
+    void (*sr_init_disp)(void);
+    unsigned char (*sr_add_mode)(int, int, double, unsigned char, sr_mode*);
+    unsigned char (*sr_switch_to_mode)(int, int, double, unsigned char, sr_mode*);
+    void (*sr_set_rotation)(unsigned char);
 } srAPI;
 
 
