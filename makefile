@@ -50,7 +50,7 @@ endif
 %.o : %.cpp
 	$(FINAL_CXX) -c $(CPPFLAGS) $< -o $@
 
-all: $(SRC:.cpp=.o) $(MAIN).cpp $(TARGET_LIB)
+all: $(SRC:.cpp=.o) $(MAIN).cpp $(TARGET_LIB) prepare_pkg_config
 	@echo $(OSFLAG)
 	$(FINAL_CXX) $(CPPFLAGS) $(CXXFLAGS) $(SRC:.cpp=.o) $(MAIN).cpp $(LIBS) -o $(STANDALONE)
 
@@ -63,6 +63,7 @@ $(GRID):
 
 clean:
 	$(REMOVE) $(OBJS) $(STANDALONE) $(TARGET_LIB).*
+	$(REMOVE) switchres.pc
 
 prepare_pkg_config:
 	$(SED) -e "s+@prefix@+$(PREFIX)+g" \
@@ -70,7 +71,7 @@ prepare_pkg_config:
 	  -e"s+@includedir@+$(INCDIR)+g" \
 	  switchres.pc.in > switchres.pc
 
-install: prepare_pkg_config
+install:
 	$(INSTALL) -Dm644 $(TARGET_LIB).$(DYNAMIC_LIB_EXT) $(LIBDIR)/$(TARGET_LIB).$(DYNAMIC_LIB_EXT)
 	$(INSTALL) -Dm644 switchres_wrapper.h $(INCDIR)/switchres/switchres_wrapper.h
 	$(INSTALL) -Dm644 switchres.h $(INCDIR)/switchres/switchres.h
