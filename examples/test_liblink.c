@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "switchres_wrapper.h"
+#include <switchres/switchres_wrapper.h>
 
 int main(int argc, char** argv) {
 	sr_mode srm;
 	unsigned char ret;
 
 	sr_init();
+	sr_init_disp();
 
 	ret = sr_add_mode(384, 224, 59.63, 0, &srm);
 	if(!ret) 
