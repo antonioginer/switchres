@@ -10,7 +10,7 @@
 #define LIBSWR "libswitchres.dll"
 #endif
 
-#include "switchres_wrapper.h"
+#include <switchres/switchres_wrapper.h>
 
 int main(int argc, char** argv) {
 	const char* err_msg;
@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
 	// Testing the function
 	printf("Init a new switchres_manager object:\n");
 	SRobj->init();
+	SRobj->sr_init_disp();
 
 	// Call mode + get result values
 	int w = 384, h = 224;

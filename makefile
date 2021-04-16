@@ -17,7 +17,6 @@ CPPFLAGS = -O3 -Wall -Wextra
 
 PKG_CONFIG=pkg-config
 INSTALL=install
-SED=sed
 
 DESTDIR ?=
 PREFIX ?= /usr
@@ -47,6 +46,20 @@ STATIC_LIB_EXT = lib
 DYNAMIC_LIB_EXT = dll
 endif
 
+define SR_PKG_CONFIG
+prefix=$(PREFIX)
+exec_prefix=$${prefix}
+includedir=$${prefix}/include
+libdir=$${exec_prefix}/lib
+
+Name: libswitchres
+Description: A basic switchres implementation
+Version: 2.00
+Cflags: -I$${includedir}/switchres
+Libs: -L$${libdir} -ldl -lswitchres
+endef
+
+
 %.o : %.cpp
 	$(FINAL_CXX) -c $(CPPFLAGS) $< -o $@
 
@@ -66,10 +79,7 @@ clean:
 	$(REMOVE) switchres.pc
 
 prepare_pkg_config:
-	$(SED) -e "s+@prefix@+$(PREFIX)+g" \
-	  -e"s+@libdir@+$(LIBDIR)+g" \
-	  -e"s+@includedir@+$(INCDIR)+g" \
-	  switchres.pc.in > switchres.pc
+	$(file > switchres.pc,$(SR_PKG_CONFIG))
 
 install:
 	$(INSTALL) -Dm644 $(TARGET_LIB).$(DYNAMIC_LIB_EXT) $(LIBDIR)/$(TARGET_LIB).$(DYNAMIC_LIB_EXT)
