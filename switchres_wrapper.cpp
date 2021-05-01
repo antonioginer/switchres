@@ -58,7 +58,7 @@ void disp_best_mode_to_sr_mode(display_manager* disp, sr_mode* srm)
 {
 	srm->width = disp->width();
 	srm->height = disp->height();
-	srm->refresh = disp->refresh();
+	srm->refresh = disp->v_freq();
 	srm->is_refresh_off = (disp->is_refresh_off() ? 1 : 0);
 	srm->is_stretched = (disp->is_stretched() ? 1 : 0);
 	srm->x_scale = disp->x_scale();
