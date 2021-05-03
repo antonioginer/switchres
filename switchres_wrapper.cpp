@@ -29,8 +29,8 @@ MODULE_API void sr_init() {
 	setlocale(LC_NUMERIC, "C");
 	swr = new switchres_manager;
 	//swr->set_log_verbose_fn((void *)printf);
-	swr->set_log_info_fn((void *)printf);
-	swr->set_log_error_fn((void *)printf);
+	//swr->set_log_info_fn((void *)printf);
+	//swr->set_log_error_fn((void *)printf);
 	swr->parse_config("switchres.ini");
 }
 
@@ -170,6 +170,26 @@ MODULE_API void sr_set_rotation (unsigned char r) {
 }
 
 
+MODULE_API void sr_set_log_level (int l) {
+	swr->set_log_level(l);
+}
+
+
+MODULE_API void sr_set_log_callback_info (void * f) {
+	swr->set_log_info_fn((void *)f);
+}
+
+
+MODULE_API void sr_set_log_callback_debug (void * f) {
+	swr->set_log_verbose_fn((void *)f);
+}
+
+
+MODULE_API void sr_set_log_callback_error (void * f) {
+	swr->set_log_error_fn((void *)f);
+}
+
+
 MODULE_API srAPI srlib = {
 	sr_init,
 	sr_load_ini,
@@ -177,7 +197,11 @@ MODULE_API srAPI srlib = {
 	sr_init_disp,
 	sr_add_mode,
 	sr_switch_to_mode,
-	sr_set_rotation
+	sr_set_rotation,
+	sr_set_log_level,
+	sr_set_log_callback_error,
+	sr_set_log_callback_info,
+	sr_set_log_callback_debug,
 };
 
 #ifdef __cplusplus
