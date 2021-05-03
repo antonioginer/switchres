@@ -50,6 +50,7 @@ public:
 	display_manager *display(int i) const { return i < (int)displays.size()? displays[i] : nullptr; }
 
 	// setters (log manager)
+	void set_log_level(int log_level);
 	void set_log_verbose_fn(void *func_ptr);
 	void set_log_info_fn(void *func_ptr);
 	void set_log_error_fn(void *func_ptr);

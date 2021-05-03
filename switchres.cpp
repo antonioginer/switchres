@@ -31,6 +31,7 @@ const string WHITESPACE = " \n\r\t\f\v";
 //  logging
 //============================================================
 
+void switchres_manager::set_log_level(int log_level) { set_log_verbosity(log_level); }
 void switchres_manager::set_log_verbose_fn(void *func_ptr) { set_log_verbose((void *)func_ptr); }
 void switchres_manager::set_log_info_fn(void *func_ptr) { set_log_info((void *)func_ptr); }
 void switchres_manager::set_log_error_fn(void *func_ptr) { set_log_error((void *)func_ptr); }
@@ -323,6 +324,15 @@ bool switchres_manager::parse_config(const char *file_name)
 				case s2i("custom_timing"):
 					set_custom_timing(value.c_str());
 					break;
+
+				// Various
+				case s2i("verbosity"):
+				{
+					int verbosity_level = 1;
+					sscanf(value.c_str(), "%d", &verbosity_level);
+					set_log_level(verbosity_level);
+					break;
+				}
 
 				default:
 					log_error("Invalid option %s\n", key.c_str());
