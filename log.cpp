@@ -15,7 +15,7 @@
 #include "log.h"
 
 enum log_verbosity { NONE, ERROR, INFO, DEBUG };
-static log_verbosity log_level = ERROR;
+static log_verbosity log_level = INFO;
 
 void log_dummy(const char *, ...) {}
 
@@ -49,4 +49,12 @@ void set_log_verbosity(int level)
 	if(level > DEBUG)
 		level = DEBUG;
 	log_level = (log_verbosity)level;
+
+	// Reinit loggers
+	if (log_level < DEBUG)
+		log_verbose = &log_dummy;
+	if (log_level < INFO)
+		log_info = &log_dummy;
+	if (log_level < ERROR)
+		log_error = &log_dummy;
 }

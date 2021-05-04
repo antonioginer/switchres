@@ -28,9 +28,6 @@ switchres_manager* swr;
 MODULE_API void sr_init() {
 	setlocale(LC_NUMERIC, "C");
 	swr = new switchres_manager;
-	//swr->set_log_verbose_fn((void *)printf);
-	//swr->set_log_info_fn((void *)printf);
-	//swr->set_log_error_fn((void *)printf);
 	swr->parse_config("switchres.ini");
 }
 
