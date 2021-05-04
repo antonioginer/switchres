@@ -33,10 +33,6 @@ int main(int argc, char **argv)
 
 	switchres_manager switchres;
 
-	// Init logging
-	switchres.set_log_info_fn((void*)printf);
-	switchres.set_log_error_fn((void*)printf);
-
 	switchres.parse_config("switchres.ini");
 
 	int width = 0;
@@ -97,6 +93,9 @@ int main(int argc, char **argv)
 		switch (c)
 		{
 			case 'v':
+				switchres.set_log_level(3);
+				switchres.set_log_error_fn((void*)printf);
+				switchres.set_log_info_fn((void*)printf);
 				switchres.set_log_verbose_fn((void*)printf);
 				break;
 
