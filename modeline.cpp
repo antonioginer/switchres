@@ -271,6 +271,14 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 		t_mode->vsync = range->vsync_polarity;
 		t_mode->interlace = interlace == 2?1:0;
 		t_mode->doublescan = doublescan == 1?0:1;
+
+		// Apply interlace fixes
+		if (cs->interlace_force_even && interlace == 2)
+		{
+			t_mode->vbegin = (t_mode->vbegin / 2) * 2;
+			t_mode->vend = (t_mode->vend / 2) * 2;
+			t_mode->vtotal++;
+		}
 	}
 
 	// finally, store result

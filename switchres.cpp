@@ -104,6 +104,7 @@ switchres_manager::switchres_manager()
 	set_super_width(2560);
 	set_v_shift_correct(0);
 	set_pixel_precision(1);
+	set_interlace_force_even(0);
 
 	// Create our display manager
 	m_display_factory = new display_manager();
@@ -315,6 +316,10 @@ bool switchres_manager::parse_config(const char *file_name)
 
 				case s2i("pixel_precision"):
 					set_pixel_precision(atoi(value.c_str()));
+					break;
+
+				case s2i("interlace_force_even"):
+					set_interlace_force_even(atoi(value.c_str()));
 					break;
 
 				// Custom video backend options
