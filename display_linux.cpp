@@ -54,7 +54,8 @@ bool linux_display::init()
 
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(m_ds.screen, NULL, method, &m_ds.vs));
-	if (video()) video()->init();
+	if (!video() or !video()->init())
+		return false;
 
 	// Build our display's mode list
 	video_modes.clear();
