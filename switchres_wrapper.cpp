@@ -31,16 +31,21 @@ MODULE_API void sr_init() {
 	swr->parse_config("switchres.ini");
 }
 
+
 MODULE_API void sr_load_ini(char* config) {
 	swr->parse_config(config);
-
 }
 
-MODULE_API void sr_init_disp() {
+
+MODULE_API unsigned char sr_init_disp(const char* scr) {
+	if (scr)
+		swr->set_screen(scr);
 	swr->add_display();
-	for (auto &display : swr->displays)
-		display->init();
+	if (!swr->display()->init())
+		return 0;
+	return 1;
 }
+
 
 MODULE_API void sr_deinit() {
 	delete swr;
@@ -50,6 +55,7 @@ MODULE_API void sr_deinit() {
 MODULE_API void sr_set_monitor(const char *preset) {
 	swr->set_monitor(preset);
 }
+
 
 void disp_best_mode_to_sr_mode(display_manager* disp, sr_mode* srm)
 {
