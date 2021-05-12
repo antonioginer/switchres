@@ -110,10 +110,10 @@ switchres_manager::switchres_manager()
 	m_display_factory = new display_manager();
 
 	// Set logger properties
-	set_log_level(2);
 	set_log_info_fn((void*)printf);
 	set_log_error_fn((void*)printf);
 	set_log_verbose_fn((void*)printf);
+	set_log_level(2);
 }
 
 //============================================================
