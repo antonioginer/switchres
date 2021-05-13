@@ -83,6 +83,7 @@ MODULE_API unsigned char sr_add_mode(int, int, double, unsigned char, sr_mode*);
 MODULE_API unsigned char sr_switch_to_mode(int, int, double, unsigned char, sr_mode*);
 MODULE_API void sr_set_monitor(const char*);
 MODULE_API void sr_set_rotation(unsigned char);
+MODULE_API void sr_set_user_mode(int, int, int);
 
 // Logging related functions
 MODULE_API void sr_set_log_level (int);
@@ -99,7 +100,9 @@ typedef struct MODULE_API {
     unsigned char (*sr_init_disp)(const char*);
     unsigned char (*sr_add_mode)(int, int, double, unsigned char, sr_mode*);
     unsigned char (*sr_switch_to_mode)(int, int, double, unsigned char, sr_mode*);
+    void (*sr_set_monitor)(const char*);
     void (*sr_set_rotation)(unsigned char);
+    void (*sr_set_user_mode)(int, int, int);
     void (*sr_set_log_level) (int);
     void (*sr_set_log_callback_error)(void *);
     void (*sr_set_log_callback_info)(void *);

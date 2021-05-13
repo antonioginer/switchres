@@ -23,22 +23,36 @@ LOG_VERBOSE log_verbose = &log_dummy;
 LOG_INFO log_info = &log_dummy;
 LOG_ERROR log_error = &log_dummy;
 
+/*
+ * These bakup pointers are here to let the user modify the log level at runtime
+ * We can't sadly unify a log function and test the log level to test if it should
+ * output a log, because it would imply frewriting log_ functions with va_args
+ * and wouldn't work with emulators log functions anymore
+ */
+LOG_VERBOSE log_verbose_bak = &log_dummy;
+LOG_INFO log_info_bak = &log_dummy;
+LOG_ERROR log_error_bak = &log_dummy;
+
+
 void set_log_verbose(void *func_ptr)
 {
 	if (log_level >= DEBUG)
 		log_verbose = (LOG_VERBOSE)func_ptr;
+	log_verbose_bak = (LOG_VERBOSE)func_ptr;
 }
 
 void set_log_info(void *func_ptr)
 {
 	if (log_level >= INFO)
 		log_info = (LOG_INFO)func_ptr;
+	log_info_bak = (LOG_INFO)func_ptr;
 }
 
 void set_log_error(void *func_ptr)
 {
 	if (log_level >= ERROR)
 		log_error = (LOG_ERROR)func_ptr;
+	log_error_bak = (LOG_ERROR)func_ptr;
 }
 
 void set_log_verbosity(int level)
@@ -48,13 +62,17 @@ void set_log_verbosity(int level)
 		level = NONE;
 	if(level > DEBUG)
 		level = DEBUG;
-	log_level = (log_verbosity)level;
 
-	// Reinit loggers
-	if (log_level < DEBUG)
-		log_verbose = &log_dummy;
-	if (log_level < INFO)
-		log_info = &log_dummy;
-	if (log_level < ERROR)
-		log_error = &log_dummy;
+	log_error = &log_dummy;
+	log_info = &log_dummy;
+	log_verbose = &log_dummy;
+
+	if (level >= ERROR)
+		log_error = log_error_bak;
+
+	if (level >= INFO)
+		log_info = log_info_bak;
+
+	if (level >= DEBUG)
+		log_verbose = log_verbose_bak;
 }

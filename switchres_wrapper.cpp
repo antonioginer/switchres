@@ -57,6 +57,15 @@ MODULE_API void sr_set_monitor(const char *preset) {
 }
 
 
+MODULE_API void sr_set_user_mode(int width, int height, int refresh) {
+	modeline user_mode = {};
+	user_mode.width = width;
+	user_mode.height = height;
+	user_mode.refresh = refresh;
+	swr->set_user_mode(&user_mode);
+}
+
+
 void disp_best_mode_to_sr_mode(display_manager* disp, sr_mode* srm)
 {
 	srm->width = disp->width();
@@ -200,7 +209,9 @@ MODULE_API srAPI srlib = {
 	sr_init_disp,
 	sr_add_mode,
 	sr_switch_to_mode,
+	sr_set_monitor,
 	sr_set_rotation,
+	sr_set_user_mode,
 	sr_set_log_level,
 	sr_set_log_callback_error,
 	sr_set_log_callback_info,
