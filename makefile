@@ -41,7 +41,8 @@ else ifneq (,$(findstring NT,$(PLATFORM)))
 SRC += display_windows.cpp custom_video_ati_family.cpp custom_video_ati.cpp custom_video_adl.cpp custom_video_pstrip.cpp resync_windows.cpp
 CPPFLAGS += -static -static-libgcc -static-libstdc++
 LIBS = 
-REMOVE = del /f
+#REMOVE = del /f
+REMOVE = rm -f
 STATIC_LIB_EXT = lib
 DYNAMIC_LIB_EXT = dll
 endif
