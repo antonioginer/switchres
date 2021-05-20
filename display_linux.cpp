@@ -49,8 +49,10 @@ bool linux_display::init()
 
 	if (!strcmp(m_ds.api, "xrandr"))
 		method = CUSTOM_VIDEO_TIMING_XRANDR;
+#ifdef SR_WITH_KMSDRM
 	else if (!strcmp(m_ds.api, "drmkms"))
 		method = CUSTOM_VIDEO_TIMING_DRMKMS;
+#endif
 
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(m_ds.screen, NULL, method, &m_ds.vs));
