@@ -23,7 +23,9 @@
 #include "custom_video_adl.h"
 #include "custom_video_pstrip.h"
 #elif defined(__linux__)
+#ifdef SR_WITH_XRANDR
 #include "custom_video_xrandr.h"
+#endif
 #ifdef SR_WITH_KMSDRM
 #include "custom_video_drmkms.h"
 #endif
@@ -81,6 +83,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 	if (device_id != NULL)
 		log_info("Device value is %s.\n", device_id);
 
+#ifdef SR_WITH_XRANDR
 	if (method == CUSTOM_VIDEO_TIMING_XRANDR || method == 0)
 	{
 		try
@@ -94,6 +97,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 			return m_custom_video;
 		}
 	}
+#endif /* SR_WITH_XRANDR */
 
 #ifdef SR_WITH_KMSDRM
 	if (method == CUSTOM_VIDEO_TIMING_DRMKMS || method == 0)
