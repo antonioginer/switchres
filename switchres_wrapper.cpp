@@ -1,6 +1,6 @@
 /**************************************************************
 
-   log.h - Simple logging for Switchres
+   switchres_wrapper.cpp - Switchres C wrapper API
 
    ---------------------------------------------------------
 
