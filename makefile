@@ -70,6 +70,7 @@ all: $(SRC:.cpp=.o) $(MAIN).cpp $(TARGET_LIB) prepare_pkg_config
 
 $(TARGET_LIB): $(OBJS)
 	$(FINAL_CXX) $(LDFLAGS) $(CPPFLAGS) -o $@.$(DYNAMIC_LIB_EXT) $^
+	$(FINAL_CXX) -c $(CPPFLAGS) -DSR_WIN32_STATIC switchres_wrapper.cpp -o switchres_wrapper.o
 	$(FINAL_AR) rcs $@.$(STATIC_LIB_EXT) $(^)
 
 $(GRID):
