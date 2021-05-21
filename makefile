@@ -27,12 +27,34 @@ PKGDIR = $(LIBDIR)/pkgconfig
 
 # Linux
 ifeq  ($(PLATFORM),Linux)
-EXTRA_LIBS = libdrm
+SRC += display_linux.cpp
+
+HAS_VALID_XRANDR := $(shell $(PKG_CONFIG) --libs xrandr; echo $$?)
+ifeq ($(HAS_VALID_XRANDR),1)
+    $(info Switchres needs xrandr. X support is disabled)
+else
+    $(info X support enabled)
+    CPPFLAGS += -DSR_WITH_XRANDR
+    SRC += custom_video_xrandr.cpp
+endif
+
+HAS_VALID_DRMKMS := $(shell $(PKG_CONFIG) --libs "libdrm >= 2.4.98"; echo $$?)
+ifeq ($(HAS_VALID_DRMKMS),1)
+    $(info Switchres needs libdrm >= 2.4.98. KMS support is disabled)
+else
+    $(info KMS support enabled)
+    CPPFLAGS += -DSR_WITH_KMSDRM
+    EXTRA_LIBS = libdrm
+    SRC += custom_video_drmkms.cpp
+endif
+
+ifneq (,$(EXTRA_LIBS))
 CPPFLAGS += $(shell $(PKG_CONFIG) --cflags $(EXTRA_LIBS))
-SRC += display_linux.cpp custom_video_xrandr.cpp custom_video_drmkms.cpp
+endif
+
 CPPFLAGS += -fPIC
 LIBS = -ldl
-REMOVE = rm -f 
+REMOVE = rm -f
 STATIC_LIB_EXT = a
 DYNAMIC_LIB_EXT = so
 
@@ -40,7 +62,7 @@ DYNAMIC_LIB_EXT = so
 else ifneq (,$(findstring NT,$(PLATFORM)))
 SRC += display_windows.cpp custom_video_ati_family.cpp custom_video_ati.cpp custom_video_adl.cpp custom_video_pstrip.cpp resync_windows.cpp
 CPPFLAGS += -static -static-libgcc -static-libstdc++
-LIBS = 
+LIBS =
 #REMOVE = del /f
 REMOVE = rm -f
 STATIC_LIB_EXT = lib
