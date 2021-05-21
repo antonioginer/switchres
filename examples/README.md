@@ -29,10 +29,10 @@ When running, dont forget to add before the binary LD_LIBRARY_PATH=<libswitchres
 ```bash
 make libswitchres
 cd examples
-gcc -o linux_dl_test test_dlopen.c -I ../ -ldl
+g++ -o linux_dl_test test_dlopen.cpp -I ../ -ldl
 LD_LIBRARY_PATH=../:$LD_LIBRARY_PATH ./linux_dl_test
 
-gcc -o linux_link_lib test_liblink.c -I ../ -L../ -lswitchres -ldl
+g++ -o linux_link_lib test_liblink.cpp -I ../ -L../ -lswitchres -ldl
 LD_LIBRARY_PATH=../:$LD_LIBRARY_PATH ./linux_link_lib
 ```
 
@@ -46,10 +46,10 @@ Pretty much the same as Linux, but with mingw64. The resulting exe and dll can b
 make PLATFORM=NT CROSS_COMPILE=x86_64-w64-mingw32- libswitchres
 (copy the dll to examples)
 
-x86_64-w64-mingw32-gcc-win32 test_dlopen.c -o w32_loaddll.exe -I ../ -static-libgcc -static-libstdc++
+x86_64-w64-mingw32-g++-win32 test_dlopen.cpp -o w32_loaddll.exe -I ../ -static-libgcc -static-libstdc++
 w32_loaddll.exe
 
-x86_64-w64-mingw32-gcc-win32 test_liblink.c -o w32_linkdll.exe -I ../ -static-libgcc -static-libstdc++ -L ./ -lswitchres
+x86_64-w64-mingw32-g++-win32 test_liblink.cpp -o w32_linkdll.exe -I ../ -static-libgcc -static-libstdc++ -L ./ -lswitchres
 w32_linkdll.exe
 ```
 

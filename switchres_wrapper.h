@@ -34,10 +34,13 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-	#ifdef MODULE_API_EXPORTS
-		#define MODULE_API __declspec(dllexport)
-	#else
-		#define MODULE_API
+/*
+ * This is a trick to avoid exporting some functions thus having the binary
+ * flagged as a virus. If switchres_wrapper.cpp is included in the compilation
+ * LIBERROR() is just declared and not compiled. If switchres_wrapper.cpp is
+ * not compiled, LIBERROR is defined here
+ */
+#ifndef SR_WIN32_STATIC
 char* LIBERROR()
 {
 	DWORD errorMessageID = GetLastError();
@@ -55,10 +58,15 @@ char* LIBERROR()
 	LocalFree(messageBuffer);
 	return error_msg;
 }
+#endif /* SR_WIN32_STATIC */
+	#ifndef SR_WIN32_STATIC
+		#define MODULE_API __declspec(dllexport)
+	#else
+		#define MODULE_API
 	#endif
 #else
 	#define MODULE_API
-#endif
+#endif /* _WIN32 */
 
 #ifdef __linux__
 #define LIBSWR "libswitchres.so"
