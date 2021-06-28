@@ -46,7 +46,7 @@ windows_display::~windows_display()
 //  windows_display::init
 //============================================================
 
-int monitor_by_index(HMONITOR h_monitor, HDC, LPRECT, LPARAM data)
+int CALLBACK monitor_by_index(HMONITOR h_monitor, HDC, LPRECT, LPARAM data)
 {
 	ENUM_INFO *mon_info = (ENUM_INFO*) data;
 	if (--mon_info->index < 0)
