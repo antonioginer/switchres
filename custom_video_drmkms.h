@@ -43,6 +43,7 @@ class drmkms_timing : public custom_video
 		drmModeCrtc *mp_crtc_desktop = NULL;
 		int m_card_id = 0;
 		int drm_master_hook(int fd);
+		bool m_kernel_user_modes = false;
 
 		char m_device_name[32];
 		unsigned int m_desktop_output = 0;
@@ -64,6 +65,7 @@ class drmkms_timing : public custom_video
 		__typeof__(drmModeSetCrtc) *p_drmModeSetCrtc;
 		__typeof__(drmModeFreeCrtc) *p_drmModeFreeCrtc;
 		__typeof__(drmModeAttachMode) *p_drmModeAttachMode;
+		__typeof__(drmModeDetachMode) *p_drmModeDetachMode;
 		__typeof__(drmModeAddFB) *p_drmModeAddFB;
 		__typeof__(drmModeRmFB) *p_drmModeRmFB;
 		__typeof__(drmModeGetFB) *p_drmModeGetFB;
@@ -76,6 +78,8 @@ class drmkms_timing : public custom_video
 		__typeof__(drmIsMaster) *p_drmIsMaster;
 		__typeof__(drmSetMaster) *p_drmSetMaster;
 		__typeof__(drmDropMaster) *p_drmDropMaster;
+
+		bool test_kernel_user_modes();
 };
 
 #endif

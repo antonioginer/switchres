@@ -35,6 +35,7 @@
 #define drmModeSetCrtc p_drmModeSetCrtc
 #define drmModeFreeCrtc p_drmModeFreeCrtc
 #define drmModeAttachMode p_drmModeAttachMode
+#define drmModeDetachMode p_drmModeDetachMode
 #define drmModeAddFB p_drmModeAddFB
 #define drmModeRmFB p_drmModeRmFB
 #define drmModeGetFB p_drmModeGetFB
@@ -103,6 +104,59 @@ const char *get_connector_name(int mode)
 			return "not_defined-";
 	}
 }
+
+//============================================================
+//  test_kernel_user_modes
+//============================================================
+bool drmkms_timing::test_kernel_user_modes() {
+	int ret = 0, first_modes_count = 0, second_modes_count = 0;
+	drmModeModeInfo mode = {};
+	const char* my_name = "KMS Test mode";
+	drmModeConnector *conn;
+
+	// Make sure we are master, that is required for the IOCTL
+	drmSetMaster(m_drm_fd);
+	if (!drmIsMaster(m_drm_fd))
+	{
+		log_verbose("DRM/KMS: <%d> (%s) Need master to test kernel user modes\n", m_id, __FUNCTION__);
+		return false;
+	}
+
+	// Create a dummy modeline with a pixel clock hgher than 25MHz to avoid
+	// drivers checks rejecting the mode. This is 320x240@60
+	// with min dotclock at 25.0MHz
+	sprintf(mode.name, my_name);
+	mode.clock       = 26027;
+	mode.hdisplay    = 1280;
+	mode.hsync_start = 1332;
+	mode.hsync_end   = 1454;
+	mode.htotal      = 1662;
+	mode.vdisplay    = 240;
+	mode.vsync_start = 242;
+	mode.vsync_end   = 245;
+	mode.vtotal      = 261;
+	mode.flags       = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC;
+
+	// Count the number of existing modes, so it should be +1 when attaching
+	// a new mode. Could also check the mode name, still better
+	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
+	first_modes_count = conn->count_modes;
+	ret = drmModeAttachMode(m_drm_fd, m_desktop_output, &mode);
+	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
+	second_modes_count = conn->count_modes;
+	if (first_modes_count != second_modes_count)
+	{
+		log_verbose("DRM/KMS: <%d> (%s) Kernel supports user modes\n", m_id, __FUNCTION__);
+		drmModeDetachMode(m_drm_fd, m_desktop_output, &mode);
+		m_kernel_user_modes = true;
+	}
+	else
+		log_verbose("DRM/KMS: <%d> (%s) Kernel doesn't supports user modes\n", m_id, __FUNCTION__);
+
+	drmDropMaster(m_drm_fd);
+	return m_kernel_user_modes;
+}
+
 
 //============================================================
 //  id for class object (static)
@@ -238,6 +292,13 @@ bool drmkms_timing::init()
 		if (p_drmModeAttachMode == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeAttachMode", "DRM_LIBRARY");
+			return false;
+		}
+
+		p_drmModeDetachMode = (__typeof__(drmModeDetachMode)) dlsym(mp_drm_handle, "drmModeDetachMode");
+		if (p_drmModeDetachMode == NULL)
+		{
+			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeDetachMode", "DRM_LIBRARY");
 			return false;
 		}
 
@@ -462,6 +523,9 @@ bool drmkms_timing::init()
 	else
 	{
 	}
+
+	// Check if the kernel handles user modes
+	test_kernel_user_modes();
 
 	return true;
 }
