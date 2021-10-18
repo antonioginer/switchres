@@ -33,6 +33,8 @@ class drmkms_timing : public custom_video
 		bool delete_mode(modeline *mode);
 		bool update_mode(modeline *mode);
 
+		bool process_modelist(std::vector<modeline *>);
+
 		bool get_timing(modeline *mode);
 		bool set_timing(modeline *mode);
 
@@ -80,6 +82,7 @@ class drmkms_timing : public custom_video
 		__typeof__(drmDropMaster) *p_drmDropMaster;
 
 		bool test_kernel_user_modes();
+		void list_drm_modes();
 };
 
 #endif
