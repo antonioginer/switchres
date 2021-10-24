@@ -18,6 +18,10 @@
 #include <vector>
 #include <cstring>
 #include "modeline.h"
+#ifdef SR_WITH_SDL2
+#include "SDL.h"
+#include "SDL_syswm.h"
+#endif
 
 #define CUSTOM_VIDEO_TIMING_MASK        0x00000ff0
 #define CUSTOM_VIDEO_TIMING_AUTO        0x00000000
@@ -89,6 +93,11 @@ public:
 	void set_allow_hardware_refresh(bool value) { m_vs.allow_hardware_refresh = value; }
 	void set_custom_timing(const char *custom_timing) { strncpy(m_vs.custom_timing, custom_timing, sizeof(m_vs.custom_timing)-1); }
 
+#ifdef SR_WITH_SDL2
+	void get_sdl_hwinfo_from_sdl_window(SDL_Window* window);
+	bool is_sdl_set() { return m_sdlwindow ? true : false; }
+	SDL_Window* get_sdl_window() { return m_sdlwindow ; }
+#endif
 	// options
 	custom_video_settings m_vs = {};
 
@@ -102,6 +111,11 @@ private:
 	custom_video *m_custom_video = 0;
 	int m_custom_method;
 
+protected:
+#ifdef SR_WITH_SDL2
+	SDL_SysWMinfo m_sdlwminfo;
+	SDL_Window* m_sdlwindow = NULL;
+#endif
 };
 
 #endif

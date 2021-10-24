@@ -82,6 +82,7 @@ class drmkms_timing : public custom_video
 		__typeof__(drmDropMaster) *p_drmDropMaster;
 
 		bool test_kernel_user_modes();
+		bool kms_has_mode(modeline*);
 		void list_drm_modes();
 };
 

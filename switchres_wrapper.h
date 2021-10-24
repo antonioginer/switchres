@@ -105,6 +105,9 @@ MODULE_API void sr_set_log_callback_info(void *);
 MODULE_API void sr_set_log_callback_debug(void *);
 
 
+/* Others */
+MODULE_API void sr_set_sdl_window(void *);
+
 /* Inspired by https://stackoverflow.com/a/1067684 */
 typedef struct MODULE_API {
     void (*init)(void);
@@ -120,6 +123,7 @@ typedef struct MODULE_API {
     void (*sr_set_log_callback_error)(void *);
     void (*sr_set_log_callback_info)(void *);
     void (*sr_set_log_callback_debug)(void *);
+    void (*sr_set_sdl_window)(void *);
 } srAPI;
 
 

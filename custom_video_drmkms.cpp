@@ -22,6 +22,10 @@
 #include <sys/stat.h>
 #include "custom_video_drmkms.h"
 #include "log.h"
+#ifdef SR_WITH_SDL2
+#include "SDL.h"
+#include "SDL_syswm.h"
+#endif
 
 #define drmGetVersion p_drmGetVersion
 #define drmFreeVersion p_drmFreeVersion
@@ -149,9 +153,11 @@ bool drmkms_timing::test_kernel_user_modes() {
 		return false;
 	}
 
-	// Create a dummy modeline with a pixel clock hgher than 25MHz to avoid
-	// drivers checks rejecting the mode. This is 320x240@60
-	// with min dotclock at 25.0MHz
+	/*
+	 * Create a dummy modeline with a pixel clock hgher than 25MHz to avoid
+	 * drivers checks rejecting the mode. This is 320x240@60
+	 * with min dotclock at 25.0MHz
+	 */
 	strcpy(mode.name, my_name);
 	mode.clock       = 26027;
 	mode.hdisplay    = 1280;
@@ -164,11 +170,24 @@ bool drmkms_timing::test_kernel_user_modes() {
 	mode.vtotal      = 261;
 	mode.flags       = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC;
 
-	// Count the number of existing modes, so it should be +1 when attaching
-	// a new mode. Could also check the mode name, still better
+	/*
+	 * Count the number of existing modes, so it should be +1 when attaching
+	 * a new mode. Could also check the mode name, still better
+	 */
 	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
 	first_modes_count = conn->count_modes;
 	ret = drmModeAttachMode(m_drm_fd, m_desktop_output, &mode);
+	/*
+	 * This case can only happen if we're not drmMaster. If the kernel doesn't support
+	 * adding new modes, the IOCTL will still return 0, not an error
+	 */
+	if ( ret < 0 )
+	{
+		// Let's fail, no need to go further
+		log_verbose("DRM/KMS: <%d> (%s) Cannot add new kernel user mode\n", m_id, __FUNCTION__);
+		m_kernel_user_modes = false;
+		return false;
+	}
 	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
 	second_modes_count = conn->count_modes;
 	if (first_modes_count != second_modes_count)
@@ -584,6 +603,17 @@ bool drmkms_timing::init()
 
 int drmkms_timing::drm_master_hook(int last_fd)
 {
+#ifdef SR_WITH_SDL2
+	// The m_sdlwminfo must have been set. This is not the case at the contructor, so we fall back to the usual hook
+	if (m_sdlwindow)
+	{
+		if (drmIsMaster(m_sdlwminfo.info.kmsdrm.drm_fd))
+		{
+			log_verbose("DRM/KMS: <%d> (%s) Got the SDL2 fd (%d)\n", m_id, __FUNCTION__, m_sdlwminfo.info.kmsdrm.drm_fd);
+			return m_sdlwminfo.info.kmsdrm.drm_fd;
+		}
+	}
+#endif
 	for (int fd = 4; fd < last_fd; fd++)
 	{
 		struct stat st;
@@ -662,40 +692,41 @@ bool drmkms_timing::add_mode(modeline *mode)
 
 	if (m_kernel_user_modes)
 	{
-		int first_modes_count = 0, second_modes_count = 0;
-		drmModeConnector *conn;
+		int ret = 0, fd = -1;
+		drmModeModeInfo drmmode;
 
-		drmSetMaster(m_drm_fd);
+		ret = drmSetMaster(m_drm_fd);
 		if (!drmIsMaster(m_drm_fd))
 		{
-			log_verbose("DRM/KMS: <%d> (%s) Need master to set kernel user modes\n", m_id, __FUNCTION__);
+			// 20 is totally random here ...
+			fd = drm_master_hook(20);
+		}
+		if (!drmIsMaster(fd))
+		{
+			log_error("DRM/KMS: <%d> (%s) Need master to add a kernel mode (%d)\n", m_id, __FUNCTION__, ret);
+			log_verbose("DRM/KMS: <%d> (%s) fd is: %d\n", m_id, __FUNCTION__, fd);
 			return false;
 		}
 
-		drmModeModeInfo drmmode;
 		modeline_to_drm_modeline(m_id, mode, &drmmode);
-		conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
-		first_modes_count = conn->count_modes;
 		log_verbose("DRM/KMS: <%d> (add_mode) [DEBUG] Adding a mode to the kernel: %dx%d %s\n", m_id, drmmode.hdisplay, drmmode.vdisplay, drmmode.name);
-		drmModeAttachMode(m_drm_fd, m_desktop_output, &drmmode);
-		conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
-		second_modes_count = conn->count_modes;
-		if (first_modes_count != second_modes_count)
+		// Calling drmModeGetConnector forces a refresh of the connector modes
+		ret = drmModeAttachMode(fd, m_desktop_output, &drmmode);
+		log_verbose("DRM/KMS: <%d> (%s) drmModeAttachMode returned: %d\n", m_id, __FUNCTION__, ret);
+		if (ret != 0)
 		{
-			log_verbose("DRM/KMS: <%d> (%s) Mode added (%d vs %d)\n", m_id, __FUNCTION__, first_modes_count, second_modes_count);
-			drmDropMaster(m_drm_fd);
-			return true;
-		}
-		else
-		{
-			log_verbose("DRM/KMS: <%d> (%s) Couldn't add mode\n", m_id, __FUNCTION__);
-			drmDropMaster(m_drm_fd);
+			/*
+			   This case hardly has any chance to happen, since at this point
+			   we are drmMaster, and we have already checked that the kernel
+			   supports user modes. If any error, it's on the kernel side
+			*/
+			log_verbose("DRM/KMS: <%d> (%s) Couldn't add mode (ret=%d)\n", m_id, __FUNCTION__, ret);
+			if (m_drm_fd != fd) drmDropMaster(m_drm_fd);
 			return false;
 		}
+		log_verbose("DRM/KMS: <%d> (%s) Mode added\n", m_id, __FUNCTION__);
+		if (m_drm_fd != fd) drmDropMaster(m_drm_fd);
 	}
-
-	// Count the number of existing modes, so it should be +1 when attaching
-	// a new mode. Could also check the mode name, still better
 
 	return true;
 }
@@ -716,7 +747,13 @@ bool drmkms_timing::set_timing(modeline *mode)
 		return false;
 	}
 
+	if( ! kms_has_mode(mode) )
+		add_mode(mode);
+
+	// If we can't be master, no need to go further
 	drmSetMaster(m_drm_fd);
+	if (!drmIsMaster(m_drm_fd))
+		return true;
 
 	// Setup the DRM mode structure
 	drmModeModeInfo dmode = {};
@@ -1014,4 +1051,27 @@ void drmkms_timing::list_drm_modes()
 		drmmode = &conn->modes[i];
 		log_verbose("DRM/KMS: <%d> (%s) DRM mode: %dx%d %s\n", m_id, __FUNCTION__, drmmode->hdisplay, drmmode->vdisplay, drmmode->name);
 	}
+}
+
+//============================================================
+//  drmkms_timing::kms_has_mode
+//============================================================
+bool drmkms_timing::kms_has_mode(modeline* mode)
+{
+	int i = 0;
+	drmModeConnector *conn;
+	drmModeModeInfo drmmode;
+
+	modeline_to_drm_modeline(m_id,  mode, &drmmode);
+
+	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
+	for (i = 0; i < conn->count_modes; i++)
+	{
+		if ( memcmp(&drmmode, &conn->modes[i], sizeof(drmModeModeInfo)) == 0 ) {
+			log_verbose("DRM/KMS: <%d> (%s) Found the mode in the connector\n", m_id, __FUNCTION__);
+			return true;
+		}
+	}
+	log_verbose("DRM/KMS: <%d> (%s) Couldn't find the mode in the connector\n", m_id, __FUNCTION__);
+	return false;
 }

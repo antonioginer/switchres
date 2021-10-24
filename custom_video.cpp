@@ -176,3 +176,49 @@ bool custom_video::process_modelist(std::vector<modeline *>)
 {
 	return false;
 }
+
+#ifdef SR_WITH_SDL2
+//============================================================
+//  custom_video::get_sdl_hwinfo_from_sdl_window
+//============================================================
+void custom_video::get_sdl_hwinfo_from_sdl_window(SDL_Window* window)
+{
+	m_sdlwindow = window;
+	SDL_VERSION(&m_sdlwminfo.version);
+	if(! SDL_GetWindowWMInfo(window, &m_sdlwminfo))
+	{
+		log_error("Couldn't get the SDL WMInfo\n");
+		return;
+	}
+	const char *subsystem = "an unsupported or unknown system!";
+	switch(m_sdlwminfo.subsystem)
+	{
+		case SDL_SYSWM_UNKNOWN:
+		case SDL_SYSWM_COCOA:
+		case SDL_SYSWM_UIKIT:
+		case SDL_SYSWM_WAYLAND:
+		case SDL_SYSWM_MIR:
+		case SDL_SYSWM_WINRT:
+		case SDL_SYSWM_ANDROID:
+		case SDL_SYSWM_VIVANTE:
+		case SDL_SYSWM_OS2:
+		case SDL_SYSWM_HAIKU:
+		case SDL_SYSWM_DIRECTFB:
+			break;
+		case SDL_SYSWM_WINDOWS:
+			subsystem = "Microsoft Windows(TM)";
+			break;
+		case SDL_SYSWM_X11:
+			subsystem = "X Window System";
+			break;
+		case SDL_SYSWM_KMSDRM:
+			subsystem = "KMSDRM";
+			break;
+	}
+	log_info("Switchres: Detected SDL version %d.%d.%d on %s\n",
+		(int)m_sdlwminfo.version.major,
+		(int)m_sdlwminfo.version.minor,
+		(int)m_sdlwminfo.version.patch,
+		subsystem);
+}
+#endif
