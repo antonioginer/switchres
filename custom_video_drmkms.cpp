@@ -20,12 +20,15 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include "custom_video_drmkms.h"
 #include "log.h"
+/*
 #ifdef SR_WITH_SDL2
 #include "SDL.h"
 #include "SDL_syswm.h"
 #endif
+*/
 
 #define drmGetVersion p_drmGetVersion
 #define drmFreeVersion p_drmFreeVersion
@@ -57,8 +60,26 @@
 //  shared the privileges of the master fd
 //============================================================
 
+/*
+ * If 2 displays use the same GPU but a different connector, let's share the
+ * FD indexed on the card ID
+ */
 static int s_shared_fd[10] = {};
+/*
+ * The active shares on a fd, per card id
+ */
 static int s_shared_count[10] = {};
+
+//============================================================
+//  id for class object (static)
+//============================================================
+
+/*
+ * This helps to trace counts of active displays accross vaious instances
+ * ++'ed at constructor, --'ed at destructor
+ * m_id will use the ++-ed value
+ */
+static int static_id = 0;
 
 //============================================================
 //  list connector types
@@ -154,7 +175,7 @@ bool drmkms_timing::test_kernel_user_modes() {
 	}
 
 	/*
-	 * Create a dummy modeline with a pixel clock hgher than 25MHz to avoid
+	 * Create a dummy modeline with a pixel clock higher than 25MHz to avoid
 	 * drivers checks rejecting the mode. This is 320x240@60
 	 * with min dotclock at 25.0MHz
 	 */
@@ -177,9 +198,11 @@ bool drmkms_timing::test_kernel_user_modes() {
 	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
 	first_modes_count = conn->count_modes;
 	ret = drmModeAttachMode(m_drm_fd, m_desktop_output, &mode);
+	drmModeFreeConnector(conn);
+
 	/*
-	 * This case can only happen if we're not drmMaster. If the kernel doesn't support
-	 * adding new modes, the IOCTL will still return 0, not an error
+	 * This case can only happen if we're not drmMaster. If the kernel doesn't
+	 * support adding new modes, the IOCTL will still return 0, not an error
 	 */
 	if ( ret < 0 )
 	{
@@ -188,6 +211,7 @@ bool drmkms_timing::test_kernel_user_modes() {
 		m_kernel_user_modes = false;
 		return false;
 	}
+
 	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
 	second_modes_count = conn->count_modes;
 	if (first_modes_count != second_modes_count)
@@ -195,20 +219,15 @@ bool drmkms_timing::test_kernel_user_modes() {
 		log_verbose("DRM/KMS: <%d> (%s) Kernel supports user modes (%d vs %d)\n", m_id, __FUNCTION__, first_modes_count, second_modes_count);
 		m_kernel_user_modes = true;
 		drmModeDetachMode(m_drm_fd, m_desktop_output, &mode);
-		drmDropMaster(m_drm_fd);
+		if ( can_drop_master )
+			drmDropMaster(m_drm_fd);
 	}
 	else
 		log_verbose("DRM/KMS: <%d> (%s) Kernel doesn't supports user modes\n", m_id, __FUNCTION__);
 
+	drmModeFreeConnector(conn);
 	return m_kernel_user_modes;
 }
-
-
-//============================================================
-//  id for class object (static)
-//============================================================
-
-static int static_id = 0;
 
 //============================================================
 //  drmkms_timing::drmkms_timing
@@ -255,6 +274,7 @@ drmkms_timing::~drmkms_timing()
 			}
 		}
 		drmDropMaster(m_drm_fd);
+		drmModeFreeConnector(conn);
 	}
 
 	// close DRM/KMS library
@@ -475,109 +495,115 @@ bool drmkms_timing::init()
 	for (int num = 0; !m_desktop_output && num < 10; num++)
 	{
 		drm_name[13] = '0' + num;
+
+		if( !access( drm_name, F_OK ) == 0 )
+		{
+			log_error("DRM/KMS: <%d> (init) [ERROR] cannot open device %s\n", m_id, drm_name);
+			break;
+		}
 		m_drm_fd = open(drm_name, O_RDWR | O_CLOEXEC);
 
-		if (m_drm_fd > 0)
+		drmVersion *version = drmGetVersion(m_drm_fd);
+		log_verbose("DRM/KMS: <%d> (init) version %d.%d.%d type %s\n", m_id, version->version_major, version->version_minor, version->version_patchlevel, version->name);
+		drmFreeVersion(version);
+
+		uint64_t check_dumb = 0;
+		if (drmGetCap(m_drm_fd, DRM_CAP_DUMB_BUFFER, &check_dumb) < 0)
+			log_error("DRM/KMS: <%d> (init) [ERROR] ioctl DRM_CAP_DUMB_BUFFER\n", m_id);
+
+		if (!check_dumb)
+			log_error("DRM/KMS: <%d> (init) [ERROR] dumb buffer not supported\n", m_id);
+
+		p_res = drmModeGetResources(m_drm_fd);
+
+		for (int i = 0; i < p_res->count_connectors; i++)
 		{
-			drmVersion *version = drmGetVersion(m_drm_fd);
-			log_verbose("DRM/KMS: <%d> (init) version %d.%d.%d type %s\n", m_id, version->version_major, version->version_minor, version->version_patchlevel, version->name);
-			drmFreeVersion(version);
-
-			uint64_t check_dumb = 0;
-			if (drmGetCap(m_drm_fd, DRM_CAP_DUMB_BUFFER, &check_dumb) < 0)
-				log_error("DRM/KMS: <%d> (init) [ERROR] ioctl DRM_CAP_DUMB_BUFFER\n", m_id);
-
-			if (!check_dumb)
-				log_error("DRM/KMS: <%d> (init) [ERROR] dumb buffer not supported\n", m_id);
-
-			p_res = drmModeGetResources(m_drm_fd);
-
-			for (int i = 0; i < p_res->count_connectors; i++)
+			p_connector = drmModeGetConnector(m_drm_fd, p_res->connectors[i]);
+			if (!p_connector)
 			{
-				p_connector = drmModeGetConnector(m_drm_fd, p_res->connectors[i]);
-				if (p_connector)
+				log_error("DRM/KMS: <%d> (init) [ERROR] card %d connector %d - %d\n", m_id, num, i, p_res->connectors[i]);
+				continue;
+			}
+			char connector_name[32];
+			snprintf(connector_name, 32, "%s%d", get_connector_name(p_connector->connector_type), p_connector->connector_type_id);
+			log_verbose("DRM/KMS: <%d> (init) card %d connector %d id %d name %s status %d - modes %d\n", m_id, num, i, p_connector->connector_id, connector_name, p_connector->connection, p_connector->count_modes);
+			// detect desktop connector
+			if (!m_desktop_output && p_connector->connection == DRM_MODE_CONNECTED)
+			{
+				printf("%s %s %d\n", m_device_name, connector_name, screen_pos);
+				if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name, connector_name) || output_position == screen_pos)
 				{
-					char connector_name[32];
-					snprintf(connector_name, 32, "%s%d", get_connector_name(p_connector->connector_type), p_connector->connector_type_id);
-					log_verbose("DRM/KMS: <%d> (init) card %d connector %d id %d name %s status %d - modes %d\n", m_id, num, i, p_connector->connector_id, connector_name, p_connector->connection, p_connector->count_modes);
-					// detect desktop connector
-					if (!m_desktop_output && p_connector->connection == DRM_MODE_CONNECTED)
+					m_desktop_output = p_connector->connector_id;
+					m_card_id = num;
+					log_verbose("DRM/KMS: <%d> (init) card %d connector %d id %d name %s selected as primary output\n", m_id, num, i, m_desktop_output, connector_name);
+
+					drmModeEncoder *p_encoder = drmModeGetEncoder(m_drm_fd, p_connector->encoder_id);
+
+					log_verbose("DRM/KMS: <%d> (%s) %d\n", m_id, __FUNCTION__, p_encoder);
+					if (p_encoder)
 					{
-						if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name, connector_name) || output_position == screen_pos)
+						for (int e = 0; e < p_res->count_crtcs; e++)
 						{
-							m_desktop_output = p_connector->connector_id;
-							m_card_id = num;
-							log_verbose("DRM/KMS: <%d> (init) card %d connector %d id %d name %s selected as primary output\n", m_id, num, i, m_desktop_output, connector_name);
+							mp_crtc_desktop = drmModeGetCrtc(m_drm_fd, p_res->crtcs[e]);
 
-							drmModeEncoder *p_encoder = drmModeGetEncoder(m_drm_fd, p_connector->encoder_id);
-
-							if (p_encoder)
+							if (mp_crtc_desktop->crtc_id == p_encoder->crtc_id)
 							{
-								for (int e = 0; e < p_res->count_crtcs; e++)
-								{
-									mp_crtc_desktop = drmModeGetCrtc(m_drm_fd, p_res->crtcs[e]);
-
-									if (mp_crtc_desktop->crtc_id == p_encoder->crtc_id)
-									{
-										log_verbose("DRM/KMS: <%d> (init) desktop mode name %s crtc %d fb %d valid %d\n", m_id, mp_crtc_desktop->mode.name, mp_crtc_desktop->crtc_id, mp_crtc_desktop->buffer_id, mp_crtc_desktop->mode_valid);
-										break;
-									}
-									drmModeFreeCrtc(mp_crtc_desktop);
-								}
+								log_verbose("DRM/KMS: <%d> (init) desktop mode name %s crtc %d fb %d valid %d\n", m_id, mp_crtc_desktop->mode.name, mp_crtc_desktop->crtc_id, mp_crtc_desktop->buffer_id, mp_crtc_desktop->mode_valid);
+								break;
 							}
-							if (!mp_crtc_desktop)
-								log_error("DRM/KMS: <%d> (init) [ERROR] no crtc found\n", m_id);
-							drmModeFreeEncoder(p_encoder);
-						}
-						output_position++;
-					}
-					drmModeFreeConnector(p_connector);
-				}
-				else
-					log_error("DRM/KMS: <%d> (init) [ERROR] card %d connector %d - %d\n", m_id, num, i, p_res->connectors[i]);
-			}
-			drmModeFreeResources(p_res);
-			if (!m_desktop_output)
-				close(m_drm_fd);
-			else
-			{
-				if (drmIsMaster(m_drm_fd))
-				{
-					s_shared_fd[m_card_id] = m_drm_fd;
-					s_shared_count[m_card_id] = 1;
-					drmDropMaster(m_drm_fd);
-				}
-				else
-				{
-					if (s_shared_count[m_card_id] > 0)
-					{
-						close(m_drm_fd);
-						m_drm_fd = s_shared_fd[m_card_id];
-						s_shared_count[m_card_id]++;
-					}
-					else if (m_id == 1)
-					{
-						log_verbose("DRM/KMS: <%d> (init) looking for the DRM master\n", m_id);
-						int fd = drm_master_hook(m_drm_fd);
-						if (fd)
-						{
-							close(m_drm_fd);
-							m_drm_fd = fd;
-							s_shared_fd[m_card_id] = m_drm_fd;
-							// start at 2 to disable closing the fd
-							s_shared_count[m_card_id] = 2;
+							drmModeFreeCrtc(mp_crtc_desktop);
 						}
 					}
+					if (!mp_crtc_desktop)
+						log_error("DRM/KMS: <%d> (init) [ERROR] no crtc found\n", m_id);
+					drmModeFreeEncoder(p_encoder);
 				}
-				if (!drmIsMaster(m_drm_fd))
-					log_error("DRM/KMS: <%d> (init) [ERROR] limited DRM rights on this screen\n", m_id);
+				output_position++;
 			}
+			drmModeFreeConnector(p_connector);
 		}
+		drmModeFreeResources(p_res);
+		if (!m_desktop_output)
+			close(m_drm_fd);
 		else
 		{
-			if (!num)
-				log_error("DRM/KMS: <%d> (init) [ERROR] cannot open device %s\n", m_id, drm_name);
-			break;
+			if (drmIsMaster(m_drm_fd))
+			{
+				/*
+				 * We've never called drmSetMaster before. This means we're the first app
+				 * opening the device, so the kernel sets us as master by default.
+				 * We drop master so other apps can become master
+				 */
+				log_verbose("DRM/KMS: <%d> (%s) Already DRM master\n", m_id, __FUNCTION__);
+				s_shared_fd[m_card_id] = m_drm_fd;
+				s_shared_count[m_card_id] = 1;
+				drmDropMaster(m_drm_fd);
+			}
+			else
+			{
+				if (s_shared_count[m_card_id] > 0)
+				{
+					log_verbose("DRM/KMS: <%d> (%s : %d) The drm FD was substituted, expect the unexpected\n", m_id, __FUNCTION__, __LINE__);
+					close(m_drm_fd);
+					m_drm_fd = s_shared_fd[m_card_id];
+					s_shared_count[m_card_id]++;
+				}
+				else if (m_id == 1)
+				{
+					log_verbose("DRM/KMS: <%d> (%s) looking for the DRM master\n", m_id, __FUNCTION__);
+					int fd = drm_master_hook();
+					if ( fd > 0 )
+					{
+						close(m_drm_fd);
+						m_drm_fd = fd;
+						s_shared_fd[m_card_id] = m_drm_fd;
+						// start at 2 to disable closing the fd
+						s_shared_count[m_card_id] = 2;
+					}
+					if (!drmIsMaster(m_drm_fd))
+						log_error("DRM/KMS: <%d> (%s) [ERROR] limited DRM rights on this screen\n", m_id, __FUNCTION__);
+				}
+			}
 		}
 	}
 
@@ -594,6 +620,9 @@ bool drmkms_timing::init()
 	// Check if the kernel handles user modes
 	test_kernel_user_modes();
 
+	if ( drmIsMaster(m_drm_fd) and can_drop_master )
+		drmDropMaster(m_drm_fd);
+
 	return true;
 }
 
@@ -601,8 +630,9 @@ bool drmkms_timing::init()
 //  drmkms_timing::drm_master_hook
 //============================================================
 
-int drmkms_timing::drm_master_hook(int last_fd)
+int drmkms_timing::drm_master_hook()
 {
+/*
 #ifdef SR_WITH_SDL2
 	// The m_sdlwminfo must have been set. This is not the case at the contructor, so we fall back to the usual hook
 	if (m_sdlwindow)
@@ -612,27 +642,72 @@ int drmkms_timing::drm_master_hook(int last_fd)
 			log_verbose("DRM/KMS: <%d> (%s) Got the SDL2 fd (%d)\n", m_id, __FUNCTION__, m_sdlwminfo.info.kmsdrm.drm_fd);
 			return m_sdlwminfo.info.kmsdrm.drm_fd;
 		}
+		else
+			log_verbose("DRM/KMS: <%d> (%s) The SDL2  fd is not master (%d)\n", m_id, __FUNCTION__, m_sdlwminfo.info.kmsdrm.drm_fd);
 	}
+	else
+		log_verbose("DRM/KMS: <%d> (%s) No SDL2 fd available\n", m_id, __FUNCTION__);
 #endif
-	for (int fd = 4; fd < last_fd; fd++)
-	{
-		struct stat st;
-		if (!fstat(fd, &st))
+*/
+	char p[100], procpath[50], fullpath[512];
+	char* actualpath;
+	int fd = -1;
+	struct stat st;
+	const char* dri = "/dev/dri/card";
+	size_t len = sizeof(dri);
+
+	sprintf(procpath, "/proc/%d/fd", getpid());
+	//sprintf(p, "ls -l /proc/%d/fd", getpid());
+	//system(p);
+	//system("ls -l /proc/self/fd");
+
+	auto dir = opendir(procpath);
+	if (!dir)
+		return 0;
+	while (auto f = readdir(dir)) {
+		if (!f->d_name || f->d_name[0] == '.')
+			continue; // Skip everything that starts with a dot
+		if ( f-> d_type != DT_LNK )
+			continue;
+
+		//log_verbose("File: %s\n", f->d_name);
+		sprintf(fullpath, "%s/%s", procpath, f->d_name);
+		if ( stat(fullpath, &st) )
+			continue;
+		if ( !S_ISCHR(st.st_mode) )
+			continue;
+		actualpath = realpath(fullpath, NULL);
+		if ( strncmp(dri, actualpath, len) != 0)
 		{
-			// in case of multiple video cards, it wouldd be better to compare dri number
-			if (S_ISCHR(st.st_mode))
-			{
-				if (drmIsMaster(fd))
-				{
-					drmVersion *version_hook = drmGetVersion(m_drm_fd);
-					log_verbose("DRM/KMS: <%d> (init) DRM hook created version %d.%d.%d type %s\n", m_id, version_hook->version_major, version_hook->version_minor, version_hook->version_patchlevel, version_hook->name);
-					drmFreeVersion(version_hook);
-					return fd;
-				}
-			}
+			free(actualpath);
+			continue;
 		}
+		fd = atoi(f->d_name);
+		log_verbose("File: %s -> %s %d\n", fullpath, actualpath, fd);
+		free(actualpath);
+
+		if ( drmIsMaster(fd) )
+		{
+			drmVersion *version_hook = drmGetVersion(m_drm_fd);
+			log_verbose("DRM/KMS: <%d> (%s) DRM hook created version %d.%d.%d type %s on FD %d\n", m_id, __FUNCTION__, version_hook->version_major, version_hook->version_minor, version_hook->version_patchlevel, version_hook->name, fd);
+			drmFreeVersion(version_hook);
+			closedir(dir);
+			if (m_drm_fd != fd)
+				can_drop_master = false;
+			return fd;
+		}
+		else
+			log_verbose("DRM/KMS: <%d> (%s) Couldn't get master on FD %d, this sounds bad\n", m_id, __FUNCTION__, fd);
 	}
-	return 0;
+	closedir(dir);
+	log_error("DRM/KMS: <%d> (%s) Couldn't find a master FD, opening default /dev/dri/card0\n", m_id, __FUNCTION__);
+
+	// Better use m_card_id + assign m_drm_fd not to close the device later
+	fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+	can_drop_master = true;
+	if (fd <= 0)
+		return -1;
+	return fd;
 }
 
 //============================================================
@@ -692,14 +767,12 @@ bool drmkms_timing::add_mode(modeline *mode)
 
 	if (m_kernel_user_modes)
 	{
-		int ret = 0, fd = -1;
+		int ret = 0, fd = m_drm_fd;
 		drmModeModeInfo drmmode;
 
-		ret = drmSetMaster(m_drm_fd);
 		if (!drmIsMaster(m_drm_fd))
 		{
-			// 20 is totally random here ...
-			fd = drm_master_hook(20);
+			fd = drm_master_hook();
 		}
 		if (!drmIsMaster(fd))
 		{
@@ -725,7 +798,8 @@ bool drmkms_timing::add_mode(modeline *mode)
 			return false;
 		}
 		log_verbose("DRM/KMS: <%d> (%s) Mode added\n", m_id, __FUNCTION__);
-		if (m_drm_fd != fd) drmDropMaster(m_drm_fd);
+		if (m_drm_fd != fd and can_drop_master)
+			drmDropMaster(m_drm_fd);
 	}
 
 	return true;
@@ -877,7 +951,8 @@ bool drmkms_timing::set_timing(modeline *mode)
 			m_framebuffer_id = framebuffer_id;
 		}
 	}
-	drmDropMaster(m_drm_fd);
+	if ( can_drop_master )
+		drmDropMaster(m_drm_fd);
 
 	return true;
 }
@@ -900,30 +975,44 @@ bool drmkms_timing::delete_mode(modeline *mode)
 
 	if(m_kernel_user_modes)
 	{
-		int i = 0, ret = 0;
+		int i = 0, ret = 0, fd = -1;
 		drmModeConnector *conn;
 
-		drmSetMaster(m_drm_fd);
+		log_verbose("DRM/KMS: <%d> (%s) m_drm_fd: %d\n", m_id, __FUNCTION__, m_drm_fd);
+		// If SR was initilized before SDL2 for instance, SR lost the DRM
 		if (!drmIsMaster(m_drm_fd))
+			fd = drm_master_hook();
+		else
+			fd = m_drm_fd;
+		if (fd < 0 or !drmIsMaster(fd))
 		{
+
 			log_verbose("DRM/KMS: <%d> (%s) Need master to remove kernel user modes\n", m_id, __FUNCTION__);
 			return false;
 		}
 
 		drmModeModeInfo srmode;
-		conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
+		conn = drmModeGetConnector(fd, m_desktop_output);
+
 		modeline_to_drm_modeline(m_id, mode, &srmode);
 		for (i = 0; i < conn->count_modes; i++)
 		{
 			drmModeModeInfo *drmmode = &conn->modes[i];
 			ret = strcmp(drmmode->name, srmode.name);
-			if (ret == 0)
+			if (ret != 0)
+				continue;
+			ret = drmModeDetachMode(fd, m_desktop_output, drmmode);
+			if (ret != 0)
 			{
-				log_verbose("DRM/KMS: <%d> (%s) Removing kernel user mode: %s\n", m_id, __FUNCTION__, drmmode->name);
-				drmModeDetachMode(m_drm_fd, m_desktop_output, drmmode);
-				drmDropMaster(m_drm_fd);
-				return true;
+				log_verbose("DRM/KMS: <%d> (%s) Failed removing kernel user mode: %s (ret=%d)\n", m_id, __FUNCTION__, drmmode->name, ret);
+				drmModeFreeConnector(conn);
+				return false;
 			}
+			log_verbose("DRM/KMS: <%d> (%s) Removing kernel user mode: %s (ret=%d)\n", m_id, __FUNCTION__, drmmode->name, ret);
+			if ( can_drop_master )
+				drmDropMaster(m_drm_fd);
+			drmModeFreeConnector(conn);
+			return true;
 		}
 	}
 
@@ -1051,6 +1140,7 @@ void drmkms_timing::list_drm_modes()
 		drmmode = &conn->modes[i];
 		log_verbose("DRM/KMS: <%d> (%s) DRM mode: %dx%d %s\n", m_id, __FUNCTION__, drmmode->hdisplay, drmmode->vdisplay, drmmode->name);
 	}
+	drmModeFreeConnector(conn);
 }
 
 //============================================================
@@ -1069,9 +1159,11 @@ bool drmkms_timing::kms_has_mode(modeline* mode)
 	{
 		if ( memcmp(&drmmode, &conn->modes[i], sizeof(drmModeModeInfo)) == 0 ) {
 			log_verbose("DRM/KMS: <%d> (%s) Found the mode in the connector\n", m_id, __FUNCTION__);
+			drmModeFreeConnector(conn);
 			return true;
 		}
 	}
 	log_verbose("DRM/KMS: <%d> (%s) Couldn't find the mode in the connector\n", m_id, __FUNCTION__);
+	drmModeFreeConnector(conn);
 	return false;
 }

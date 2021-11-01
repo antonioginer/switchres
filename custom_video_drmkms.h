@@ -39,13 +39,17 @@ class drmkms_timing : public custom_video
 		bool set_timing(modeline *mode);
 
 	private:
+		/*
+		 * Consider m_id as the "display number": 1 for the 1st, 2 for the second etc...
+		 */
 		int m_id = 0;
 
-		int m_drm_fd = 0;
+		int m_drm_fd = -1;
 		drmModeCrtc *mp_crtc_desktop = NULL;
 		int m_card_id = 0;
-		int drm_master_hook(int fd);
+		int drm_master_hook();
 		bool m_kernel_user_modes = false;
+		bool can_drop_master = true;
 
 		char m_device_name[32];
 		unsigned int m_desktop_output = 0;
