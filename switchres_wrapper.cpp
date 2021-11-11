@@ -38,11 +38,11 @@ MODULE_API void sr_load_ini(char* config) {
 }
 
 
-MODULE_API unsigned char sr_init_disp(const char* scr) {
+MODULE_API unsigned char sr_init_disp(const char* scr, void* pfdata) {
 	if (scr)
 		swr->set_screen(scr);
 	swr->add_display();
-	if (!swr->display()->init())
+	if (!swr->display()->init(pfdata))
 		return 0;
 	return 1;
 }
@@ -109,38 +109,6 @@ bool sr_refresh_display(display_manager *disp)
 }
 
 
-#ifdef SR_WITH_SDL2
-bool sdl2_set_mode(SDL_Window* sdlw, int width, int height, int refresh)
-{
-	SDL_DisplayMode target, closest;
-	target.w = width;
-	target.h = height;
-	target.format = 0;  // don't care
-	target.refresh_rate = refresh;
-
-	if ( ! (SDL_GetWindowFlags(sdlw) & SDL_WINDOW_FULLSCREEN) &&
-	       SDL_SetWindowFullscreen(sdlw, SDL_WINDOW_FULLSCREEN) != 0)
-	{
-		log_error("Couldn't set the window to FULLSCREEN\n");
-		return false;
-	}
-	if (SDL_GetClosestDisplayMode(0, &target, &closest) == NULL)
-	{
-		// If the returned pointer is null, no match was found.
-		log_error("\nNo suitable display mode was found!\n\n");
-		return false;
-	}
-	log_verbose("  Received: \t%dx%dpx @ %dhz \n", closest.w, closest.h, closest.refresh_rate);
-	if ( SDL_SetWindowDisplayMode(sdlw, &closest) != 0 )
-	{
-		log_error("Failed to switch mode!\n");
-		return false;
-	}
-	return true;
-}
-#endif
-
-
 MODULE_API unsigned char sr_add_mode(int width, int height, double refresh, unsigned char interlace, sr_mode *return_mode) {
 
 	log_verbose("Inside sr_add_mode(%dx%d@%f%s)\n", width, height, refresh, interlace > 0? "i":"");
@@ -186,14 +154,6 @@ MODULE_API unsigned char sr_switch_to_mode(int width, int height, double refresh
 
 	if (disp->is_switching_required())
 	{
-#ifdef SR_WITH_SDL2
-		// Make sure we got a mode
-		modeline* best_mode = disp->best_mode();
-		if( !disp->is_sdl_set() )
-			return false;
-		if ( sdl2_set_mode(disp->get_sdl_window(), best_mode->hactive, best_mode->vactive, best_mode->refresh) )
-			return 1;
-#endif
 		if (disp->set_mode(disp->best_mode()))
 		{
 			log_info("sr_switch_to_mode: successfully switched to %dx%d@%f\n", disp->width(), disp->height(), disp->v_freq());
@@ -242,12 +202,6 @@ MODULE_API void sr_set_log_callback_error (void * f) {
 	swr->set_log_error_fn((void *)f);
 }
 
-#ifdef SR_WITH_SDL2
-MODULE_API void sr_set_sdl_window(void* sdlwindowptr) {
-	SDL_Window* window = (SDL_Window*)sdlwindowptr;
-	swr->display()->set_sdlwindow(window);
-}
-#endif
 
 MODULE_API srAPI srlib = {
 	sr_init,
@@ -263,11 +217,6 @@ MODULE_API srAPI srlib = {
 	sr_set_log_callback_error,
 	sr_set_log_callback_info,
 	sr_set_log_callback_debug,
-#ifdef SR_WITH_SDL2
-	sr_set_sdl_window
-#else
-	NULL
-#endif
 };
 
 #ifdef __cplusplus

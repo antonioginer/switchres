@@ -52,7 +52,7 @@ public:
 
 	display_manager *make(display_settings *ds);
 	void parse_options();
-	virtual bool init();
+	virtual bool init(void* = nullptr);
 	virtual int caps();
 
 	// getters
@@ -144,12 +144,6 @@ public:
 	// monitor preset
 	monitor_range range[MAX_RANGES];
 
-#ifdef SR_WITH_SDL2
-	void set_sdlwindow(SDL_Window* window) { m_video->get_sdl_hwinfo_from_sdl_window(window); }
-	bool is_sdl_set() { return m_video->is_sdl_set(); }
-	SDL_Window* get_sdl_window() { return m_video->get_sdl_window(); }
-#endif
-
 private:
 
 	// custom video backend
@@ -163,6 +157,9 @@ private:
 	int m_index = 0;
 	bool m_desktop_is_rotated = 0;
 	bool m_switching_required = 0;
+
+protected:
+	void* m_pf_data = nullptr;
 };
 
 #endif
