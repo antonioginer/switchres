@@ -47,9 +47,9 @@ class drmkms_timing : public custom_video
 		int m_drm_fd = -1;
 		drmModeCrtc *mp_crtc_desktop = NULL;
 		int m_card_id = 0;
-		int drm_master_hook();
 		bool m_kernel_user_modes = false;
 		bool can_drop_master = true;
+		int m_hook_fd = -1;
 
 		char m_device_name[32];
 		unsigned int m_desktop_output = 0;
@@ -63,6 +63,7 @@ class drmkms_timing : public custom_video
 		__typeof__(drmFreeVersion) *p_drmFreeVersion;
 		__typeof__(drmModeGetResources) *p_drmModeGetResources;
 		__typeof__(drmModeGetConnector) *p_drmModeGetConnector;
+		__typeof__(drmModeGetConnectorCurrent) *p_drmModeGetConnectorCurrent;
 		__typeof__(drmModeFreeConnector) *p_drmModeFreeConnector;
 		__typeof__(drmModeFreeResources) *p_drmModeFreeResources;
 		__typeof__(drmModeGetEncoder) *p_drmModeGetEncoder;
@@ -88,6 +89,8 @@ class drmkms_timing : public custom_video
 		bool test_kernel_user_modes();
 		bool kms_has_mode(modeline*);
 		void list_drm_modes();
+		int get_master_fd();
+
 };
 
 #endif
