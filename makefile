@@ -126,5 +126,4 @@ install:
 	$(INSTALL) -Dm644 $(TARGET_LIB).$(DYNAMIC_LIB_EXT) $(LIBDIR)/$(TARGET_LIB).$(DYNAMIC_LIB_EXT)
 	$(INSTALL) -Dm644 switchres_wrapper.h $(INCDIR)/switchres/switchres_wrapper.h
 	$(INSTALL) -Dm644 switchres.h $(INCDIR)/switchres/switchres.h
-	$(INSTALL) -Dm644 switchres_defs.h $(INCDIR)/switchres/switchres_defs.h
 	$(INSTALL) -Dm644 switchres.pc $(PKGDIR)/switchres.pc
