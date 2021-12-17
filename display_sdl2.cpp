@@ -149,7 +149,7 @@ bool sdl2_display::init(void* pf_data)
 	/*
 	// Alternative method, only when the render has been created
 	if( SDL_GL_GetCurrentWindow() !=  NULL)
-		log_verbose("Swithres/SDL2: (%s) SDL_GL_GetCurrentWindow(); OK !\n", __FUNCTION__);
+	    log_verbose("Swithres/SDL2: (%s) SDL_GL_GetCurrentWindow(); OK !\n", __FUNCTION__);
 	*/
 	if (pf_data == nullptr or pf_data == NULL)
 	{
