@@ -140,11 +140,12 @@ display_manager* switchres_manager::add_display(bool parse_options)
 	display_settings base_ds = ds;
 	char file_name[32] = {0};
 	sprintf(file_name, "display%d.ini", (int)displays.size());
-	parse_config(file_name);
+	bool has_ini = parse_config(file_name);
 
 	// Create new display
 	display_manager *display = m_display_factory->make(&ds);
 	display->set_index(displays.size());
+	display->set_has_ini(has_ini);
 	displays.push_back(display);
 
 	log_verbose("Switchres(v%s) add display[%d]\n", SWITCHRES_VERSION, display->index());
