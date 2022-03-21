@@ -140,7 +140,7 @@ bool connector_already_used(unsigned int conn_id)
 	// Don't remap to an already used connector
 	for (int c = 1 ; c < static_id ; c++)
 	{
-		if ( s_shared_conn[c] == conn_id )
+		if (s_shared_conn[c] == conn_id)
 			return true;
 	}
 	return false;
@@ -279,7 +279,7 @@ drmkms_timing::~drmkms_timing()
 		drmModeConnector *conn;
 
 		fd = get_master_fd();
-		if ( fd >= 0 )
+		if (fd >= 0)
 		{
 			conn = drmModeGetConnectorCurrent(fd, m_desktop_output);
 			drmSetMaster(fd);
@@ -538,7 +538,7 @@ bool drmkms_timing::init()
 	{
 		drm_name[13] = '0' + num;
 
-		if( !access( drm_name, F_OK ) == 0 )
+		if (!access(drm_name, F_OK) == 0)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] cannot open device %s\n", m_id, drm_name);
 			break;
@@ -575,7 +575,7 @@ bool drmkms_timing::init()
 				if (!strcmp(m_device_name, "auto") || !strcmp(m_device_name, connector_name) || output_position == screen_pos)
 				{
 					// In a multihead setup, skip already used connectors
-					if( connector_already_used(p_connector->connector_id) )
+					if (connector_already_used(p_connector->connector_id))
 					{
 						drmModeFreeConnector(p_connector);
 						continue;
@@ -636,7 +636,7 @@ bool drmkms_timing::init()
 				{
 					log_verbose("DRM/KMS: <%d> (%s) looking for the DRM master\n", m_id, __FUNCTION__);
 					int fd = get_master_fd();
-					if ( fd >= 0 )
+					if (fd >= 0)
 					{
 						close(m_drm_fd);
 						 // This statement is dangerous, as drmIsMaster can return 1
@@ -668,7 +668,7 @@ bool drmkms_timing::init()
 	// Check if the kernel handles user modes
 	test_kernel_user_modes();
 
-	if ( drmIsMaster(m_drm_fd) and m_drm_fd != m_hook_fd )
+	if (drmIsMaster(m_drm_fd) and m_drm_fd != m_hook_fd)
 		drmDropMaster(m_drm_fd);
 
 	return true;
@@ -699,23 +699,23 @@ int drmkms_timing::get_master_fd()
 	int fd;
 
 	// CASE 1: m_drm_fd is a valid FD
-	if ( fstat(m_drm_fd, &st) == 0 )
+	if (fstat(m_drm_fd, &st) == 0)
 	{
-		if( drmIsMaster(m_drm_fd) )
+		if (drmIsMaster(m_drm_fd))
 			return m_drm_fd;
-		if ( drmSetMaster(m_drm_fd) == 0 )
+		if (drmSetMaster(m_drm_fd) == 0)
 			return m_drm_fd;
 	}
 
 	// CASE 2: m_drm_fd can't be master, find the master FD
-	if(m_card_id > MAX_CARD_ID - 1 or m_card_id < 0)
+	if (m_card_id > MAX_CARD_ID - 1 or m_card_id < 0)
 	{
 		log_error("DRM/KMS: <%d> (%s) [ERROR] card id (%d) out of bounds (0 to %d)\n", m_id, __FUNCTION__, m_card_id, MAX_CARD_ID - 1);
 		return -1;
 	}
 
 	snprintf(dev_path, path_length, "/dev/dri/card%d", m_card_id);
-	if( !access( dev_path, F_OK ) == 0 )
+	if (!access(dev_path, F_OK) == 0)
 	{
 		log_error("DRM/KMS: <%d> (%s) [ERROR] Device %s doesn't exist\n", m_id, __FUNCTION__, dev_path);
 		return -1;
@@ -731,7 +731,7 @@ int drmkms_timing::get_master_fd()
 		if (!f->d_name || f->d_name[0] == '.')
 			continue;
 		// Only symlinks matter
-		if ( f-> d_type != DT_LNK )
+		if (f-> d_type != DT_LNK)
 			continue;
 
 		//log_verbose("File: %s\n", f->d_name);
@@ -769,7 +769,7 @@ int drmkms_timing::get_master_fd()
 	m_hook_fd = -1;
 
 	fd = open(dev_path, O_RDWR | O_CLOEXEC);
-	if ( fd < 0 )
+	if (fd < 0)
 	{
 		// Oh, we're totally screwed here, worst possible scenario
 		log_error("DRM/KMS: <%d> (%s) Can't open /dev/dri/card%d, can't get master rights\n", m_id, __FUNCTION__, m_card_id);
@@ -895,7 +895,7 @@ bool drmkms_timing::set_timing(modeline *mode)
 		return false;
 	}
 
-	if(!kms_has_mode(mode))
+	if (!kms_has_mode(mode))
 		add_mode(mode);
 
 	// If we can't be master, no need to go further
@@ -1054,7 +1054,7 @@ bool drmkms_timing::delete_mode(modeline *mode)
 
 		// If SR was initilized before SDL2 for instance, SR lost the DRM
 		fd = get_master_fd();
-		if ( fd < 0 )
+		if (fd < 0)
 		{
 			log_verbose("DRM/KMS: <%d> (%s) Need master to remove kernel user modes\n", m_id, __FUNCTION__);
 			return false;
@@ -1070,7 +1070,7 @@ bool drmkms_timing::delete_mode(modeline *mode)
 			if (ret != 0)
 				continue;
 			ret = drmModeDetachMode(fd, m_desktop_output, drmmode);
-			if ( fd != m_hook_fd )
+			if (fd != m_hook_fd)
 				drmDropMaster(m_drm_fd);
 			drmModeFreeConnector(conn);
 			if (ret != 0)
