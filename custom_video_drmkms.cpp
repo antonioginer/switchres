@@ -152,6 +152,9 @@ bool connector_already_used(unsigned int conn_id)
 
 void modeline_to_drm_modeline(int id, modeline *mode, drmModeModeInfo *drmmode)
 {
+	// Clear struct
+	memset(drmmode, 0, sizeof(drmModeModeInfo));
+
 	// Create specific mode name
 	snprintf(drmmode->name, 32, "SR-%d_%dx%d@%.02f%s", id, mode->hactive, mode->vactive, mode->vfreq, mode->interlace ? "i" : "");
 	drmmode->clock       = mode->pclock / 1000;
@@ -169,10 +172,6 @@ void modeline_to_drm_modeline(int id, modeline *mode, drmModeModeInfo *drmmode)
 	drmmode->vscan       = 0;
 
 	drmmode->vrefresh    = mode->refresh;  // Used only for human readable output
-
-	drmmode->type        = DRM_MODE_TYPE_USERDEF;  //DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
-
-	drmmode->type       |= CUSTOM_VIDEO_TIMING_DRMKMS;
 }
 
 //============================================================
@@ -857,6 +856,8 @@ bool drmkms_timing::add_mode(modeline *mode)
 		}
 
 		modeline_to_drm_modeline(m_id, mode, &drmmode);
+		drmmode.type = DRM_MODE_TYPE_USERDEF;
+
 		log_verbose("DRM/KMS: <%d> (add_mode) [DEBUG] Adding a mode to the kernel: %dx%d %s\n", m_id, drmmode.hdisplay, drmmode.vdisplay, drmmode.name);
 		// Calling drmModeGetConnector forces a refresh of the connector modes, which is slow, so don't do it
 		ret = drmModeAttachMode(fd, m_desktop_output, &drmmode);
@@ -1130,7 +1131,9 @@ bool drmkms_timing::get_timing(modeline *mode)
 
 				mode->hfreq         = mode->pclock / mode->htotal;
 				mode->vfreq         = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
-				mode->refresh       = mode->vfreq;
+
+				// Store drm's integer refresh to make sure we use the same rounding
+				mode->refresh       = pdmode->vrefresh;
 
 				mode->width         = pdmode->hdisplay;
 				mode->height        = pdmode->vdisplay;
@@ -1218,12 +1221,15 @@ bool drmkms_timing::kms_has_mode(modeline* mode)
 	drmModeConnector *conn;
 	drmModeModeInfo drmmode;
 
+	// To avoid matching issues, we just compare the relevant timing fields
+	int size_to_compare = sizeof(drmModeModeInfo) - sizeof(drmModeModeInfo::type) - sizeof(drmModeModeInfo::name);
+
 	modeline_to_drm_modeline(m_id,  mode, &drmmode);
 
 	conn = drmModeGetConnectorCurrent(m_drm_fd, m_desktop_output);
 	for (i = 0; i < conn->count_modes; i++)
 	{
-		if (memcmp(&drmmode, &conn->modes[i], sizeof(drmModeModeInfo)) == 0)
+		if (memcmp(&drmmode, &conn->modes[i], size_to_compare) == 0)
 		{
 			log_verbose("DRM/KMS: <%d> (%s) Found the mode in the connector\n", m_id, __FUNCTION__);
 			drmModeFreeConnector(conn);
