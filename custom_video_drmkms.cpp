@@ -211,7 +211,7 @@ bool drmkms_timing::test_kernel_user_modes()
 
 	// Count the number of existing modes, so it should be +1 when attaching
 	// a new mode. Could also check the mode name, still better
-	conn = drmModeGetConnectorCurrent(fd, m_desktop_output);
+	conn = drmModeGetConnector(fd, m_desktop_output);
 	first_modes_count = conn->count_modes;
 	ret = drmModeAttachMode(fd, m_desktop_output, &mode);
 	drmModeFreeConnector(conn);
