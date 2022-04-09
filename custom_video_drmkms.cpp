@@ -354,21 +354,21 @@ bool drmkms_timing::init()
 			return false;
 		}
 
-		p_drmModeGetConnector = (__typeof__(drmModeGetConnector)) dlsym(mp_drm_handle, "drmModeGetConnector");
+		p_drmModeGetConnector = (__typeof__(drmModeGetConnector)) dlsym(RTLD_DEFAULT, "drmModeGetConnector");
 		if (p_drmModeGetConnector == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeGetConnector", "DRM_LIBRARY");
 			return false;
 		}
 
-		p_drmModeGetConnectorCurrent = (__typeof__(drmModeGetConnectorCurrent)) dlsym(mp_drm_handle, "drmModeGetConnectorCurrent");
+		p_drmModeGetConnectorCurrent = (__typeof__(drmModeGetConnectorCurrent)) dlsym(RTLD_DEFAULT, "drmModeGetConnectorCurrent");
 		if (p_drmModeGetConnectorCurrent == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeGetConnectorCurrent", "DRM_LIBRARY");
 			return false;
 		}
 
-		p_drmModeFreeConnector = (__typeof__(drmModeFreeConnector)) dlsym(mp_drm_handle, "drmModeFreeConnector");
+		p_drmModeFreeConnector = (__typeof__(drmModeFreeConnector)) dlsym(RTLD_DEFAULT, "drmModeFreeConnector");
 		if (p_drmModeFreeConnector == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeFreeConnector", "DRM_LIBRARY");
@@ -665,8 +665,15 @@ bool drmkms_timing::init()
 	{
 	}
 
+	// Check if we have a libdrm hook
+	if (drmModeGetConnectorCurrent(-1, 0) != NULL)
+	{
+		log_verbose("DRM/KMS: libdrm hook found!\n");
+		m_caps |= CUSTOM_VIDEO_CAPS_UPDATE;
+	}
 	// Check if the kernel handles user modes
-	test_kernel_user_modes();
+	else if (test_kernel_user_modes())
+		m_caps |= CUSTOM_VIDEO_CAPS_ADD;
 
 	if (drmIsMaster(m_drm_fd) and m_drm_fd != m_hook_fd)
 		drmDropMaster(m_drm_fd);
@@ -801,6 +808,23 @@ bool drmkms_timing::update_mode(modeline *mode)
 		return false;
 	}
 
+	drmModeConnector *conn = drmModeGetConnectorCurrent(m_drm_fd, m_desktop_output);
+	if (conn)
+	{
+		for (int i = 0; i < conn->count_modes; i++)
+		{
+			drmModeModeInfo *drmmode = &conn->modes[i];
+			if ((int)mode->platform_data == i)
+			{
+				modeline_to_drm_modeline(m_id, mode, drmmode);
+				return true;
+			}
+		}
+	}
+
+	return false;
+
+/*
 	if (!delete_mode(mode))
 	{
 		log_error("DRM/KMS: <%d> (update_mode) [ERROR] delete operation not successful", m_id);
@@ -814,6 +838,7 @@ bool drmkms_timing::update_mode(modeline *mode)
 	}
 
 	return true;
+*/
 }
 
 //============================================================
@@ -1113,7 +1138,7 @@ bool drmkms_timing::get_timing(modeline *mode)
 				drmModeModeInfo *pdmode = &p_connector->modes[m_video_modes_position++];
 
 				// Use mode position as index
-				mode->platform_data = m_video_modes_position;
+				mode->platform_data = m_video_modes_position - 1;
 
 				mode->pclock        = pdmode->clock * 1000;
 				mode->hactive       = pdmode->hdisplay;
@@ -1142,6 +1167,8 @@ bool drmkms_timing::get_timing(modeline *mode)
 				// TODO: mode->type |= MODE_ROTATED;
 
 				mode->type |= CUSTOM_VIDEO_TIMING_DRMKMS;
+
+				if (mode->hactive == 608 && mode->vactive == 456) mode->type |= XYV_EDITABLE | SCAN_EDITABLE;
 
 				if (strncmp(pdmode->name, "SR-", 3) == 0)
 					log_verbose("DRM/KMS: <%d> (get_timing) [WARNING] modeline %s detected\n", m_id, pdmode->name);
@@ -1182,6 +1209,9 @@ bool drmkms_timing::process_modelist(std::vector<modeline *> modelist)
 
 		else if (mode->type & MODE_ADD)
 			result = add_mode(mode);
+
+		else if (mode->type & MODE_UPDATE)
+			result = update_mode(mode);
 
 		if (!result)
 		{
