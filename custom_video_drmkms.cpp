@@ -823,22 +823,6 @@ bool drmkms_timing::update_mode(modeline *mode)
 	}
 
 	return false;
-
-/*
-	if (!delete_mode(mode))
-	{
-		log_error("DRM/KMS: <%d> (update_mode) [ERROR] delete operation not successful", m_id);
-		return false;
-	}
-
-	if (!add_mode(mode))
-	{
-		log_error("DRM/KMS: <%d> (update_mode) [ERROR] add operation not successful", m_id);
-		return false;
-	}
-
-	return true;
-*/
 }
 
 //============================================================
@@ -1168,7 +1152,8 @@ bool drmkms_timing::get_timing(modeline *mode)
 
 				mode->type |= CUSTOM_VIDEO_TIMING_DRMKMS;
 
-				if (mode->hactive == 608 && mode->vactive == 456) mode->type |= XYV_EDITABLE | SCAN_EDITABLE;
+				// Check if this is a dummy mode
+				if (pdmode->type & (1<<7)) mode->type |= XYV_EDITABLE | SCAN_EDITABLE;
 
 				if (strncmp(pdmode->name, "SR-", 3) == 0)
 					log_verbose("DRM/KMS: <%d> (get_timing) [WARNING] modeline %s detected\n", m_id, pdmode->name);
@@ -1177,7 +1162,6 @@ bool drmkms_timing::get_timing(modeline *mode)
 					// Add the desktop flag to desktop modeline
 					log_verbose("DRM/KMS: <%d> (get_timing) desktop mode name %s refresh %d found\n", m_id, mp_crtc_desktop->mode.name, mp_crtc_desktop->mode.vrefresh);
 					mode->type |= MODE_DESKTOP;
-					mode->platform_data = 4815162342;
 				}
 			}
 			else

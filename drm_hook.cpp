@@ -170,21 +170,27 @@ bool hook_connector(drmModeConnectorPtr conn)
 
 	drmModeFreeConnector(conn);
 
-	// Add dummy mode to mode list
-	drmModeModeInfo *mode = &my_modes[my_conn->count_modes];
-	*mode = {};
-	strcpy(mode->name, "dummy_mode");
-	mode->clock       = 12395;
-	mode->hdisplay    = 608;
-	mode->hsync_start = 633;
-	mode->hsync_end   = 691;
-	mode->htotal      = 790;
-	mode->vdisplay    = 456;
-	mode->vsync_start = 470;
-	mode->vsync_end   = 476;
-	mode->vtotal      = 524;
-	mode->vrefresh     = 60;
-	mode->flags       = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_INTERLACE;
+	bool found = false;
+	drmModeModeInfo *mode = NULL;
+	for (int i = 0; i < my_conn->count_modes; i++)
+	{
+		mode = &my_modes[i];
+		if (mode->type & DRM_MODE_TYPE_PREFERRED)
+		{
+			found = true;
+			break;
+		}
+	}
+
+	// If preferred mode not found, default to first entry
+	if (!found)
+		mode = &my_modes[0];
+
+	// Add dummy mode to mode list (preferred mode with vfresh +1)
+	drmModeModeInfo *dummy_mode = &my_modes[my_conn->count_modes];
+	*dummy_mode = *mode;
+	dummy_mode->vrefresh++;
+	dummy_mode->type |= (1<<7);
 	my_conn->count_modes++;
 
 	return true;
