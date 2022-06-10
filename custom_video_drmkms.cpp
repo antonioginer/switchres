@@ -735,7 +735,7 @@ int drmkms_timing::get_master_fd()
 	while (auto f = readdir(dir))
 	{
 		// Skip everything that starts with a dot
-		if (!f->d_name || f->d_name[0] == '.')
+		if (f->d_name[0] == '.')
 			continue;
 		// Only symlinks matter
 		if (f-> d_type != DT_LNK)
