@@ -185,6 +185,12 @@ int main(int argc, char **argv)
 		height = atoi(argv[optind + 1]);
 		refresh = atof(argv[optind + 2]);
 
+		if (width <= 0 || height <= 0 || refresh <= 0.0f)
+		{
+			log_error("Error: wrong video mode request: %sx%s@%s\n", argv[optind], argv[optind + 1], argv[optind + 2]);
+			goto usage;
+		}
+
 		char scan_mode = argv[optind + 2][strlen(argv[optind + 2]) -1];
 		if (scan_mode == 'i')
 			interlaced_flag = true;
