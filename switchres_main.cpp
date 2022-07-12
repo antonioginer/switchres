@@ -164,8 +164,8 @@ int main(int argc, char **argv)
 
 			case 'g':
 				geometry_flag = true;
-				if (sscanf(optarg, "%lf;%d;%d", &switchres.ds.gs.h_size, &switchres.ds.gs.h_shift, &switchres.ds.gs.v_shift) < 3)
-					log_error("Error: use format --geometry <h_size>;<h_shift>;<v_shift>\n");
+				if (sscanf(optarg, "%lf:%d:%d", &switchres.ds.gs.h_size, &switchres.ds.gs.h_shift, &switchres.ds.gs.v_shift) < 3)
+					log_error("Error: use format --geometry <h_size>:<h_shift>:<v_shift>\n");
 				break;
 
 			default:
@@ -322,7 +322,7 @@ int show_usage()
 		"  -b, --backend <api_name>          Specify the api name\n"
 		"  -e, --edid                        Create an EDID binary with calculated video modes\n"
 		"  -k, --keep                        Keep changes on exit (warning: this disables cleanup)\n"
-		"  -g --geometry <h_size>;<h_shift>;<v_shift>  Adjust geometry of generated modeline\n"
+		"  -g --geometry <h_size>:<h_shift>:<v_shift>  Adjust geometry of generated modeline\n"
 	};
 
 	log_info("%s", usage);
