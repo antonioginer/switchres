@@ -434,6 +434,9 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 		return nullptr;
 	}
 
+	if (!(best_mode.result.weight & R_OUT_OF_RANGE))
+		modeline_adjust(&best_mode, &m_ds.gs);
+
 	log_verbose("\nSwitchres: %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", rotation()?"rotated":"normal",
 		width, height, refresh, best_mode.hactive, best_mode.vactive, best_mode.vfreq);
 

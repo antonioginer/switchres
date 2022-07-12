@@ -148,6 +148,9 @@ public:
 	void set_super_width(int value) { m_ds.gs.super_width = value; }
 	void set_rotation(bool value) { m_ds.gs.rotation = value; }
 	void set_monitor_aspect(double value) { m_ds.gs.monitor_aspect = value; }
+	void set_h_size(double value) { m_ds.gs.h_size = value; }
+	void set_h_shift(int value) { m_ds.gs.h_shift = value; }
+	void set_v_shift(int value) { m_ds.gs.v_shift = value; }
 	void set_v_shift_correct(int value) { m_ds.gs.v_shift_correct = value; }
 	void set_pixel_precision(int value) { m_ds.gs.pixel_precision = value; }
 	void set_interlace_force_even(int value) { m_ds.gs.interlace_force_even = value; }
