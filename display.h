@@ -88,6 +88,9 @@ public:
 	int super_width() { return m_ds.gs.super_width; }
 	bool rotation() { return m_ds.gs.rotation; }
 	double monitor_aspect() { return m_ds.gs.monitor_aspect; }
+	double h_size() { return m_ds.gs.h_size; }
+	int h_shift() { return m_ds.gs.h_shift; }
+	int v_shift() { return m_ds.gs.v_shift; }
 	int v_shift_correct() { return m_ds.gs.v_shift_correct; }
 	int pixel_precision() { return m_ds.gs.pixel_precision; }
 	int interlace_force_even() { return m_ds.gs.interlace_force_even; }
