@@ -117,7 +117,7 @@ $(DRMHOOK_LIB):
 	$(FINAL_CXX) drm_hook.cpp -shared -ldl -fPIC -I/usr/include/libdrm  -o libdrmhook.so
 
 $(GRID):
-	$(FINAL_CXX) grid.cpp -lSDL2 -o grid
+	$(FINAL_CXX) grid.cpp -lSDL2 -lSDL2_ttf -o grid
 
 clean:
 	$(REMOVE) $(OBJS) $(STANDALONE) $(TARGET_LIB).*
