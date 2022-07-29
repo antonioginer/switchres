@@ -657,26 +657,27 @@ int modeline_to_monitor_range(monitor_range *range, modeline *mode)
 
 	double line_time = 1 / mode->hfreq;
 	double pixel_time = line_time / mode->htotal * 1000000;
+	double interlace_factor = mode->interlace? 0.5 : 1.0;
 
 	range->hfront_porch = pixel_time * (mode->hbegin - mode->hactive);
 	range->hsync_pulse = pixel_time * (mode->hend - mode->hbegin);
 	range->hback_porch = pixel_time * (mode->htotal - mode->hend);
 
-	range->vfront_porch = line_time * (mode->vbegin - mode->vactive);
-	range->vsync_pulse = line_time * (mode->vend - mode->vbegin);
-	range->vback_porch = line_time * (mode->vtotal - mode->vend);
+	range->vfront_porch = line_time * (mode->vbegin - mode->vactive) * interlace_factor;
+	range->vsync_pulse = line_time * (mode->vend - mode->vbegin) * interlace_factor;
+	range->vback_porch = line_time * (mode->vtotal - mode->vend) * interlace_factor;
 	range->vertical_blank = range->vfront_porch + range->vsync_pulse + range->vback_porch;
 
 	range->hsync_polarity = mode->hsync;
 	range->vsync_polarity = mode->vsync;
 
-	range->progressive_lines_min = mode->interlace?0:mode->vactive;
-	range->progressive_lines_max = mode->interlace?0:mode->vactive;
-	range->interlaced_lines_min = mode->interlace?mode->vactive:0;
-	range->interlaced_lines_max= mode->interlace?mode->vactive:0;
+	range->progressive_lines_min = mode->interlace? 0 : mode->vactive;
+	range->progressive_lines_max = mode->interlace? 0 : mode->vactive;
+	range->interlaced_lines_min = mode->interlace? mode->vactive : 0;
+	range->interlaced_lines_max= mode->interlace? mode->vactive : 0;
 
-	range->hfreq_min = range->vfreq_min * mode->vtotal;
-	range->hfreq_max = range->vfreq_max * mode->vtotal;
+	range->hfreq_min = range->vfreq_min * mode->vtotal * interlace_factor;
+	range->hfreq_max = range->vfreq_max * mode->vtotal * interlace_factor;
 
 	return 1;
 }
