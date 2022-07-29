@@ -230,7 +230,8 @@ int main(int argc, char **argv)
 			{
 				monitor_range range = {};
 				modeline_to_monitor_range(&range, mode);
-				log_info("Adjusted geometry: H: %.3f, %.3f, %.3f V: %.3f, %.3f, %.3f\n",
+				log_info("Adjusted geometry (%.3f:%d:%d) H: %.3f, %.3f, %.3f V: %.3f, %.3f, %.3f\n",
+						display->h_size(), display->h_shift(), display->v_shift(),
 						range.hfront_porch, range.hsync_pulse, range.hback_porch,
 						range.vfront_porch * 1000, range.vsync_pulse * 1000, range.vback_porch * 1000);
 			}
