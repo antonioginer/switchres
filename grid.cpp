@@ -322,6 +322,24 @@ int main(int argc, char **argv)
 					switch (event.key.keysym.scancode)
 					{
 						case SDL_SCANCODE_ESCAPE:
+						case SDL_SCANCODE_Q:
+							close = true;
+							return_code = 1;
+							break;
+
+						case SDL_SCANCODE_BACKSPACE:
+						case SDL_SCANCODE_DELETE:
+							close = true;
+							return_code = 2;
+							break;
+
+						case SDL_SCANCODE_R:
+							close = true;
+							return_code = 3;
+							break;
+
+						case SDL_SCANCODE_RETURN:
+						case SDL_SCANCODE_KP_ENTER:
 							close = true;
 							break;
 
