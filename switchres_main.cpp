@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 			modeline *mode = display->get_mode(width, height, refresh, interlaced_flag);
 			if (mode) display->flush_modes();
 
-			if (geometry_flag)
+			if (mode && geometry_flag)
 			{
 				monitor_range range = {};
 				modeline_to_monitor_range(&range, mode);
