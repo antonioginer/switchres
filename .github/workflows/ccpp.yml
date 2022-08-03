@@ -126,9 +126,7 @@ jobs:
     - name: Build geometry.exe
       run: |
         pip install pyinstaller
-        pyinstaller --onefile geometry.py
-        dir
-        dir dist
+        pyinstaller --onefile geometry.py --icon=tv.ico
     - name: Upload artifact
       uses: actions/upload-artifact@v3.1.0
       with:
