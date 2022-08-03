@@ -2,6 +2,7 @@ import argparse
 import subprocess
 import sys
 import time
+import os
 
 class mode:
 	def __init__(self, w:int = 640, h:int = 480, rr:float = 60):
@@ -121,18 +122,25 @@ def switchres_output_get_command_exit_code(output:str):
 	print("Couldn't find the app exit code!")
 	return None
 
-def launch_switchres(mode: mode, geom: geometry, switchres_command:str = "switchres", launch_command:str = "grid"):
+def launch_switchres(mode: mode, geom: geometry, switchres_command:str = "switchres", launch_command:str = "grid", display:int = 0):
 	return_list = dict()
 	#print(type(mode))
 	#print(mode)
 
 	# The command line may not require launching a program, just to get the crt_range for example
 	cmd = [switchres_command, str(mode.width), str(mode.height), str(mode.refresh_rate), '-v']
+	if display > 0:
+		cmd.extend(['-d', str(display)])
+	print(cmd)
 	if launch_command:
+		#cmd.extend(['-s', '-m', 'generic_15', '-l', launch_command, '-g', str(geom)])
+		if display > 0:
+			launch_command += " {}".format(display)
 		cmd.extend(['-s', '-l', launch_command, '-g', str(geom)])
 	else:
 		cmd.extend(['-c'])
 
+	os.environ['GRID_TEXT'] = "({})".format(str(geom))
 	print("Calling: {}".format(" ".join(cmd)))
 	return_status = subprocess.run(cmd, capture_output=True, text=True)
 	#print(return_status.stdout)
@@ -175,14 +183,14 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 		# Pressed ESCAPE / Q
 		case 1:
 			print("Aborted!")
-			exit(1)
+			sys.exit(1)
 		# Pressed ENTER / RETURN
 		case 0:
 			print("Finished!")
 			print("Final geometry: {}".format(str(geom)))
 			print("Final crt_range: {} -> TO BE DONE".format(str(range)))
 			update_switchres_ini(range)
-			exit(0)
+			sys.exit(0)
 		# Pressed DEL / BACKSPACE
 		case 2:
 			geom = geometry(1.0, 0, 0)
@@ -192,15 +200,15 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 	print("Readjusted geometry: {}".format(str(geom)))
 	return geom
 
-def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid"):
+def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0):
 	working_geometry = geometry(1.0, 0, 0)
 	# We need the original crt_range to apply the final geometry adjustments on it at the end
-	working_crt_range = launch_switchres(mode, working_geometry, switchres_command, launch_command = "")['default_crt_range']
+	working_crt_range = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)['default_crt_range']
 	grid_return_code = 0
 
 	#while grid_return_code not in [0, 1]:
 	while True:
-		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command)
+		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command, display_nr)
 		grid_return_code = sr_launch_return['exit_code']
 		#grid_return_code = 8
 		working_geometry = readjust_geometry(working_geometry, sr_launch_return['new_crt_range'], grid_return_code)
@@ -216,27 +224,24 @@ parser.add_argument('-i', '--ini', metavar='ini', type=str, default='switchres.i
                     help='The switchres.ini file to edit')
 parser.add_argument('-s', '--switchres', metavar='binary', type=str, default='switchres',
                     help='The switchres binary to use')
-parser.add_argument('-m', '--monitor', metavar='monitor', type=str, default='arcade_15',
-                    help='The monitor preset base, to override the switchres.ini (NOT YET IMPLEMENTED)')
-parser.add_argument('-g', '--geometry', metavar='geometry', type=str, default='1.0:0:0',
-                    help='Start with a predefined geometry (NOT YET IMPLEMENTED)')
+parser.add_argument('-d', '--display', metavar='display', type=int, default=0,
+                    help='Set the display to calibrate')
+#parser.add_argument('-m', '--monitor', metavar='monitor', type=str, default='arcade_15',
+                    # help='The monitor preset base, to override the switchres.ini (NOT YET IMPLEMENTED)')
+# parser.add_argument('-g', '--geometry', metavar='geometry', type=str, default='1.0:0:0',
+                    # help='Start with a predefined geometry (NOT YET IMPLEMENTED)')
 
 
-if sys.version_info[0] < 3:
+if sys.sys.version_info.major < 3:
     raise Exception("Must use Python 3.7 or later")
-if sys.version_info[1] < 10:
+if sys.sys.version_info.minor < 10:
     raise Exception("Must use Python 3.7 or later")
 
 #args = parser.parse_args(['320', '240', '59.94'])
 args = parser.parse_args()
 
-print(args)
-print(int(args.mode[0]))
+# print(args)
 
 command_mode = mode(args.mode[0], args.mode[1], args.mode[2])
-user_geom = geometry()
-print(command_mode)
-print(user_geom)
 
-# launch_switchres(command_mode, user_geom, args.switchres, args.launch)
-switchres_geometry_loop(command_mode, args.switchres, args.launch)
+switchres_geometry_loop(command_mode, args.switchres, args.launch, args.display)
