@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 		{
 			status_code = system(launch_command.c_str());
 			#ifdef __linux__
-			status_code = WEXITSTATUS(status_code)
+			status_code = WEXITSTATUS(status_code);
 			#endif
 			log_info("Process exited with value %d\n", status_code);
 		}
