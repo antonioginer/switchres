@@ -269,7 +269,10 @@ int main(int argc, char **argv)
 
 		if (launch_flag)
 		{
-			status_code = WEXITSTATUS(system(launch_command.c_str()));
+			status_code = system(launch_command.c_str());
+			#ifdef __linux__
+			status_code = WEXITSTATUS(status_code)
+			#endif
 			log_info("Process exited with value %d\n", status_code);
 		}
 	}
