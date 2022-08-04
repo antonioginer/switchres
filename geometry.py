@@ -232,9 +232,9 @@ parser.add_argument('-d', '--display', metavar='display', type=int, default=0,
                     # help='Start with a predefined geometry (NOT YET IMPLEMENTED)')
 
 
-if sys.sys.version_info.major < 3:
+if sys.version_info.major < 3:
     raise Exception("Must use Python 3.7 or later")
-if sys.sys.version_info.minor < 10:
+if sys.version_info.minor < 10:
     raise Exception("Must use Python 3.7 or later")
 
 #args = parser.parse_args(['320', '240', '59.94'])
