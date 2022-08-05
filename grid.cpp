@@ -305,6 +305,7 @@ int main(int argc, char **argv)
 	bool close = false;
 	int  num_grid = 0;
 	int return_code = 0;
+	int CTRL_modifier = 0;
 
 	while (!close)
 	{
@@ -379,6 +380,23 @@ int main(int argc, char **argv)
 							return_code = GRID_ADJUST::H_SIZE_DEC;
 							break;
 
+						case SDL_SCANCODE_LCTRL:
+						case SDL_SCANCODE_RCTRL:
+							CTRL_modifier = 1<<7;
+							break;
+
+						default:
+							break;
+					}
+
+				case SDL_KEYUP:
+					switch (event.key.keysym.scancode)
+					{
+						case SDL_SCANCODE_LCTRL:
+						case SDL_SCANCODE_RCTRL:
+							CTRL_modifier = 0;
+							break;
+
 						default:
 							break;
 					}
@@ -401,5 +419,5 @@ int main(int argc, char **argv)
 
 	SDL_Quit();
 
-	return return_code;
+	return return_code | CTRL_modifier;
 }
