@@ -127,7 +127,7 @@ def switchres_output_get_adjusted_geometry(output:str):
 		if l[0:19] != "Adjusted geometry (" : continue
 		Hpos = l.find('H: ')
 
-		#print("Found! -> {}".format(l[Hpos:]))
+		# print("Found! -> {}".format(l[Hpos:]))
 		return l[19:Hpos - 2]
 	print("Couldn't find the adjusted geometry!")
 	return None
@@ -137,12 +137,12 @@ def switchres_output_get_command_exit_code(output:str):
 		# The line to parse looks like:
 		# Process exited with value 256
 		if l[0:26] != "Process exited with value " : continue
-		print("Found! -> {}".format(l[26:]))
+		# print("Found! -> {}".format(l[26:]))
 		return int(l[26:])
 	print("Couldn't find the app exit code!")
 	return None
 
-def launch_switchres(mode: mode, geom: geometry, switchres_command:str = "switchres", launch_command:str = "grid", display:int = 0):
+def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:str = "switchres", launch_command:str = "grid", display:int = 0):
 	return_list = dict()
 	#print(type(mode))
 	#print(mode)
@@ -151,7 +151,6 @@ def launch_switchres(mode: mode, geom: geometry, switchres_command:str = "switch
 	cmd = [switchres_command, str(mode.width), str(mode.height), str(mode.refresh_rate), '-v']
 	if display > 0:
 		cmd.extend(['-d', str(display)])
-	print(cmd)
 	if launch_command:
 		#cmd.extend(['-s', '-m', 'generic_15', '-l', launch_command, '-g', str(geom)])
 		if display > 0:
@@ -159,15 +158,17 @@ def launch_switchres(mode: mode, geom: geometry, switchres_command:str = "switch
 		cmd.extend(['-s', '-l', launch_command, '-g', str(geom)])
 	else:
 		cmd.extend(['-c'])
-
-	os.environ['GRID_TEXT'] = "({})".format(str(geom))
+	cmd.extend(['-g', str(geom)])
+	os.environ['GRID_TEXT'] = "\n".join([os.getenv('GRID_TEXT') or "", "({})".format(str(geom))])
 	print("Calling: {}".format(" ".join(cmd)))
 	return_status = subprocess.run(cmd, capture_output=True, text=True)
-	#print(return_status.stdout)
+	# print(return_status.stdout)
+
 	default_crt_range = switchres_output_get_monitor_range(return_status.stdout)
 	adjusted_geometry = switchres_output_get_adjusted_crt_geometry(return_status.stdout)
 	grid_return = switchres_output_get_command_exit_code(return_status.stdout)
 	user_crt_range = default_crt_range
+
 	if launch_command:
 		user_crt_range.new_geometry_from_string(adjusted_geometry)
 	#print(user_crt_range)
@@ -225,18 +226,25 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 	print("Readjusted geometry: {}".format(str(geom)))
 	return geom
 
-def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0):
-	working_geometry = geometry(1.0, 0, 0)
+def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0, geom:geometry = geometry()):
+	working_geometry = geom
 	# We need the original crt_range to apply the final geometry adjustments on it at the end
-	working_crt_range = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)['default_crt_range']
+	first_sr_run = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)
+	working_crt_range = first_sr_run['default_crt_range']
+	ret_geom = geometry.set_from_string(first_sr_run['geometry'])
+	if ret_geom != geom:
+		os.environ['GRID_TEXT'] = "Geometry readjusted, was out of CRT range bounds"
+		working_geometry = ret_geom
 
 	while True:
 		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command, display_nr)
 		grid_return_code = sr_launch_return['exit_code']
 		sr_geometry = geometry.set_from_string(sr_launch_return['geometry'])
+		os.environ['GRID_TEXT'] = ""
 		# Need to add a test when the geometry was resetted
 		if sr_geometry != working_geometry:
-			print("Warning: you've reached a limit, can't go further in the last direction")
+			print("Warning: you've reached a limit, can't go further in the last direction. Setting back to {}".format(str(sr_geometry)))
+			os.environ['GRID_TEXT'] = "Geometry readjusted, was out of CRT range bounds"
 			working_geometry = sr_geometry
 		working_geometry = readjust_geometry(working_geometry, sr_launch_return['new_crt_range'], grid_return_code)
 		time.sleep(2)
@@ -255,8 +263,8 @@ parser.add_argument('-d', '--display', metavar='display', type=int, default=0,
                     help='Set the display to calibrate')
 #parser.add_argument('-m', '--monitor', metavar='monitor', type=str, default='arcade_15',
                     # help='The monitor preset base, to override the switchres.ini (NOT YET IMPLEMENTED)')
-# parser.add_argument('-g', '--geometry', metavar='geometry', type=str, default='1.0:0:0',
-                    # help='Start with a predefined geometry (NOT YET IMPLEMENTED)')
+parser.add_argument('-g', '--geometry', metavar='geometry', type=str, default='1.0:0:0',
+                    help='Start with a predefined geometry')
 
 
 if sys.version_info.major < 3:
@@ -270,5 +278,6 @@ args = parser.parse_args()
 # print(args)
 
 command_mode = mode(args.mode[0], args.mode[1], args.mode[2])
+geometry_arg = geometry.set_from_string(args.geometry)
 
-switchres_geometry_loop(command_mode, args.switchres, args.launch, args.display)
+switchres_geometry_loop(command_mode, args.switchres, args.launch, args.display, geometry_arg)
