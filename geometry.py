@@ -39,12 +39,12 @@ class geometry:
 		hsize, hshift, vshit = geom.split(':')
 		return cls(hsize, jshift, vshift)
 
-	def inc_hsize(self, step = 0.1): self.h_size += step
-	def inc_hshift(self, step = 1): self.h_shift += step
-	def inc_vshift(self, step = 1): self.v_shift += step
-	def dec_hsize(self, step = 0.1): self.h_size -= step
-	def dec_hshift(self, step = 1): self.h_shift -= step
-	def dec_vshift(self, step = 1): self.v_shift -= step
+	def inc_hsize(self, step = 0.01, factor:int = 1): self.h_size += (step * factor)
+	def inc_hshift(self, step = 1, factor:int = 1): self.h_shift += step * factor
+	def inc_vshift(self, step = 1, factor:int = 1): self.v_shift += step * factor
+	def dec_hsize(self, step = 0.01, factor:int = 1): self.h_size -= step * factor
+	def dec_hshift(self, step = 1, factor:int = 1): self.h_shift -= step * factor
+	def dec_vshift(self, step = 1, factor:int = 1): self.v_shift -= step * factor
 
 
 class crt_range:
@@ -160,26 +160,27 @@ def update_switchres_ini(range: crt_range, inifile:str = "/etc/switchres.ini"):
 	print("Updating {} with crt_range {} (NOT YET IMPLEMENTED)".format(inifile, str(range)))
 
 def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
+	wanted_factor = 10 if return_code & (1<<7) else 1
 	# This syntax requires python >= 3.10
 	match return_code:
 		# Pressed PAGEUP
 		case 68:
-			geom.inc_hsize()
+			geom.inc_hsize(factor = wanted_factor)
 		# Pressed PAGEDOWN
 		case 69:
-			geom.dec_hsize()
+			geom.dec_hsize(factor = wanted_factor)
 		# Pressed LEFT
 		case 64:
-			geom.dec_hshift()
+			geom.dec_hshift(factor = wanted_factor)
 		# Pressed RIGHT
 		case 65:
-			geom.inc_hshift()
+			geom.inc_hshift(factor = wanted_factor)
 		# Pressed DOWN
 		case 67:
-			geom.inc_vshift()
+			geom.inc_vshift(factor = wanted_factor)
 		# Pressed UP
 		case 66:
-			geom.dec_vshift()
+			geom.dec_vshift(factor = wanted_factor)
 		# Pressed ESCAPE / Q
 		case 1:
 			print("Aborted!")
