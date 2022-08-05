@@ -26,10 +26,11 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "font.h"
-#include <string>
+#include <string.h>
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <math.h>
 
 #define FONT_SIZE 11
 
