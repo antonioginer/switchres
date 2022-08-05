@@ -4,6 +4,9 @@ import sys
 import time
 import os
 
+
+CTR_modifier = 1<<7
+
 class mode:
 	def __init__(self, w:int = 640, h:int = 480, rr:float = 60):
 		self.width = int(w)
@@ -26,6 +29,9 @@ class geometry:
 	def __str__(self):
 		return "{}:{}:{}".format(self.h_size, self.h_shift, self.v_shift)
 
+	def __eq__(self, other):
+		return self.h_size == other.h_size and self.h_shift == other.h_shift and self.v_shift == other.v_shift
+
 	def set_geometry(self, h_size:float, h_shift:int, v_shift:int):
 		self.h_size = float(h_size)
 		self.h_shift = int(h_shift)
@@ -36,10 +42,10 @@ class geometry:
 		"""
 		geom should be in the form of 1.0:-5:2
 		"""
-		hsize, hshift, vshit = geom.split(':')
-		return cls(hsize, jshift, vshift)
+		hsize, hshift, vshift = geom.split(':')
+		return cls(hsize, hshift, vshift)
 
-	def inc_hsize(self, step = 0.01, factor:int = 1): self.h_size += (step * factor)
+	def inc_hsize(self, step = 0.01, factor:int = 1): self.h_size += step * factor
 	def inc_hshift(self, step = 1, factor:int = 1): self.h_shift += step * factor
 	def inc_vshift(self, step = 1, factor:int = 1): self.v_shift += step * factor
 	def dec_hsize(self, step = 0.01, factor:int = 1): self.h_size -= step * factor
@@ -101,14 +107,28 @@ def switchres_output_get_monitor_range(output:str):
 	print("Couldn't find the monitor range!")
 	return None
 
-def switchres_output_get_adjusted_geometry(output:str):
+def switchres_output_get_adjusted_crt_geometry(output:str):
 	for l in output.splitlines():
 		# The line to parse looks like:
 		# Adjusted geometry (1.000:0:0) H: 2.004, 4.696, 8.015 V: 0.223, 0.191, 1.212
+		# We need what is behind H:
 		if l[0:19] != "Adjusted geometry (" : continue
 		Hpos = l.find('H: ')
 		#print("Found! -> {}".format(l[Hpos:]))
 		return l[Hpos:]
+	print("Couldn't find the adjusted crt geometry!")
+	return None
+
+def switchres_output_get_adjusted_geometry(output:str):
+	for l in output.splitlines():
+		# The line to parse looks like:
+		# Adjusted geometry (1.000:0:0) H: 2.004, 4.696, 8.015 V: 0.223, 0.191, 1.212
+		# We need what is between parenthesis
+		if l[0:19] != "Adjusted geometry (" : continue
+		Hpos = l.find('H: ')
+
+		#print("Found! -> {}".format(l[Hpos:]))
+		return l[19:Hpos - 2]
 	print("Couldn't find the adjusted geometry!")
 	return None
 
@@ -117,7 +137,7 @@ def switchres_output_get_command_exit_code(output:str):
 		# The line to parse looks like:
 		# Process exited with value 256
 		if l[0:26] != "Process exited with value " : continue
-		#print("Found! -> {}".format(l[26:]))
+		print("Found! -> {}".format(l[26:]))
 		return int(l[26:])
 	print("Couldn't find the app exit code!")
 	return None
@@ -145,7 +165,7 @@ def launch_switchres(mode: mode, geom: geometry, switchres_command:str = "switch
 	return_status = subprocess.run(cmd, capture_output=True, text=True)
 	#print(return_status.stdout)
 	default_crt_range = switchres_output_get_monitor_range(return_status.stdout)
-	adjusted_geometry = switchres_output_get_adjusted_geometry(return_status.stdout)
+	adjusted_geometry = switchres_output_get_adjusted_crt_geometry(return_status.stdout)
 	grid_return = switchres_output_get_command_exit_code(return_status.stdout)
 	user_crt_range = default_crt_range
 	if launch_command:
@@ -154,13 +174,17 @@ def launch_switchres(mode: mode, geom: geometry, switchres_command:str = "switch
 	return_list['exit_code'] = grid_return
 	return_list['new_crt_range'] = user_crt_range
 	return_list['default_crt_range'] = default_crt_range
+	return_list['geometry'] = switchres_output_get_adjusted_geometry(return_status.stdout)
+
 	return return_list
 
 def update_switchres_ini(range: crt_range, inifile:str = "/etc/switchres.ini"):
 	print("Updating {} with crt_range {} (NOT YET IMPLEMENTED)".format(inifile, str(range)))
 
 def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
-	wanted_factor = 10 if return_code & (1<<7) else 1
+	wanted_factor = 10 if return_code & CTR_modifier else 1
+	# Disable the modifier
+	return_code = return_code & ~CTR_modifier
 	# This syntax requires python >= 3.10
 	match return_code:
 		# Pressed PAGEUP
@@ -205,13 +229,15 @@ def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", lau
 	working_geometry = geometry(1.0, 0, 0)
 	# We need the original crt_range to apply the final geometry adjustments on it at the end
 	working_crt_range = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)['default_crt_range']
-	grid_return_code = 0
 
-	#while grid_return_code not in [0, 1]:
 	while True:
 		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command, display_nr)
 		grid_return_code = sr_launch_return['exit_code']
-		#grid_return_code = 8
+		sr_geometry = geometry.set_from_string(sr_launch_return['geometry'])
+		# Need to add a test when the geometry was resetted
+		if sr_geometry != working_geometry:
+			print("Warning: you've reached a limit, can't go further in the last direction")
+			working_geometry = sr_geometry
 		working_geometry = readjust_geometry(working_geometry, sr_launch_return['new_crt_range'], grid_return_code)
 		time.sleep(2)
 

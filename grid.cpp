@@ -320,6 +320,9 @@ int main(int argc, char **argv)
 					break;
 
 				case SDL_KEYDOWN:
+					if(event.key.keysym.mod == KMOD_LCTRL or event.key.keysym.mod == KMOD_RCTRL)
+						CTRL_modifier = 1<<7;
+
 					switch (event.key.keysym.scancode)
 					{
 						case SDL_SCANCODE_ESCAPE:
@@ -380,26 +383,10 @@ int main(int argc, char **argv)
 							return_code = GRID_ADJUST::H_SIZE_DEC;
 							break;
 
-						case SDL_SCANCODE_LCTRL:
-						case SDL_SCANCODE_RCTRL:
-							CTRL_modifier = 1<<7;
-							break;
-
 						default:
 							break;
 					}
 
-				case SDL_KEYUP:
-					switch (event.key.keysym.scancode)
-					{
-						case SDL_SCANCODE_LCTRL:
-						case SDL_SCANCODE_RCTRL:
-							CTRL_modifier = 0;
-							break;
-
-						default:
-							break;
-					}
 			}
 		}
 	}
