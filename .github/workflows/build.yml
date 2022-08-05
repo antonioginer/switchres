@@ -44,4 +44,22 @@ jobs:
       with:
         name: switchres-${{matrix.platform.name}}-x86_64
         path: artifacts/
-      
+
+  win32-build-x86_64-geometry:
+
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Build geometry.exe
+      run: |
+        pip install pyinstaller
+        pyinstaller --onefile geometry.py
+        dir
+        dir dist
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3.1.0
+      with:
+        path: dist/
