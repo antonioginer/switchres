@@ -144,7 +144,7 @@ def switchres_output_get_command_exit_code(output:str):
 	logging.warning("Couldn't find the app exit code!")
 	return None
 
-def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:str = "switchres", launch_command:str = "grid", display:int = 0, switchres_ini:str):
+def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:str = "switchres", launch_command:str = "grid", display:int = 0):
 	return_list = dict()
 
 	# The command line may not require launching a program, just to get the crt_range for example
@@ -152,16 +152,16 @@ def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:st
 	if display > 0:
 		cmd.extend(['-d', str(display)])
 	if launch_command:
-		#cmd.extend(['-s', '-m', 'generic_15', '-l', launch_command, '-g', str(geom)])
 		if display > 0:
 			launch_command += " {}".format(display)
-		cmd.extend(['-s', '-l', launch_command, '-g', str(geom)])
+		cmd.extend(['-s', '-l', launch_command])
 	else:
 		cmd.extend(['-c'])
 	cmd.extend(['-g', str(geom)])
 	os.environ['GRID_TEXT'] = "\n".join([os.getenv('GRID_TEXT') or "", "({})".format(str(geom))])
-	logging.debug("Calling: {}".format(" ".join(cmd)))
+	logging.debug("Calling: {} with text: {}".format(" ".join(cmd), os.getenv('GRID_TEXT')))
 	return_status = subprocess.run(cmd, capture_output=True, text=True)
+	os.environ['GRID_TEXT'] = ""
 	logging.debug(return_status.stdout)
 
 	default_crt_range = switchres_output_get_monitor_range(return_status.stdout)
@@ -179,7 +179,9 @@ def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:st
 
 	return return_list
 
-def update_switchres_ini(range: crt_range, inifile:str = "/etc/switchres.ini"):
+def update_switchres_ini(range: crt_range, inifile:str = ''):
+	if not inifile:
+		sys.exit(0)
 	logging.info("Updating {} with crt_range {} (NOT YET IMPLEMENTED)".format(inifile, str(range)))
 
 def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
@@ -216,7 +218,7 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 			logging.info("Finished!")
 			logging.info("Final geometry: {}".format(str(geom)))
 			logging.info("Final crt_range: {}".format(str(range)))
-			update_switchres_ini(range)
+			#update_switchres_ini(range, switchres_ini)
 			sys.exit(0)
 		# Pressed DEL / BACKSPACE
 		case 2:
@@ -227,7 +229,7 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 	logging.debug("Readjusted geometry: {}".format(str(geom)))
 	return geom
 
-def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0, geom:geometry = geometry(), switchres_ini:str):
+def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0, geom:geometry = geometry()):
 	working_geometry = geom
 	# We need the original crt_range to apply the final geometry adjustments on it at the end
 	first_sr_run = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)
@@ -241,7 +243,6 @@ def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", lau
 		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command, display_nr)
 		grid_return_code = sr_launch_return['exit_code']
 		sr_geometry = geometry.set_from_string(sr_launch_return['geometry'])
-		os.environ['GRID_TEXT'] = ""
 		# Need to add a test when the geometry was resetted
 		if sr_geometry != working_geometry:
 			logging.info("Warning: you've reached a crt_range limit, can't go further in the last direction. Setting back to {}".format(str(sr_geometry)))
@@ -258,7 +259,7 @@ def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", lau
 # The default switchres.ini file depends on the platform
 if platform.system() == 'Linux':
 	default_switchres_ini = '/etc/switchres.ini'
-else
+else:
 	default_switchres_ini = 'switchres.ini'
 
 parser = argparse.ArgumentParser(description='Switchres wrapper to adjust a crt_range for switchres.ini')
@@ -266,9 +267,9 @@ parser.add_argument('mode', metavar='N', type=float, nargs=3,
                     help='width height refresh_rate')
 parser.add_argument('-l', '--launch', metavar='launch', type=str, default='grid',
                     help='The program you want to launch')
-parser.add_argument('-i', '--ini', metavar='ini', type=str, default='/etc/switchres.ini',
-                    help='The switchres.ini file to edit')
-parser.add_argument('-s', '--switchres', metavar='binary', type=str, default=default_switchres_ini,
+# parser.add_argument('-i', '--ini', metavar='ini', type=str, default=default_switchres_ini,
+                    # help='The switchres.ini file to edit')
+parser.add_argument('-s', '--switchres', metavar='binary', type=str, default='switchres',
                     help='The switchres binary to use')
 parser.add_argument('-d', '--display', metavar='display', type=int, default=0,
                     help='Set the display to calibrate')
@@ -291,7 +292,6 @@ args = parser.parse_args()
 loggingLevel = logging.INFO
 logging.basicConfig(stream=sys.stdout, level=loggingLevel, format='%(message)s')
 if args.verbose > 0:
-	print("Verbose mode!")
 	loggingLevel = logging.DEBUG
 	logger = logging.getLogger()
 	logger.setLevel(loggingLevel)
@@ -300,7 +300,7 @@ if args.verbose > 0:
 	for handler in logging.root.handlers[:]:
 		logging.root.removeHandler(handler)
 	logging.basicConfig(stream=sys.stdout, level=loggingLevel,
-		format='%(levelname)s %(filename)s/%(funcName)s(%(lineno)d): %(message)s')
+		format='[%(levelname)s] %(filename)s/%(funcName)s(%(lineno)d): %(message)s')
 logging.debug("Specified logging level: {}".format(args.verbose))
 logging.debug("Command line arguments: {}".format(args))
 
