@@ -3,6 +3,8 @@ import subprocess
 import sys
 import time
 import os
+import logging
+import platform
 
 
 CTR_modifier = 1<<7
@@ -101,10 +103,10 @@ def switchres_output_get_monitor_range(output:str):
 		# The line to parse looks like:
 		# Switchres: Monitor range 15625.00-16200.00,49.50-65.00,2.000,4.700,8.000,0.064,0.192,1.024,0,0,192,288,448,576
 		if l[0:25] != "Switchres: Monitor range " : continue
-		#print("Found! -> {}".format(l[25:]))
-		#print(crt_range().set_from_string(l[25:]))
+		logging.debug("Found! -> {}".format(l[25:]))
+		logging.debug(crt_range().set_from_string(l[25:]))
 		return crt_range().set_from_string(l[25:])
-	print("Couldn't find the monitor range!")
+	logging.warning("Couldn't find the monitor range!")
 	return None
 
 def switchres_output_get_adjusted_crt_geometry(output:str):
@@ -114,9 +116,9 @@ def switchres_output_get_adjusted_crt_geometry(output:str):
 		# We need what is behind H:
 		if l[0:19] != "Adjusted geometry (" : continue
 		Hpos = l.find('H: ')
-		#print("Found! -> {}".format(l[Hpos:]))
+		logging.debug("Found! -> {}".format(l[Hpos:]))
 		return l[Hpos:]
-	print("Couldn't find the adjusted crt geometry!")
+	logging.warning("Couldn't find the adjusted crt geometry!")
 	return None
 
 def switchres_output_get_adjusted_geometry(output:str):
@@ -127,9 +129,9 @@ def switchres_output_get_adjusted_geometry(output:str):
 		if l[0:19] != "Adjusted geometry (" : continue
 		Hpos = l.find('H: ')
 
-		# print("Found! -> {}".format(l[Hpos:]))
+		logging.debug("Found! -> {}".format(l[Hpos:]))
 		return l[19:Hpos - 2]
-	print("Couldn't find the adjusted geometry!")
+	logging.warning("Couldn't find the adjusted geometry!")
 	return None
 
 def switchres_output_get_command_exit_code(output:str):
@@ -137,15 +139,13 @@ def switchres_output_get_command_exit_code(output:str):
 		# The line to parse looks like:
 		# Process exited with value 256
 		if l[0:26] != "Process exited with value " : continue
-		# print("Found! -> {}".format(l[26:]))
+		logging.debug("Found! -> {}".format(l[26:]))
 		return int(l[26:])
-	print("Couldn't find the app exit code!")
+	logging.warning("Couldn't find the app exit code!")
 	return None
 
-def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:str = "switchres", launch_command:str = "grid", display:int = 0):
+def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:str = "switchres", launch_command:str = "grid", display:int = 0, switchres_ini:str):
 	return_list = dict()
-	#print(type(mode))
-	#print(mode)
 
 	# The command line may not require launching a program, just to get the crt_range for example
 	cmd = [switchres_command, str(mode.width), str(mode.height), str(mode.refresh_rate), '-v']
@@ -160,18 +160,18 @@ def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:st
 		cmd.extend(['-c'])
 	cmd.extend(['-g', str(geom)])
 	os.environ['GRID_TEXT'] = "\n".join([os.getenv('GRID_TEXT') or "", "({})".format(str(geom))])
-	print("Calling: {}".format(" ".join(cmd)))
+	logging.debug("Calling: {}".format(" ".join(cmd)))
 	return_status = subprocess.run(cmd, capture_output=True, text=True)
-	# print(return_status.stdout)
+	logging.debug(return_status.stdout)
 
 	default_crt_range = switchres_output_get_monitor_range(return_status.stdout)
 	adjusted_geometry = switchres_output_get_adjusted_crt_geometry(return_status.stdout)
-	grid_return = switchres_output_get_command_exit_code(return_status.stdout)
 	user_crt_range = default_crt_range
+	grid_return = None
 
 	if launch_command:
+		grid_return = switchres_output_get_command_exit_code(return_status.stdout)
 		user_crt_range.new_geometry_from_string(adjusted_geometry)
-	#print(user_crt_range)
 	return_list['exit_code'] = grid_return
 	return_list['new_crt_range'] = user_crt_range
 	return_list['default_crt_range'] = default_crt_range
@@ -180,10 +180,11 @@ def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:st
 	return return_list
 
 def update_switchres_ini(range: crt_range, inifile:str = "/etc/switchres.ini"):
-	print("Updating {} with crt_range {} (NOT YET IMPLEMENTED)".format(inifile, str(range)))
+	logging.info("Updating {} with crt_range {} (NOT YET IMPLEMENTED)".format(inifile, str(range)))
 
 def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 	wanted_factor = 10 if return_code & CTR_modifier else 1
+	factor_message = " with CTRL pressed" if return_code & CTR_modifier else ''
 	# Disable the modifier
 	return_code = return_code & ~CTR_modifier
 	# This syntax requires python >= 3.10
@@ -208,13 +209,13 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 			geom.dec_vshift(factor = wanted_factor)
 		# Pressed ESCAPE / Q
 		case 1:
-			print("Aborted!")
+			logging.info("Aborted!")
 			sys.exit(1)
 		# Pressed ENTER / RETURN
 		case 0:
-			print("Finished!")
-			print("Final geometry: {}".format(str(geom)))
-			print("Final crt_range: {} -> TO BE DONE".format(str(range)))
+			logging.info("Finished!")
+			logging.info("Final geometry: {}".format(str(geom)))
+			logging.info("Final crt_range: {}".format(str(range)))
 			update_switchres_ini(range)
 			sys.exit(0)
 		# Pressed DEL / BACKSPACE
@@ -222,11 +223,11 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 			geom = geometry(1.0, 0, 0)
 		# Pressed R
 		case 3:
-			print("Refreshing with the same geometry values if your screen was scrolling")
-	print("Readjusted geometry: {}".format(str(geom)))
+			logging.debug("Refreshing with the same geometry values if your screen was scrolling")
+	logging.debug("Readjusted geometry: {}".format(str(geom)))
 	return geom
 
-def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0, geom:geometry = geometry()):
+def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0, geom:geometry = geometry(), switchres_ini:str):
 	working_geometry = geom
 	# We need the original crt_range to apply the final geometry adjustments on it at the end
 	first_sr_run = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)
@@ -243,21 +244,31 @@ def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", lau
 		os.environ['GRID_TEXT'] = ""
 		# Need to add a test when the geometry was resetted
 		if sr_geometry != working_geometry:
-			print("Warning: you've reached a limit, can't go further in the last direction. Setting back to {}".format(str(sr_geometry)))
+			logging.info("Warning: you've reached a crt_range limit, can't go further in the last direction. Setting back to {}".format(str(sr_geometry)))
 			os.environ['GRID_TEXT'] = "Geometry readjusted, was out of CRT range bounds"
 			working_geometry = sr_geometry
 		working_geometry = readjust_geometry(working_geometry, sr_launch_return['new_crt_range'], grid_return_code)
 		time.sleep(2)
 
 
+#
+# MAIN
+#
+
+# The default switchres.ini file depends on the platform
+if platform.system() == 'Linux':
+	default_switchres_ini = '/etc/switchres.ini'
+else
+	default_switchres_ini = 'switchres.ini'
+
 parser = argparse.ArgumentParser(description='Switchres wrapper to adjust a crt_range for switchres.ini')
 parser.add_argument('mode', metavar='N', type=float, nargs=3,
                     help='width height refresh_rate')
 parser.add_argument('-l', '--launch', metavar='launch', type=str, default='grid',
                     help='The program you want to launch')
-parser.add_argument('-i', '--ini', metavar='ini', type=str, default='switchres.ini',
+parser.add_argument('-i', '--ini', metavar='ini', type=str, default='/etc/switchres.ini',
                     help='The switchres.ini file to edit')
-parser.add_argument('-s', '--switchres', metavar='binary', type=str, default='switchres',
+parser.add_argument('-s', '--switchres', metavar='binary', type=str, default=default_switchres_ini,
                     help='The switchres binary to use')
 parser.add_argument('-d', '--display', metavar='display', type=int, default=0,
                     help='Set the display to calibrate')
@@ -265,6 +276,7 @@ parser.add_argument('-d', '--display', metavar='display', type=int, default=0,
                     # help='The monitor preset base, to override the switchres.ini (NOT YET IMPLEMENTED)')
 parser.add_argument('-g', '--geometry', metavar='geometry', type=str, default='1.0:0:0',
                     help='Start with a predefined geometry')
+parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbose mode')
 
 
 if sys.version_info.major < 3:
@@ -275,7 +287,24 @@ if sys.version_info.minor < 10:
 #args = parser.parse_args(['320', '240', '59.94'])
 args = parser.parse_args()
 
-# print(args)
+# Set log level according to wanted verbosity
+loggingLevel = logging.INFO
+logging.basicConfig(stream=sys.stdout, level=loggingLevel, format='%(message)s')
+if args.verbose > 0:
+	print("Verbose mode!")
+	loggingLevel = logging.DEBUG
+	logger = logging.getLogger()
+	logger.setLevel(loggingLevel)
+	for handler in logger.handlers:
+		handler.setLevel(loggingLevel)
+	for handler in logging.root.handlers[:]:
+		logging.root.removeHandler(handler)
+	logging.basicConfig(stream=sys.stdout, level=loggingLevel,
+		format='%(levelname)s %(filename)s/%(funcName)s(%(lineno)d): %(message)s')
+logging.debug("Specified logging level: {}".format(args.verbose))
+logging.debug("Command line arguments: {}".format(args))
+
+logging.debug(args)
 
 command_mode = mode(args.mode[0], args.mode[1], args.mode[2])
 geometry_arg = geometry.set_from_string(args.geometry)
