@@ -36,7 +36,7 @@
 
 enum GRID_ADJUST
 {
-	LEFT = 8000,
+	LEFT = 64,
 	RIGHT,
 	UP,
 	DOWN,
