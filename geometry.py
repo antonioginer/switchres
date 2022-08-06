@@ -148,7 +148,9 @@ def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:st
 	return_list = dict()
 
 	# The command line may not require launching a program, just to get the crt_range for example
-	cmd = [switchres_command, str(mode.width), str(mode.height), str(mode.refresh_rate), '-v']
+	cmd = [ switchres_command.split(" ")[0], str(mode.width), str(mode.height), str(mode.refresh_rate), '-v' ]
+	if switchres_command.split(" ")[1:]:
+		cmd.extend(switchres_command.split(" ")[1:])
 	if display > 0:
 		cmd.extend(['-d', str(display)])
 	if launch_command:
