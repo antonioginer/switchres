@@ -105,7 +105,7 @@ endef
 %.o : %.cpp
 	$(FINAL_CXX) -c $(CPPFLAGS) $< -o $@
 
-all: $(SRC:.cpp=.o) $(MAIN).cpp $(TARGET_LIB) prepare_pkg_config
+all: $(SRC:.cpp=.o) $(MAIN).cpp $(TARGET_LIB) prepare_pkg_config $(GRID)
 	@echo $(OSFLAG)
 	$(FINAL_CXX) $(CPPFLAGS) $(CXXFLAGS) $(SRC:.cpp=.o) $(MAIN).cpp $(LIBS) -o $(STANDALONE)
 
@@ -121,7 +121,7 @@ $(GRID):
 	$(FINAL_CXX) grid.cpp $(WIN_ONLY_FLAGS) -lSDL2 -lSDL2_ttf -o grid
 
 clean:
-	$(REMOVE) $(OBJS) $(STANDALONE) $(TARGET_LIB).*
+	$(REMOVE) $(OBJS) $(STANDALONE) $(TARGET_LIB).* $(GRID) $(GRID).exe
 	$(REMOVE) switchres.pc
 
 prepare_pkg_config:
