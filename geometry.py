@@ -233,24 +233,20 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 
 def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0, geom:geometry = geometry()):
 	working_geometry = geom
-	# We need the original crt_range to apply the final geometry adjustments on it at the end
-	first_sr_run = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)
-	working_crt_range = first_sr_run['default_crt_range']
-	ret_geom = geometry.set_from_string(first_sr_run['geometry'])
-	if ret_geom != geom:
-		os.environ['GRID_TEXT'] = "Geometry readjusted, was out of CRT range bounds"
-		working_geometry = ret_geom
 
 	while True:
+		# This launch is to confirm the geometry
+		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)
+		ret_geom = geometry.set_from_string(sr_launch_return['geometry'])
+		if ret_geom != working_geometry:
+			os.environ['GRID_TEXT'] = "Geometry readjusted, was out of CRT range bounds"
+			logging.info("Warning: you've reached a crt_range limit, can't go further in the last direction. Setting back to {}".format(str(ret_geom)))
+			working_geometry = ret_geom
+		# Now is the real launch with the grid
 		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command, display_nr)
 		grid_return_code = sr_launch_return['exit_code']
 		sr_geometry = geometry.set_from_string(sr_launch_return['geometry'])
-		# Need to add a test when the geometry was resetted
-		if sr_geometry != working_geometry:
-			logging.info("Warning: you've reached a crt_range limit, can't go further in the last direction. Setting back to {}".format(str(sr_geometry)))
-			os.environ['GRID_TEXT'] = "Geometry readjusted, was out of CRT range bounds"
-			working_geometry = sr_geometry
-		working_geometry = readjust_geometry(working_geometry, sr_launch_return['new_crt_range'], grid_return_code)
+		working_geometry = readjust_geometry(sr_geometry, sr_launch_return['new_crt_range'], grid_return_code)
 		time.sleep(2)
 
 
