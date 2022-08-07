@@ -320,7 +320,7 @@ int main(int argc, char **argv)
 					break;
 
 				case SDL_KEYDOWN:
-					if(event.key.keysym.mod == KMOD_LCTRL or event.key.keysym.mod == KMOD_RCTRL)
+					if (event.key.keysym.mod & KMOD_LCTRL || event.key.keysym.mod & KMOD_RCTRL)
 						CTRL_modifier = 1<<7;
 
 					switch (event.key.keysym.scancode)
