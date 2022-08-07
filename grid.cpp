@@ -36,7 +36,7 @@
 
 enum GRID_ADJUST
 {
-	LEFT = 8000,
+	LEFT = 64,
 	RIGHT,
 	UP,
 	DOWN,
@@ -305,6 +305,7 @@ int main(int argc, char **argv)
 	bool close = false;
 	int  num_grid = 0;
 	int return_code = 0;
+	int CTRL_modifier = 0;
 
 	while (!close)
 	{
@@ -319,9 +320,30 @@ int main(int argc, char **argv)
 					break;
 
 				case SDL_KEYDOWN:
+					if(event.key.keysym.mod == KMOD_LCTRL or event.key.keysym.mod == KMOD_RCTRL)
+						CTRL_modifier = 1<<7;
+
 					switch (event.key.keysym.scancode)
 					{
 						case SDL_SCANCODE_ESCAPE:
+						case SDL_SCANCODE_Q:
+							close = true;
+							return_code = 1;
+							break;
+
+						case SDL_SCANCODE_BACKSPACE:
+						case SDL_SCANCODE_DELETE:
+							close = true;
+							return_code = 2;
+							break;
+
+						case SDL_SCANCODE_R:
+							close = true;
+							return_code = 3;
+							break;
+
+						case SDL_SCANCODE_RETURN:
+						case SDL_SCANCODE_KP_ENTER:
 							close = true;
 							break;
 
@@ -364,6 +386,7 @@ int main(int argc, char **argv)
 						default:
 							break;
 					}
+
 			}
 		}
 	}
@@ -383,5 +406,5 @@ int main(int argc, char **argv)
 
 	SDL_Quit();
 
-	return return_code;
+	return return_code | CTRL_modifier;
 }
