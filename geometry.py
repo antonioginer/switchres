@@ -160,10 +160,8 @@ def launch_switchres(mode:mode, geom:geometry = geometry(), switchres_command:st
 	else:
 		cmd.extend(['-c'])
 	cmd.extend(['-g', str(geom)])
-	os.environ['GRID_TEXT'] = "\n".join([os.getenv('GRID_TEXT') or "", "({})".format(str(geom))])
 	logging.debug("Calling: {} with text: {}".format(" ".join(cmd), os.getenv('GRID_TEXT')))
 	return_status = subprocess.run(cmd, capture_output=True, text=True)
-	os.environ['GRID_TEXT'] = ""
 	logging.debug(return_status.stdout)
 
 	default_crt_range = switchres_output_get_monitor_range(return_status.stdout)
@@ -231,22 +229,38 @@ def readjust_geometry(geom: geometry, range:crt_range, return_code:int):
 	logging.debug("Readjusted geometry: {}".format(str(geom)))
 	return geom
 
+def set_grid_text(top_txt:str = '', bottom_txt:str = '', geom:geometry = geometry()):
+	help_txt = """H size: {}
+H shift: {}
+V shift: {}
+
+Arrows: shift screen - Page Up/Down: H size
+ENTER: validate - ESC: cancel - DEL: reinit - R: reload
+CTRL+key: step x10""".format(geom.h_size, geom.h_shift, geom.v_shift)
+	os.environ['GRID_TEXT'] = "\n \n{}".format("\n \n".join(filter(None, [top_txt, help_txt, bottom_txt])))
+	logging.debug(os.getenv('GRID_TEXT'))
+
 def switchres_geometry_loop(mode: mode, switchres_command:str = "switchres", launch_command:str = "grid", display_nr:int = 0, geom:geometry = geometry()):
 	working_geometry = geom
+	top_txt = ''
 
 	while True:
 		# This launch is to confirm the geometry
 		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command = "", display = display_nr)
 		ret_geom = geometry.set_from_string(sr_launch_return['geometry'])
 		if ret_geom != working_geometry:
-			os.environ['GRID_TEXT'] = "Geometry readjusted, was out of CRT range bounds"
+			top_txt = "Geometry readjusted, was out of CRT range bounds"
 			logging.info("Warning: you've reached a crt_range limit, can't go further in the last direction. Setting back to {}".format(str(ret_geom)))
 			working_geometry = ret_geom
+		os.environ['GRID_TEXT'] = "\n".join([os.getenv('GRID_TEXT') or "", "({})".format(str(geom))])
+		set_grid_text(top_txt, '', working_geometry)
 		# Now is the real launch with the grid
 		sr_launch_return = launch_switchres(mode, working_geometry, switchres_command, launch_command, display_nr)
 		grid_return_code = sr_launch_return['exit_code']
 		sr_geometry = geometry.set_from_string(sr_launch_return['geometry'])
 		working_geometry = readjust_geometry(sr_geometry, sr_launch_return['new_crt_range'], grid_return_code)
+		os.environ['GRID_TEXT'] = ""
+		top_txt = ''
 		time.sleep(2)
 
 
