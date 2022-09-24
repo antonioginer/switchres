@@ -685,11 +685,11 @@ int modeline_adjust(modeline *mode, double hfreq_max, generator_settings *cs)
 {
 	// If input values are out of range, they are fixed within range and returned in the cs struct.
 
-	// H size ajdustment, valid values 0.5-1.5
+	// H size ajdustment, valid values 0.5-2.0
 	if (cs->h_size != 1.0f)
 	{
-		if (cs->h_size > 1.5f)
-			cs->h_size = 1.5f;
+		if (cs->h_size > 2.0f)
+			cs->h_size = 2.0f;
 		else if (cs->h_size < 0.5f)
 			cs->h_size = 0.5f;
 
@@ -844,7 +844,6 @@ int round_near_odd(double number)
 
 int round_near_even(double number)
 {
-	log_verbose("round_near_even(%f): %d\n", number, int(int(ceil(number)) % 2 == 1? floor(number) : ceil(number)));
 	return int(ceil(number)) % 2 == 1? floor(number) : ceil(number);
 }
 
