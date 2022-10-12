@@ -397,7 +397,11 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 					{
 						// If user's vfreq is defined, it means we have an user modeline, so force it
 						if (m_user_mode.vfreq)
+						{
+							int t_type = t_mode.type;
 							t_mode = m_user_mode;
+							t_mode.type = t_type;
+						}
 						else
 							t_mode.vfreq = s_mode.vfreq;
 					}

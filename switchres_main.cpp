@@ -23,6 +23,10 @@ using namespace std;
 int show_version();
 int show_usage();
 
+enum
+ {
+	OPT_MODELINE = 128
+ };
 
 //============================================================
 //  main
@@ -78,6 +82,7 @@ int main(int argc, char **argv)
 			{"backend",     required_argument, 0, 'b'},
 			{"keep",        no_argument,       0, 'k'},
 			{"geometry",    required_argument, 0, 'g'},
+			{"modeline",    required_argument, 0, OPT_MODELINE},
 			{0, 0, 0, 0}
 		};
 
@@ -95,6 +100,10 @@ int main(int argc, char **argv)
 
 		switch (c)
 		{
+			case OPT_MODELINE:
+				switchres.set_modeline(optarg);
+				break;
+
 			case 'v':
 				switchres.set_log_level(3);
 				switchres.set_log_error_fn((void*)printf);
@@ -318,15 +327,16 @@ int show_usage()
 		"  -s, --switch                      Switch to video mode\n"
 		"  -l, --launch <command>            Launch <command>\n"
 		"  -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)\n"
-		"  -a  --aspect <num:den>            Monitor aspect ratio\n"
-		"  -r  --rotated                     Original mode's native orientation is rotated\n"
+		"  -a, --aspect <num:den>            Monitor aspect ratio\n"
+		"  -r, --rotated                     Original mode's native orientation is rotated\n"
 		"  -d, --display <OS_display_name>   Use target display (Windows: \\\\.\\DISPLAY1, ... Linux: VGA-0, ...)\n"
 		"  -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list\n"
 		"  -i, --ini <file.ini>              Specify an ini file\n"
 		"  -b, --backend <api_name>          Specify the api name\n"
 		"  -e, --edid                        Create an EDID binary with calculated video modes\n"
 		"  -k, --keep                        Keep changes on exit (warning: this disables cleanup)\n"
-		"  -g --geometry <h_size>:<h_shift>:<v_shift>  Adjust geometry of generated modeline\n"
+		"  -g, --geometry <h_size>:<h_shift>:<v_shift>  Adjust geometry of generated modeline\n"
+		"  --modeline <\"pclk hdisp hsst hsend htot vdisp vsst vsend vtot flags\">  Force an XFree86 modeline\n"
 	};
 
 	log_info("%s", usage);
