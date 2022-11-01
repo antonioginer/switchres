@@ -217,6 +217,9 @@ int main(int argc, char **argv)
 	if (user_ini_flag)
 		switchres.parse_config(ini_file.c_str());
 
+	if (calculate_flag)
+		switchres.set_screen("dummy");
+
 	switchres.add_display();
 
 	if (force_flag)

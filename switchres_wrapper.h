@@ -76,15 +76,16 @@ char* LIBERROR()
 
 
 /* That's all the exposed data from Switchres calculation */
-typedef struct MODULE_API {
+typedef struct MODULE_API
+{
 	int width;
 	int height;
 	double refresh;
-	unsigned char is_refresh_off;
-	unsigned char is_stretched;
+	int is_refresh_off;
+	int is_stretched;
 	int x_scale;
 	int y_scale;
-	unsigned char interlace;
+	int interlace;
 } sr_mode;
 
 
@@ -92,15 +93,18 @@ typedef struct MODULE_API {
 MODULE_API void sr_init();
 MODULE_API void sr_load_ini(char* config);
 MODULE_API void sr_deinit();
-MODULE_API unsigned char sr_init_disp(const char*, void*);
-MODULE_API unsigned char sr_add_mode(int, int, double, unsigned char, sr_mode*);
-MODULE_API unsigned char sr_switch_to_mode(int, int, double, unsigned char, sr_mode*);
+MODULE_API int sr_init_disp(const char*, void*);
+MODULE_API void sr_set_disp(int);
+MODULE_API int sr_get_mode(int, int, double, int, sr_mode*);
+MODULE_API int sr_add_mode(int, int, double, int, sr_mode*);
+MODULE_API int sr_switch_to_mode(int, int, double, int, sr_mode*);
+MODULE_API int sr_flush();
 MODULE_API void sr_set_monitor(const char*);
-MODULE_API void sr_set_rotation(unsigned char);
+MODULE_API void sr_set_rotation(int);
 MODULE_API void sr_set_user_mode(int, int, int);
 
 /* Logging related functions */
-MODULE_API void sr_set_log_level (int);
+MODULE_API void sr_set_log_level(int);
 MODULE_API void sr_set_log_callback_error(void *);
 MODULE_API void sr_set_log_callback_info(void *);
 MODULE_API void sr_set_log_callback_debug(void *);
@@ -110,20 +114,24 @@ MODULE_API void sr_set_log_callback_debug(void *);
 MODULE_API void sr_set_sdl_window(void *);
 
 /* Inspired by https://stackoverflow.com/a/1067684 */
-typedef struct MODULE_API {
+typedef struct MODULE_API
+{
 	void (*init)(void);
-	void (*sr_sr_load_ini)(char*);
+	void (*load_ini)(char*);
 	void (*deinit)(void);
-	unsigned char (*sr_init_disp)(const char*, void*);
-	unsigned char (*sr_add_mode)(int, int, double, unsigned char, sr_mode*);
-	unsigned char (*sr_switch_to_mode)(int, int, double, unsigned char, sr_mode*);
-	void (*sr_set_monitor)(const char*);
-	void (*sr_set_rotation)(unsigned char);
-	void (*sr_set_user_mode)(int, int, int);
-	void (*sr_set_log_level) (int);
-	void (*sr_set_log_callback_error)(void *);
-	void (*sr_set_log_callback_info)(void *);
-	void (*sr_set_log_callback_debug)(void *);
+	int (*init_disp)(const char*, void*);
+	void (*set_disp)(int);
+	int (*get_mode)(int, int, double, int, sr_mode*);
+	int (*add_mode)(int, int, double, int, sr_mode*);
+	int (*switch_to_mode)(int, int, double, int, sr_mode*);
+	int (*flush)(void);
+	void (*set_monitor)(const char*);
+	void (*set_rotation)(int);
+	void (*set_user_mode)(int, int, int);
+	void (*set_log_level) (int);
+	void (*set_log_callback_error)(void *);
+	void (*set_log_callback_info)(void *);
+	void (*set_log_callback_debug)(void *);
 } srAPI;
 
 

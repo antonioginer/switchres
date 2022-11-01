@@ -208,4 +208,10 @@ protected:
 	void* m_pf_data = nullptr;
 };
 
+class dummy_display : public display_manager
+{
+	public:
+		dummy_display(display_settings *ds) { m_ds = *ds; };
+};
+
 #endif

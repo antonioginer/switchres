@@ -34,6 +34,12 @@ display_manager *display_manager::make(display_settings *ds)
 {
 	display_manager *display = nullptr;
 
+	if (!strcmp(ds->screen, "dummy"))
+	{
+		display = new dummy_display(ds);
+		return display;
+	}
+
 #ifdef SR_WITH_SDL2
 	try
 	{
@@ -121,7 +127,7 @@ bool display_manager::init(void* pf_data)
 
 int display_manager::caps()
 {
-	if (video())
+	if (video() != nullptr)
 		return video()->caps();
 	else
 		return CUSTOM_VIDEO_CAPS_ADD;
@@ -133,11 +139,8 @@ int display_manager::caps()
 
 bool display_manager::add_mode(modeline *mode)
 {
-	if (video() == nullptr)
-		return false;
-
 	// Add new mode
-	if (!video()->add_mode(mode))
+	if (video() != nullptr && !video()->add_mode(mode))
 	{
 		log_verbose("Switchres: error adding mode ");
 		log_mode(mode);
@@ -158,10 +161,7 @@ bool display_manager::add_mode(modeline *mode)
 
 bool display_manager::delete_mode(modeline *mode)
 {
-	if (video() == nullptr)
-		return false;
-
-	if (!video()->delete_mode(mode))
+	if (video() != nullptr && !video()->delete_mode(mode))
 	{
 		log_verbose("Switchres: error deleting mode ");
 		log_mode(mode);
@@ -179,11 +179,8 @@ bool display_manager::delete_mode(modeline *mode)
 
 bool display_manager::update_mode(modeline *mode)
 {
-	if (video() == nullptr)
-		return false;
-
 	// Apply new timings
-	if (!video()->update_mode(mode))
+	if (video() != nullptr && !video()->update_mode(mode))
 	{
 		log_verbose("Switchres: error updating mode ");
 		log_mode(mode);
@@ -213,7 +210,7 @@ bool display_manager::set_mode(modeline *)
 void display_manager::log_mode(modeline *mode)
 {
 	char modeline_txt[256];
-	log_verbose("%s timing %s\n", video()->api_name(), modeline_print(mode, modeline_txt, MS_FULL));
+	log_verbose("%s timing %s\n", video() != nullptr? video()->api_name() : "dummy", modeline_print(mode, modeline_txt, MS_FULL));
 }
 
 //============================================================
@@ -249,9 +246,6 @@ bool display_manager::flush_modes()
 	bool error = false;
 	std::vector<modeline *> modified_modes = {};
 
-	if (video() == nullptr)
-		return false;
-
 	// Loop through our mode table to collect all pending changes
 	for (auto &mode : video_modes)
 		if (mode.type & (MODE_UPDATE | MODE_ADD | MODE_DELETE))
@@ -260,7 +254,8 @@ bool display_manager::flush_modes()
 	// Flush pending changes to driver
 	if (modified_modes.size() > 0)
 	{
-		video()->process_modelist(modified_modes);
+		if (video() != nullptr)
+			video()->process_modelist(modified_modes);
 
 		// Log error/success result for each mode
 		for (auto &mode : modified_modes)
