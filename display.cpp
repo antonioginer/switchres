@@ -170,6 +170,10 @@ bool display_manager::delete_mode(modeline *mode)
 
 	log_verbose("Switchres: deleted ");
 	log_mode(mode);
+
+	ptrdiff_t i = mode - &video_modes[0];
+	video_modes.erase(video_modes.begin() + i);
+
 	return true;
 }
 
