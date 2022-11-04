@@ -32,7 +32,7 @@ extern "C" {
 //============================================================
 
 int sr_mode_internal(int width, int height, double refresh, int interlace, sr_mode *return_mode, int action, const char *caller);
-void modeline_to_sr_mode(display_manager* disp, sr_mode* srm);
+void modeline_to_sr_mode(modeline* m, sr_mode* srm);
 
 
 //============================================================
@@ -282,7 +282,7 @@ int sr_mode_internal(int width, int height, double refresh, int interlace, sr_mo
 		if (disp->got_mode())
 		{
 			log_verbose("%s: got mode %dx%d@%f type(%x)\n", caller, disp->width(), disp->height(), disp->v_freq(), disp->best_mode()->type);
-			modeline_to_sr_mode(disp, return_mode);
+			modeline_to_sr_mode(disp->best_mode(), return_mode);
 		}
 		else
 		{
@@ -324,16 +324,17 @@ int sr_mode_internal(int width, int height, double refresh, int interlace, sr_mo
 //  modeline_to_sr_mode
 //============================================================
 
-void modeline_to_sr_mode(display_manager* disp, sr_mode* srm)
+void modeline_to_sr_mode(modeline* m, sr_mode* srm)
 {
-	srm->width = disp->best_mode()->hactive;
-	srm->height = disp->best_mode()->vactive;
-	srm->refresh = disp->v_freq();
-	srm->is_refresh_off = (disp->is_refresh_off() ? 1 : 0);
-	srm->is_stretched = (disp->is_stretched() ? 1 : 0);
-	srm->x_scale = disp->x_scale();
-	srm->y_scale = disp->y_scale();
-	srm->interlace = (disp->is_interlaced() ? 1 : 0);
+	srm->width          = m->hactive;
+	srm->height         = m->vactive;
+	srm->refresh        = m->vfreq;
+	srm->is_refresh_off = sr_disp()->is_refresh_off() ? 1 : 0;
+	srm->is_stretched   = sr_disp()->is_stretched() ? 1 : 0;
+	srm->x_scale        = sr_disp()->x_scale();
+	srm->y_scale        = sr_disp()->y_scale();
+	srm->interlace      = sr_disp()->is_interlaced() ? 1 : 0;
+	srm->id             = m->id;
 }
 
 

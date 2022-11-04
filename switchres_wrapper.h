@@ -86,6 +86,7 @@ typedef struct MODULE_API
 	int x_scale;
 	int y_scale;
 	int interlace;
+	int id;
 } sr_mode;
 
 

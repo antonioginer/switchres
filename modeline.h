@@ -98,6 +98,7 @@ typedef struct modeline
 	int    refresh;
 	int    refresh_label;
 	//
+	int    id;
 	int    type;
 	int    range;
 	uint64_t platform_data;

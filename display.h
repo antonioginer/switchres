@@ -203,6 +203,7 @@ private:
 	bool m_desktop_is_rotated = 0;
 	bool m_switching_required = 0;
 	bool m_has_ini = 0;
+	int m_id_counter = 0;
 
 protected:
 	void* m_pf_data = nullptr;
