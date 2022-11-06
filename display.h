@@ -63,7 +63,7 @@ public:
 
 	// getters (modes)
 	modeline user_mode() const { return m_user_mode; }
-	modeline *best_mode() const { return m_best_mode; }
+	modeline *selected_mode() const { return m_selected_mode; }
 	modeline *current_mode() const { return m_current_mode; }
 
 	// getters (display manager)
@@ -96,22 +96,22 @@ public:
 	int interlace_force_even() { return m_ds.gs.interlace_force_even; }
 
 	// getters (modeline result)
-	bool got_mode() { return (m_best_mode != nullptr); }
-	int width() { return m_best_mode != nullptr? m_best_mode->width : 0; }
-	int height() { return m_best_mode != nullptr? m_best_mode->height : 0; }
-	int refresh() { return m_best_mode != nullptr? m_best_mode->refresh : 0; }
-	double v_freq() { return m_best_mode != nullptr? m_best_mode->vfreq : 0; }
-	double h_freq() { return m_best_mode != nullptr? m_best_mode->hfreq : 0; }
-	int x_scale() { return m_best_mode != nullptr? m_best_mode->result.x_scale : 0; }
-	int y_scale() { return m_best_mode != nullptr? m_best_mode->result.y_scale : 0; }
-	int v_scale() { return m_best_mode != nullptr? m_best_mode->result.v_scale : 0; }
-	bool is_interlaced() { return m_best_mode != nullptr? m_best_mode->interlace : false; }
-	bool is_doublescanned() { return m_best_mode != nullptr? m_best_mode->doublescan : false; }
-	bool is_stretched() { return m_best_mode != nullptr? m_best_mode->result.weight & R_RES_STRETCH : false; }
-	bool is_refresh_off() { return m_best_mode != nullptr? m_best_mode->result.weight & R_V_FREQ_OFF : false; }
+	bool got_mode() { return (m_selected_mode != nullptr); }
+	int width() { return m_selected_mode != nullptr? m_selected_mode->width : 0; }
+	int height() { return m_selected_mode != nullptr? m_selected_mode->height : 0; }
+	int refresh() { return m_selected_mode != nullptr? m_selected_mode->refresh : 0; }
+	double v_freq() { return m_selected_mode != nullptr? m_selected_mode->vfreq : 0; }
+	double h_freq() { return m_selected_mode != nullptr? m_selected_mode->hfreq : 0; }
+	int x_scale() { return m_selected_mode != nullptr? m_selected_mode->result.x_scale : 0; }
+	int y_scale() { return m_selected_mode != nullptr? m_selected_mode->result.y_scale : 0; }
+	int v_scale() { return m_selected_mode != nullptr? m_selected_mode->result.v_scale : 0; }
+	bool is_interlaced() { return m_selected_mode != nullptr? m_selected_mode->interlace : false; }
+	bool is_doublescanned() { return m_selected_mode != nullptr? m_selected_mode->doublescan : false; }
+	bool is_stretched() { return m_selected_mode != nullptr? m_selected_mode->result.weight & R_RES_STRETCH : false; }
+	bool is_refresh_off() { return m_selected_mode != nullptr? m_selected_mode->result.weight & R_V_FREQ_OFF : false; }
 	bool is_switching_required() { return m_switching_required; }
-	bool is_mode_updated() { return m_best_mode != nullptr? m_best_mode->type & MODE_UPDATE : false; }
-	bool is_mode_new() { return m_best_mode != nullptr? m_best_mode->type & MODE_ADD : false; }
+	bool is_mode_updated() { return m_selected_mode != nullptr? m_selected_mode->type & MODE_UPDATE : false; }
+	bool is_mode_new() { return m_selected_mode != nullptr? m_selected_mode->type & MODE_ADD : false; }
 
 	// getters (custom_video backend)
 	bool screen_compositing() { return m_ds.vs.screen_compositing; }
@@ -127,6 +127,7 @@ public:
 
 	// setters (modes)
 	void set_user_mode(modeline *mode) { m_ds.user_mode = m_user_mode = *mode; filter_modes(); }
+	void set_selected_mode(modeline *mode) { m_selected_mode = mode; }
 	void set_current_mode(modeline *mode) { m_current_mode = mode; }
 
 	// setters (display_manager)
@@ -196,7 +197,7 @@ private:
 	custom_video *m_video = 0;
 
 	modeline m_user_mode = {};
-	modeline *m_best_mode = 0;
+	modeline *m_selected_mode = 0;
 	modeline *m_current_mode = 0;
 
 	int m_index = 0;

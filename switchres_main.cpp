@@ -252,7 +252,7 @@ int main(int argc, char **argv)
 		if (edid_flag)
 		{
 			edid_block edid = {};
-			modeline *mode = switchres.display()->best_mode();
+			modeline *mode = switchres.display()->selected_mode();
 			if (mode)
 			{
 				monitor_range *range = &switchres.display()->range[mode->range];
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->best_mode());
+		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->selected_mode());
 
 		if (switch_flag && !launch_flag && !keep_changes_flag)
 		{

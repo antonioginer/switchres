@@ -100,6 +100,7 @@ MODULE_API int sr_get_mode(int, int, double, int, sr_mode*);
 MODULE_API int sr_add_mode(int, int, double, int, sr_mode*);
 MODULE_API int sr_switch_to_mode(int, int, double, int, sr_mode*);
 MODULE_API int sr_flush();
+MODULE_API int sr_set_mode(int);
 MODULE_API void sr_set_monitor(const char*);
 MODULE_API void sr_set_rotation(int);
 MODULE_API void sr_set_user_mode(int, int, int);
@@ -126,6 +127,7 @@ typedef struct MODULE_API
 	int (*add_mode)(int, int, double, int, sr_mode*);
 	int (*switch_to_mode)(int, int, double, int, sr_mode*);
 	int (*flush)(void);
+	int (*set_mode)(int);
 	void (*set_monitor)(const char*);
 	void (*set_rotation)(int);
 	void (*set_user_mode)(int, int, int);

@@ -280,7 +280,7 @@ bool display_manager::flush_modes()
 			if (video_modes[i].type & MODE_DELETE)
 			{
 				video_modes.erase(video_modes.begin() + i);
-				m_best_mode = 0;
+				m_selected_mode = 0;
 			}
 			else
 				video_modes[i].type &= ~(MODE_UPDATE | MODE_ADD);
@@ -419,7 +419,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 					if (modeline_compare(&t_mode, &best_mode))
 					{
 						best_mode = t_mode;
-						m_best_mode = &mode;
+						m_selected_mode = &mode;
 					}
 				}
 			}
@@ -427,13 +427,13 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	}
 
 	// If we didn't need to create a new mode, remove our dummy entry
-	if (caps() & CUSTOM_VIDEO_CAPS_ADD && m_ds.modeline_generation && m_best_mode != &video_modes.back())
+	if (caps() & CUSTOM_VIDEO_CAPS_ADD && m_ds.modeline_generation && m_selected_mode != &video_modes.back())
 		video_modes.pop_back();
 
 	// If we didn't find a suitable mode, exit now
 	if (best_mode.result.weight & R_OUT_OF_RANGE)
 	{
-		m_best_mode = 0;
+		m_selected_mode = 0;
 		log_error("Switchres: could not find a video mode that meets your specs\n");
 		return nullptr;
 	}
@@ -457,7 +457,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 			// lock new mode
 			best_mode.type &= ~(X_RES_EDITABLE | Y_RES_EDITABLE);
 		}
-		else if (modeline_is_different(&best_mode, m_best_mode) != 0)
+		else if (modeline_is_different(&best_mode, m_selected_mode) != 0)
 			best_mode.type |= MODE_UPDATE;
 
 		char modeline[256]={'\x00'};
@@ -465,14 +465,14 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	}
 
 	// Check if new best mode is different than previous one
-	m_switching_required = (m_current_mode != m_best_mode || best_mode.type & MODE_UPDATE);
+	m_switching_required = (m_current_mode != m_selected_mode || best_mode.type & MODE_UPDATE);
 
 	// Add id to mode
 	if (best_mode.id == 0)
 		best_mode.id = ++m_id_counter;
 
-	*m_best_mode = best_mode;
-	return m_best_mode;
+	*m_selected_mode = best_mode;
+	return m_selected_mode;
 }
 
 //============================================================
