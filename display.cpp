@@ -340,15 +340,18 @@ bool display_manager::filter_modes()
 //  display_manager::get_video_mode
 //============================================================
 
-modeline *display_manager::get_mode(int width, int height, float refresh, bool interlaced)
+modeline *display_manager::get_mode(int width, int height, float refresh, int flags)
 {
 	modeline s_mode = {};
 	modeline t_mode = {};
 	modeline best_mode = {};
 	char result[256]={'\x00'};
 
-	log_verbose("Switchres: Calculating best video mode for %dx%d@%.6f%s orientation: %s\n",
-						width, height, refresh, interlaced?"i":"", rotation()?"rotated":"normal");
+	bool rotated = flags & SR_MODE_ROTATED;
+	bool interlaced = flags & SR_MODE_INTERLACED;
+
+	log_info("Switchres: Calculating best video mode for %dx%d@%.6f%s orientation: %s\n",
+						width, height, refresh, interlaced?"i":"", rotated?"rotated":"normal");
 
 	best_mode.result.weight |= R_OUT_OF_RANGE;
 
@@ -358,7 +361,11 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	s_mode.hactive = normalize(width, 8);
 	s_mode.vactive = height;
 
-	if (rotation()) std::swap(s_mode.hactive, s_mode.vactive);
+	if (rotated)
+	{
+		std::swap(s_mode.hactive, s_mode.vactive);
+		s_mode.type |= MODE_ROTATED;
+	}
 
 	// Create a dummy mode entry if allowed
 	if (caps() & CUSTOM_VIDEO_CAPS_ADD && m_ds.modeline_generation)
@@ -441,7 +448,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	if ((best_mode.type & V_FREQ_EDITABLE) && !(best_mode.result.weight & R_OUT_OF_RANGE))
 		modeline_adjust(&best_mode, range[best_mode.range].hfreq_max, &m_ds.gs);
 
-	log_verbose("\nSwitchres: %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", rotation()?"rotated":"normal",
+	log_verbose("\nSwitchres: %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", rotated?"rotated":"normal",
 		width, height, refresh, best_mode.hactive, best_mode.vactive, best_mode.vfreq);
 
 	log_verbose("%s\n", modeline_result(&best_mode, result));

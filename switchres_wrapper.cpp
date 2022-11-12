@@ -32,7 +32,7 @@ extern "C" {
 //  PROTOTYPES
 //============================================================
 
-int sr_mode_internal(int width, int height, double refresh, int interlace, sr_mode *srm, int action, const char *caller);
+int sr_mode_internal(int width, int height, double refresh, int flags, sr_mode *srm, int action, const char *caller);
 void modeline_to_sr_mode(modeline* m, sr_mode* srm);
 
 
@@ -153,9 +153,9 @@ MODULE_API void sr_set_user_mode(int width, int height, int refresh)
 //  sr_get_mode
 //============================================================
 
-MODULE_API int sr_get_mode(int width, int height, double refresh, int interlace, sr_mode *srm)
+MODULE_API int sr_get_mode(int width, int height, double refresh, int flags, sr_mode *srm)
 {
-	return sr_mode_internal(width, height, refresh, interlace, srm, SR_ACTION_GET, __FUNCTION__);
+	return sr_mode_internal(width, height, refresh, flags, srm, SR_ACTION_GET, __FUNCTION__);
 }
 
 
@@ -163,9 +163,9 @@ MODULE_API int sr_get_mode(int width, int height, double refresh, int interlace,
 //  sr_add_mode
 //============================================================
 
-MODULE_API int sr_add_mode(int width, int height, double refresh, int interlace, sr_mode *srm)
+MODULE_API int sr_add_mode(int width, int height, double refresh, int flags, sr_mode *srm)
 {
-	return sr_mode_internal(width, height, refresh, interlace, srm, SR_ACTION_GET | SR_ACTION_FLUSH, __FUNCTION__);
+	return sr_mode_internal(width, height, refresh, flags, srm, SR_ACTION_GET | SR_ACTION_FLUSH, __FUNCTION__);
 }
 
 
@@ -183,9 +183,9 @@ MODULE_API int sr_flush()
 //  sr_switch_to_mode
 //============================================================
 
-MODULE_API int sr_switch_to_mode(int width, int height, double refresh, int interlace, sr_mode *srm)
+MODULE_API int sr_switch_to_mode(int width, int height, double refresh, int flags, sr_mode *srm)
 {
-	return sr_mode_internal(width, height, refresh, interlace, srm, SR_ACTION_GET | SR_ACTION_FLUSH | SR_ACTION_SWITCH, __FUNCTION__);
+	return sr_mode_internal(width, height, refresh, flags, srm, SR_ACTION_GET | SR_ACTION_FLUSH | SR_ACTION_SWITCH, __FUNCTION__);
 }
 
 
@@ -199,16 +199,6 @@ MODULE_API int sr_set_mode(int id)
 	srm.id = id;
 
 	return sr_mode_internal(0, 0, 0, 0, &srm, SR_ACTION_GET_FROM_ID | SR_ACTION_SWITCH, __FUNCTION__);
-}
-
-
-//============================================================
-//  sr_set_rotation
-//============================================================
-
-MODULE_API void sr_set_rotation(int r)
-{
-	swr->set_rotation(r > 0? true : false);
 }
 
 
@@ -259,7 +249,6 @@ MODULE_API srAPI srlib =
 	sr_flush,
 	sr_set_mode,
 	sr_set_monitor,
-	sr_set_rotation,
 	sr_set_user_mode,
 	sr_set_log_level,
 	sr_set_log_callback_error,
@@ -276,7 +265,7 @@ MODULE_API srAPI srlib =
 //  sr_mode_internal
 //============================================================
 
-int sr_mode_internal(int width, int height, double refresh, int interlace, sr_mode *srm, int action, const char *caller)
+int sr_mode_internal(int width, int height, double refresh, int flags, sr_mode *srm, int action, const char *caller)
 {
 	display_manager *disp = sr_disp();
 	if (disp == nullptr)
@@ -293,7 +282,7 @@ int sr_mode_internal(int width, int height, double refresh, int interlace, sr_mo
 			return 0;
 		}
 
-		disp->get_mode(width, height, refresh, (interlace > 0? true : false));
+		disp->get_mode(width, height, refresh, flags);
 		if (disp->got_mode())
 		{
 			log_verbose("%s: got mode %dx%d@%f type(%x)\n", caller, disp->width(), disp->height(), disp->v_freq(), disp->selected_mode()->type);

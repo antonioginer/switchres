@@ -53,6 +53,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 	double y_ratio = 0;
 	double x_ratio = 0;
 	double borders = 0;
+	int rotation = s_mode->type & MODE_ROTATED;
 	t_mode->result.weight = 0;
 
 	// ≈≈≈ Vertical refresh ≈≈≈
@@ -165,7 +166,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 		if (t_mode->type & X_RES_EDITABLE)
 		{
 			x_scale = y_scale;
-			double aspect_corrector = max(1.0f, cs->monitor_aspect / (cs->rotation? (1.0/(STANDARD_CRT_ASPECT)) : (STANDARD_CRT_ASPECT)));
+			double aspect_corrector = max(1.0f, cs->monitor_aspect / (rotation? 1.0 / (STANDARD_CRT_ASPECT) : (STANDARD_CRT_ASPECT)));
 			t_mode->hactive = normalize(double(t_mode->hactive) * double(x_scale) * aspect_corrector, 8);
 		}
 
@@ -176,7 +177,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 			// if the source width fits our xres, try applying integer scaling
 			if (x_scale)
 			{
-				x_scale = scale_into_aspect(s_mode->hactive, t_mode->hactive, cs->rotation?1.0/(STANDARD_CRT_ASPECT):STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff);
+				x_scale = scale_into_aspect(s_mode->hactive, t_mode->hactive, rotation? 1.0 / (STANDARD_CRT_ASPECT) : STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff);
 				if (x_diff > 15.0 && t_mode->hactive < cs->super_width)
 						t_mode->result.weight |= R_RES_STRETCH;
 			}
@@ -203,7 +204,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 			t_mode->hactive = max(t_mode->hactive, normalize(STANDARD_CRT_ASPECT * t_mode->vactive, 8));
 
 		// calculate integer scale for prescaling
-		x_scale = max(1, scale_into_aspect(s_mode->hactive, t_mode->hactive, cs->rotation?1.0/(STANDARD_CRT_ASPECT):STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff));
+		x_scale = max(1, scale_into_aspect(s_mode->hactive, t_mode->hactive, rotation? 1.0 / (STANDARD_CRT_ASPECT) : STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff));
 		y_scale = max(1, floor(double(t_mode->vactive) / s_mode->vactive));
 
 		scan_factor = interlace;

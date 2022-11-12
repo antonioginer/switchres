@@ -100,7 +100,6 @@ switchres_manager::switchres_manager()
 	set_interlace(true);
 	set_doublescan(true);
 	set_dotclock_min(0.0f);
-	set_rotation(false);
 	set_monitor_aspect(STANDARD_CRT_ASPECT);
 	set_refresh_tolerance(2.0f);
 	set_super_width(2560);

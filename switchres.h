@@ -75,7 +75,6 @@ public:
 	void set_dotclock_min(double value) { ds.gs.pclock_min = value * 1000000; }
 	void set_refresh_tolerance(double value) { ds.gs.refresh_tolerance = value; }
 	void set_super_width(int value) { ds.gs.super_width = value; }
-	void set_rotation(bool value) { ds.gs.rotation = value; }
 	void set_monitor_aspect(double value) { ds.gs.monitor_aspect = value; }
 	void set_monitor_aspect(const char* aspect) { set_monitor_aspect(get_aspect(aspect)); }
 	void set_h_size(double value) { ds.gs.h_size = value; }

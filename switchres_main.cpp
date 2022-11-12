@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 	bool launch_flag = false;
 	bool force_flag = false;
 	bool interlaced_flag = false;
+	bool rotated_flag = false;
 	bool user_ini_flag = false;
 	bool keep_changes_flag = false;
 	bool geometry_flag = false;
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
 				break;
 
 			case 'r':
-				switchres.set_rotation(true);
+				rotated_flag = true;
 				break;
 
 			case 'd':
@@ -235,7 +236,8 @@ int main(int argc, char **argv)
 	{
 		for (auto &display : switchres.displays)
 		{
-			modeline *mode = display->get_mode(width, height, refresh, interlaced_flag);
+			int flags = (interlaced_flag? SR_MODE_INTERLACED : 0) | (rotated_flag? SR_MODE_ROTATED : 0);
+			modeline *mode = display->get_mode(width, height, refresh, flags);
 			if (mode) display->flush_modes();
 
 			if (mode && geometry_flag)

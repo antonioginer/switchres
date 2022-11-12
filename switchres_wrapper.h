@@ -74,6 +74,9 @@ char* LIBERROR()
 #define LIBSWR "libswitchres.dll"
 #endif
 
+/* Mode flags */
+#define SR_MODE_INTERLACED    1<<0
+#define SR_MODE_ROTATED       1<<1
 
 /* That's all the exposed data from Switchres calculation */
 typedef struct MODULE_API
@@ -102,7 +105,6 @@ MODULE_API int sr_switch_to_mode(int, int, double, int, sr_mode*);
 MODULE_API int sr_flush();
 MODULE_API int sr_set_mode(int);
 MODULE_API void sr_set_monitor(const char*);
-MODULE_API void sr_set_rotation(int);
 MODULE_API void sr_set_user_mode(int, int, int);
 
 /* Logging related functions */
@@ -129,7 +131,6 @@ typedef struct MODULE_API
 	int (*flush)(void);
 	int (*set_mode)(int);
 	void (*set_monitor)(const char*);
-	void (*set_rotation)(int);
 	void (*set_user_mode)(int, int, int);
 	void (*set_log_level) (int);
 	void (*set_log_callback_error)(void *);

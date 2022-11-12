@@ -19,6 +19,10 @@
 #include "modeline.h"
 #include "custom_video.h"
 
+// Mode flags
+#define SR_MODE_INTERLACED    1<<0
+#define SR_MODE_ROTATED       1<<1
+
 typedef struct display_settings
 {
 	char   screen[32];
@@ -86,7 +90,6 @@ public:
 	double dotclock_min() { return m_ds.gs.pclock_min; }
 	double refresh_tolerance() { return m_ds.gs.refresh_tolerance; }
 	int super_width() { return m_ds.gs.super_width; }
-	bool rotation() { return m_ds.gs.rotation; }
 	double monitor_aspect() { return m_ds.gs.monitor_aspect; }
 	double h_size() { return m_ds.gs.h_size; }
 	int h_shift() { return m_ds.gs.h_shift; }
@@ -150,7 +153,6 @@ public:
 	void set_dotclock_min(double value) { m_ds.gs.pclock_min = value * 1000000; }
 	void set_refresh_tolerance(double value) { m_ds.gs.refresh_tolerance = value; }
 	void set_super_width(int value) { m_ds.gs.super_width = value; }
-	void set_rotation(bool value) { m_ds.gs.rotation = value; }
 	void set_monitor_aspect(double value) { m_ds.gs.monitor_aspect = value; }
 	void set_h_size(double value) { m_ds.gs.h_size = value; }
 	void set_h_shift(int value) { m_ds.gs.h_shift = value; }
@@ -169,7 +171,7 @@ public:
 	display_settings m_ds = {};
 
 	// mode setting interface
-	modeline *get_mode(int width, int height, float refresh, bool interlaced);
+	modeline *get_mode(int width, int height, float refresh, int flags);
 	bool add_mode(modeline *mode);
 	bool delete_mode(modeline *mode);
 	bool update_mode(modeline *mode);
