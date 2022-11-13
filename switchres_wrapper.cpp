@@ -359,6 +359,7 @@ void modeline_to_sr_mode(modeline* m, sr_mode* srm)
 	srm->is_stretched   = sr_disp()->is_stretched() ? 1 : 0;
 	srm->x_scale        = sr_disp()->x_scale();
 	srm->y_scale        = sr_disp()->y_scale();
+	srm->v_scale        = sr_disp()->v_scale();
 	srm->interlace      = sr_disp()->is_interlaced() ? 1 : 0;
 	srm->id             = m->id;
 }

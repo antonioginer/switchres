@@ -63,15 +63,12 @@ typedef struct mode_result
 {
 	int     weight;
 	int     scan_penalty;
-	int     x_scale;
-	int     y_scale;
-	int     v_scale;
+	double  x_scale;
+	double  y_scale;
+	double  v_scale;
 	double  x_diff;
 	double  y_diff;
 	double  v_diff;
-	double  x_ratio;
-	double  y_ratio;
-	double  v_ratio;
 } mode_result;
 
 typedef struct modeline

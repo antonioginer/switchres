@@ -47,13 +47,16 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 	int x_scale = 0;
 	int y_scale = 0;
 	int v_scale = 0;
+	double x_fscale = 0;
+	double y_fscale = 0;
+	double v_fscale = 0;
 	double x_diff = 0;
 	double y_diff = 0;
 	double v_diff = 0;
 	double y_ratio = 0;
-	double x_ratio = 0;
 	double borders = 0;
 	int rotation = s_mode->type & MODE_ROTATED;
+	double source_aspect = rotation? 1.0 / (STANDARD_CRT_ASPECT) : (STANDARD_CRT_ASPECT);
 	t_mode->result.weight = 0;
 
 	// ≈≈≈ Vertical refresh ≈≈≈
@@ -166,7 +169,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 		if (t_mode->type & X_RES_EDITABLE)
 		{
 			x_scale = y_scale;
-			double aspect_corrector = max(1.0f, cs->monitor_aspect / (rotation? 1.0 / (STANDARD_CRT_ASPECT) : (STANDARD_CRT_ASPECT)));
+			double aspect_corrector = max(1.0f, cs->monitor_aspect / source_aspect);
 			t_mode->hactive = normalize(double(t_mode->hactive) * double(x_scale) * aspect_corrector, 8);
 		}
 
@@ -177,7 +180,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 			// if the source width fits our xres, try applying integer scaling
 			if (x_scale)
 			{
-				x_scale = scale_into_aspect(s_mode->hactive, t_mode->hactive, rotation? 1.0 / (STANDARD_CRT_ASPECT) : STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff);
+				x_scale = scale_into_aspect(s_mode->hactive, t_mode->hactive, source_aspect, cs->monitor_aspect, &x_diff);
 				if (x_diff > 15.0 && t_mode->hactive < cs->super_width)
 						t_mode->result.weight |= R_RES_STRETCH;
 			}
@@ -204,16 +207,16 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 			t_mode->hactive = max(t_mode->hactive, normalize(STANDARD_CRT_ASPECT * t_mode->vactive, 8));
 
 		// calculate integer scale for prescaling
-		x_scale = max(1, scale_into_aspect(s_mode->hactive, t_mode->hactive, rotation? 1.0 / (STANDARD_CRT_ASPECT) : STANDARD_CRT_ASPECT, cs->monitor_aspect, &x_diff));
+		x_scale = max(1, scale_into_aspect(s_mode->hactive, t_mode->hactive, source_aspect, cs->monitor_aspect, &x_diff));
 		y_scale = max(1, floor(double(t_mode->vactive) / s_mode->vactive));
 
 		scan_factor = interlace;
 		doublescan = 1;
 	}
 
-	x_ratio = double(t_mode->hactive) / s_mode->hactive;
-	y_ratio = double(t_mode->vactive) / s_mode->vactive;
-	v_scale = max(round_near(vfreq_real / s_mode->vfreq), 1);
+	x_fscale = double(t_mode->hactive) / s_mode->hactive * source_aspect / cs->monitor_aspect;
+	y_fscale = double(t_mode->vactive) / s_mode->vactive;
+	v_fscale = vfreq_real / s_mode->vfreq;
 	v_diff = (vfreq_real / v_scale) -  s_mode->vfreq;
 	if (fabs(v_diff) > cs->refresh_tolerance)
 		t_mode->result.weight |= R_V_FREQ_OFF;
@@ -279,15 +282,12 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 
 	// finally, store result
 	t_mode->result.scan_penalty = (s_mode->interlace != t_mode->interlace? 1:0) + (s_mode->doublescan != t_mode->doublescan? 1:0);
-	t_mode->result.x_scale = x_scale;
-	t_mode->result.y_scale = y_scale;
-	t_mode->result.v_scale = v_scale;
+	t_mode->result.x_scale = t_mode->result.weight & R_RES_STRETCH || t_mode->hactive >= cs->super_width ? x_fscale : (double)x_scale;
+	t_mode->result.y_scale = t_mode->result.weight & R_RES_STRETCH? y_fscale : (double)y_scale;
+	t_mode->result.v_scale = v_fscale;
 	t_mode->result.x_diff = x_diff;
 	t_mode->result.y_diff = y_diff;
 	t_mode->result.v_diff = v_diff;
-	t_mode->result.x_ratio = x_ratio;
-	t_mode->result.y_ratio = y_ratio;
-	t_mode->result.v_ratio = 0;
 
 	return 0;
 }
@@ -474,9 +474,9 @@ char * modeline_result(modeline *mode, char *result)
 		sprintf(result, " out of range");
 
 	else
-		sprintf(result, "%4d x%4d_%3.6f%s%s %3.6f [%s] scale(%d, %d, %d) diff(%.2f, %.2f, %.4f) ratio(%.3f, %.3f)",
+		sprintf(result, "%4d x%4d_%3.6f%s%s %3.6f [%s] scale(%.3f, %.3f, %.3f) diff(%.3f, %.3f, %.3f)",
 			mode->hactive, mode->vactive, mode->vfreq, mode->interlace?"i":"p", mode->doublescan?"d":"", mode->hfreq/1000, mode->result.weight & R_RES_STRETCH?"fract":"integ",
-			mode->result.x_scale, mode->result.y_scale, mode->result.v_scale, mode->result.x_diff, mode->result.y_diff, mode->result.v_diff, mode->result.x_ratio, mode->result.y_ratio);
+			mode->result.x_scale, mode->result.y_scale, mode->result.v_scale, mode->result.x_diff, mode->result.y_diff, mode->result.v_diff);
 	return result;
 }
 
@@ -486,7 +486,7 @@ char * modeline_result(modeline *mode, char *result)
 
 int modeline_compare(modeline *t, modeline *best)
 {
-	bool vector = (t->hactive == (int)t->result.x_ratio);
+	bool vector = (t->hactive == (int)t->result.x_scale);
 
 	if (t->result.weight < best->result.weight)
 		return 1;
@@ -498,12 +498,12 @@ int modeline_compare(modeline *t, modeline *best)
 
 		if (t->result.weight & R_RES_STRETCH || vector)
 		{
-			double t_y_score = t->result.y_ratio * (t->interlace?(2.0/3.0):1.0);
-			double b_y_score = best->result.y_ratio * (best->interlace?(2.0/3.0):1.0);
+			double t_y_score = t->result.y_scale * (t->interlace?(2.0/3.0):1.0);
+			double b_y_score = best->result.y_scale * (best->interlace?(2.0/3.0):1.0);
 
 			if  ((t_v_diff <  b_v_diff) ||
 				((t_v_diff == b_v_diff) && (t_y_score > b_y_score)) ||
-				((t_v_diff == b_v_diff) && (t_y_score == b_y_score) && (t->result.x_ratio > best->result.x_ratio)))
+				((t_v_diff == b_v_diff) && (t_y_score == b_y_score) && (t->result.x_scale > best->result.x_scale)))
 					return 1;
 		}
 		else

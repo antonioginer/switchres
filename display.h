@@ -105,9 +105,9 @@ public:
 	int refresh() { return m_selected_mode != nullptr? m_selected_mode->refresh : 0; }
 	double v_freq() { return m_selected_mode != nullptr? m_selected_mode->vfreq : 0; }
 	double h_freq() { return m_selected_mode != nullptr? m_selected_mode->hfreq : 0; }
-	int x_scale() { return m_selected_mode != nullptr? m_selected_mode->result.x_scale : 0; }
-	int y_scale() { return m_selected_mode != nullptr? m_selected_mode->result.y_scale : 0; }
-	int v_scale() { return m_selected_mode != nullptr? m_selected_mode->result.v_scale : 0; }
+	double x_scale() { return m_selected_mode != nullptr? m_selected_mode->result.x_scale : 0; }
+	double y_scale() { return m_selected_mode != nullptr? m_selected_mode->result.y_scale : 0; }
+	double v_scale() { return m_selected_mode != nullptr? m_selected_mode->result.v_scale : 0; }
 	bool is_interlaced() { return m_selected_mode != nullptr? m_selected_mode->interlace : false; }
 	bool is_doublescanned() { return m_selected_mode != nullptr? m_selected_mode->doublescan : false; }
 	bool is_stretched() { return m_selected_mode != nullptr? m_selected_mode->result.weight & R_RES_STRETCH : false; }

@@ -86,8 +86,9 @@ typedef struct MODULE_API
 	double refresh;
 	int is_refresh_off;
 	int is_stretched;
-	int x_scale;
-	int y_scale;
+	double x_scale;
+	double y_scale;
+	double v_scale;
 	int interlace;
 	int id;
 } sr_mode;

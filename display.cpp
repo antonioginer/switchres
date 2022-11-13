@@ -358,7 +358,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, int fl
 	s_mode.interlace = interlaced;
 	s_mode.vfreq = refresh;
 
-	s_mode.hactive = normalize(width, 8);
+	s_mode.hactive = width;
 	s_mode.vactive = height;
 
 	if (rotated)
