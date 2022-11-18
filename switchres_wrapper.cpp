@@ -132,6 +132,7 @@ MODULE_API void sr_load_ini(char* config)
 MODULE_API void sr_set_monitor(const char *preset)
 {
 	swr->set_monitor(preset);
+	sr_disp()->set_monitor(preset);
 }
 
 

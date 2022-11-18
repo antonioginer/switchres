@@ -134,7 +134,7 @@ public:
 	void set_current_mode(modeline *mode) { m_current_mode = mode; }
 
 	// setters (display_manager)
-	void set_monitor(const char *preset) { strncpy(m_ds.monitor, preset, sizeof(m_ds.monitor)-1); }
+	void set_monitor(const char *preset) { set_preset(preset); }
 	void set_modeline(const char *modeline) { strncpy(m_ds.user_modeline, modeline, sizeof(m_ds.user_modeline)-1); }
 	void set_crt_range(int i, const char *range) { strncpy(m_ds.crt_range[i], range, sizeof(m_ds.crt_range[i])-1); }
 	void set_lcd_range(const char *range) { strncpy(m_ds.lcd_range, range, sizeof(m_ds.lcd_range)-1); }
@@ -207,6 +207,8 @@ private:
 	bool m_switching_required = 0;
 	bool m_has_ini = 0;
 	int m_id_counter = 0;
+
+	void set_preset(const char *preset);
 
 protected:
 	void* m_pf_data = nullptr;

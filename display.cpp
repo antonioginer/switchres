@@ -93,20 +93,27 @@ void display_manager::parse_options()
 		monitor_show_range(range);
 	}
 	else
-	{
-		char default_monitor[] = "generic_15";
+		set_preset(m_ds.monitor);
+}
 
-		memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
+//============================================================
+//  display_manager::set_preset
+//============================================================
 
-		if (!strcmp(m_ds.monitor, "custom"))
-			for (int i = 0; i < MAX_RANGES; i++) monitor_fill_range(&range[i], m_ds.crt_range[i]);
+void display_manager::set_preset(const char *preset)
+{
+	strncpy(m_ds.monitor, preset, sizeof(m_ds.monitor)-1);
 
-		else if (!strcmp(m_ds.monitor, "lcd"))
-			monitor_fill_lcd_range(&range[0], m_ds.lcd_range);
+	memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 
-		else if (monitor_set_preset(m_ds.monitor, range) == 0)
-			monitor_set_preset(default_monitor, range);
-	}
+	if (!strcmp(preset, "custom"))
+		for (int i = 0; i < MAX_RANGES; i++) monitor_fill_range(&range[i], m_ds.crt_range[i]);
+
+	else if (!strcmp(preset, "lcd"))
+		monitor_fill_lcd_range(&range[0], m_ds.lcd_range);
+
+	else if (monitor_set_preset(preset, range) == 0)
+		monitor_set_preset("generic_15", range);
 }
 
 //============================================================
