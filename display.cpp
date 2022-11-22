@@ -392,50 +392,46 @@ modeline *display_manager::get_mode(int width, int height, float refresh, int fl
 			mode.type & MODE_DISABLED?" - locked":"");
 
 		// now get the mode if allowed
-		if (!(mode.type & MODE_DISABLED))
+		if (mode.type & MODE_DISABLED)
+			continue;
+
+		for (int i = 0 ; i < MAX_RANGES ; i++)
 		{
-			for (int i = 0 ; i < MAX_RANGES ; i++)
+			if (range[i].hfreq_min == 0)
+				continue;
+
+			t_mode = mode;
+
+			// init all editable fields with source or user values
+			if (t_mode.type & X_RES_EDITABLE)
+				t_mode.hactive = m_user_mode.width? m_user_mode.width : s_mode.hactive;
+
+			if (t_mode.type & Y_RES_EDITABLE)
+				t_mode.vactive = m_user_mode.height? m_user_mode.height : s_mode.vactive;
+
+			if (t_mode.type & V_FREQ_EDITABLE)
 			{
-				if (range[i].hfreq_min)
-				{
-					t_mode = mode;
+				// If user's vfreq is defined, it means we have an user modeline, so force it
+				if (m_user_mode.vfreq)
+					modeline_copy_timings(&t_mode, &m_user_mode);
+				else
+					t_mode.vfreq = s_mode.vfreq;
+			}
 
-					// init all editable fields with source or user values
-					if (t_mode.type & X_RES_EDITABLE)
-						t_mode.hactive = m_user_mode.width? m_user_mode.width : s_mode.hactive;
+			// lock resolution fields if required
+			if (m_user_mode.width) t_mode.type &= ~X_RES_EDITABLE;
+			if (m_user_mode.height) t_mode.type &= ~Y_RES_EDITABLE;
+			if (m_user_mode.vfreq) t_mode.type &= ~V_FREQ_EDITABLE;
 
-					if (t_mode.type & Y_RES_EDITABLE)
-						t_mode.vactive = m_user_mode.height? m_user_mode.height : s_mode.vactive;
+			modeline_create(&s_mode, &t_mode, &range[i], &m_ds.gs);
+			t_mode.range = i;
 
-					if (t_mode.type & V_FREQ_EDITABLE)
-					{
-						// If user's vfreq is defined, it means we have an user modeline, so force it
-						if (m_user_mode.vfreq)
-						{
-							int t_type = t_mode.type;
-							t_mode = m_user_mode;
-							t_mode.type = t_type;
-						}
-						else
-							t_mode.vfreq = s_mode.vfreq;
-					}
+			log_verbose("%s\n", modeline_result(&t_mode, result));
 
-					// lock resolution fields if required
-					if (m_user_mode.width) t_mode.type &= ~X_RES_EDITABLE;
-					if (m_user_mode.height) t_mode.type &= ~Y_RES_EDITABLE;
-					if (m_user_mode.vfreq) t_mode.type &= ~V_FREQ_EDITABLE;
-
-					modeline_create(&s_mode, &t_mode, &range[i], &m_ds.gs);
-					t_mode.range = i;
-
-					log_verbose("%s\n", modeline_result(&t_mode, result));
-
-					if (modeline_compare(&t_mode, &best_mode))
-					{
-						best_mode = t_mode;
-						m_selected_mode = &mode;
-					}
-				}
+			if (modeline_compare(&t_mode, &best_mode))
+			{
+				best_mode = t_mode;
+				m_selected_mode = &mode;
 			}
 		}
 	}

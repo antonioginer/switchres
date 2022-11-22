@@ -132,6 +132,7 @@ int modeline_parse(const char *user_modeline, modeline *mode);
 int modeline_to_monitor_range(monitor_range *range, modeline *mode);
 int modeline_adjust(modeline *mode, double hfreq_max, generator_settings *cs);
 int modeline_is_different(modeline *n, modeline *p);
+void modeline_copy_timings(modeline *n, modeline *p);
 
 int round_near(double number);
 int round_near_odd(double number);

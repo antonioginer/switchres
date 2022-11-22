@@ -771,6 +771,16 @@ int modeline_is_different(modeline *n, modeline *p)
 }
 
 //============================================================
+//  modeline_copy_timings
+//============================================================
+
+void modeline_copy_timings(modeline *n, modeline *p)
+{
+	// Only copy relevant timing fields
+	memcpy(n, p, offsetof(struct modeline, width));
+}
+
+//============================================================
 //  monitor_fill_vesa_gtf
 //============================================================
 
