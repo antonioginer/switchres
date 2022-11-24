@@ -374,9 +374,9 @@ void modeline_to_sr_mode(modeline* m, sr_mode* srm)
 	//
 	srm->is_refresh_off = m->result.weight & R_V_FREQ_OFF ? 1 : 0;
 	srm->is_stretched   = m->result.weight & R_RES_STRETCH ? 1 : 0;
-	srm->x_scale        = sr_disp()->x_scale();
-	srm->y_scale        = sr_disp()->y_scale();
-	srm->v_scale        = sr_disp()->v_scale();
+	srm->x_scale        = m->result.x_scale;
+	srm->y_scale        = m->result.y_scale;
+	srm->v_scale        = m->result.v_scale;
 	srm->id             = m->id;
 }
 
