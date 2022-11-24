@@ -355,13 +355,28 @@ void modeline_to_sr_mode(modeline* m, sr_mode* srm)
 {
 	srm->width          = m->hactive;
 	srm->height         = m->vactive;
-	srm->refresh        = m->vfreq;
-	srm->is_refresh_off = sr_disp()->is_refresh_off() ? 1 : 0;
-	srm->is_stretched   = sr_disp()->is_stretched() ? 1 : 0;
+	srm->refresh        = m->refresh;
+	//
+	srm->vfreq          = m->vfreq;
+	srm->hfreq          = m->hfreq;
+	//
+	srm->pclock         = m->pclock;
+	srm->hbegin         = m->hbegin;
+	srm->hend           = m->hend;
+	srm->htotal         = m->htotal;
+	srm->vbegin         = m->vbegin;
+	srm->vend           = m->vend;
+	srm->vtotal         = m->vtotal;
+	srm->interlace      = m->interlace;
+	srm->doublescan     = m->doublescan;
+	srm->hsync          = m->hsync;
+	srm->vsync          = m->vsync;
+	//
+	srm->is_refresh_off = m->result.weight & R_V_FREQ_OFF ? 1 : 0;
+	srm->is_stretched   = m->result.weight & R_RES_STRETCH ? 1 : 0;
 	srm->x_scale        = sr_disp()->x_scale();
 	srm->y_scale        = sr_disp()->y_scale();
 	srm->v_scale        = sr_disp()->v_scale();
-	srm->interlace      = sr_disp()->is_interlaced() ? 1 : 0;
 	srm->id             = m->id;
 }
 

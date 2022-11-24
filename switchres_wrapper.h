@@ -81,16 +81,31 @@ char* LIBERROR()
 /* That's all the exposed data from Switchres calculation */
 typedef struct MODULE_API
 {
-	int width;
-	int height;
-	double refresh;
-	int is_refresh_off;
-	int is_stretched;
-	double x_scale;
-	double y_scale;
-	double v_scale;
-	int interlace;
-	int id;
+	int      width;
+	int      height;
+	int      refresh;
+	//
+	double   vfreq;
+	double   hfreq;
+	//
+	uint64_t pclock;
+	int      hbegin;
+	int      hend;
+	int      htotal;
+	int      vbegin;
+	int      vend;
+	int      vtotal;
+	int      interlace;
+	int      doublescan;
+	int      hsync;
+	int      vsync;
+	//
+	int      is_refresh_off;
+	int      is_stretched;
+	double   x_scale;
+	double   y_scale;
+	double   v_scale;
+	int      id;
 } sr_mode;
 
 
