@@ -46,7 +46,8 @@ display_manager *display_manager::make(display_settings *ds)
 		display = new sdl2_display(ds);
 	}
 	catch (...) {};
-	if ( ! display ) {
+	if (!display)
+	{
 #endif
 
 #if defined(_WIN32)
@@ -103,6 +104,7 @@ void display_manager::parse_options()
 void display_manager::set_preset(const char *preset)
 {
 	strncpy(m_ds.monitor, preset, sizeof(m_ds.monitor)-1);
+	for (size_t i = 0; i < strlen(m_ds.monitor); i++) m_ds.monitor[i] = tolower(m_ds.monitor[i]);
 
 	memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 
@@ -520,4 +522,25 @@ bool display_manager::auto_specs()
 	set_user_mode(&user_mode);
 
 	return true;
+}
+
+//============================================================
+//  display_manager::get_aspect
+//============================================================
+
+double display_manager::get_aspect(const char* aspect)
+{
+	int num, den;
+	if (sscanf(aspect, "%d:%d", &num, &den) == 2)
+	{
+		if (den == 0)
+		{
+			log_error("Error: denominator can't be zero\n");
+			return STANDARD_CRT_ASPECT;
+		}
+		return (double(num)/double(den));
+	}
+
+	log_error("Error: use format --aspect <num:den>\n");
+	return STANDARD_CRT_ASPECT;
 }

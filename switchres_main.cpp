@@ -36,6 +36,7 @@ int main(int argc, char **argv)
 {
 
 	switchres_manager switchres;
+	display_manager* df = switchres.display_factory();
 
 	switchres.parse_config("switchres.ini");
 
@@ -102,7 +103,7 @@ int main(int argc, char **argv)
 		switch (c)
 		{
 			case OPT_MODELINE:
-				switchres.set_modeline(optarg);
+				df->set_modeline(optarg);
 				break;
 
 			case 'v':
@@ -130,7 +131,7 @@ int main(int argc, char **argv)
 				break;
 
 			case 'm':
-				switchres.set_monitor(optarg);
+				df->set_monitor(optarg);
 				break;
 
 			case 'r':
@@ -141,11 +142,11 @@ int main(int argc, char **argv)
 				// Add new display in multi-monitor case
 				if (index > 0) switchres.add_display();
 				index ++;
-				switchres.set_screen(optarg);
+				df->set_screen(optarg);
 				break;
 
 			case 'a':
-				switchres.set_monitor_aspect(optarg);
+				df->set_monitor_aspect(optarg);
 				break;
 
 			case 'e':
@@ -164,18 +165,22 @@ int main(int argc, char **argv)
 				break;
 
 			case 'b':
-				switchres.set_api(optarg);
+				df->set_api(optarg);
 				break;
 
 			case 'k':
 				keep_changes_flag = true;
-				switchres.set_keep_changes(true);
+				df->set_keep_changes(true);
 				break;
 
 			case 'g':
-				geometry_flag = true;
-				if (sscanf(optarg, "%lf:%d:%d", &switchres.ds.gs.h_size, &switchres.ds.gs.h_shift, &switchres.ds.gs.v_shift) < 3)
+				double h_size; int h_shift, v_shift;
+				if (sscanf(optarg, "%lf:%d:%d", &h_size, &h_shift, &v_shift) < 3)
 					log_error("Error: use format --geometry <h_size>:<h_shift>:<v_shift>\n");
+				geometry_flag = true;
+				df->set_h_size(h_size);
+				df->set_h_shift(h_shift);
+				df->set_v_shift(v_shift);
 				break;
 
 			default:
@@ -219,7 +224,7 @@ int main(int argc, char **argv)
 		switchres.parse_config(ini_file.c_str());
 
 	if (calculate_flag)
-		switchres.set_screen("dummy");
+		switchres.display()->set_screen("dummy");
 
 	switchres.add_display();
 
@@ -258,10 +263,10 @@ int main(int argc, char **argv)
 			if (mode)
 			{
 				monitor_range *range = &switchres.display()->range[mode->range];
-				edid_from_modeline(mode, range, switchres.ds.monitor, &edid);
+				edid_from_modeline(mode, range, switchres.display()->monitor(), &edid);
 
-				char file_name[sizeof(switchres.ds.monitor) + 4];
-				sprintf(file_name, "%s.bin", switchres.ds.monitor);
+				char file_name[sizeof(switchres.display()->monitor()) + 4];
+				sprintf(file_name, "%s.bin", switchres.display()->monitor());
 
 				FILE *file = fopen(file_name, "wb");
 				if (file)

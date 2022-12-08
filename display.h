@@ -154,6 +154,7 @@ public:
 	void set_refresh_tolerance(double value) { m_ds.gs.refresh_tolerance = value; }
 	void set_super_width(int value) { m_ds.gs.super_width = value; }
 	void set_monitor_aspect(double value) { m_ds.gs.monitor_aspect = value; }
+	void set_monitor_aspect(const char* aspect) { set_monitor_aspect(get_aspect(aspect)); }
 	void set_h_size(double value) { m_ds.gs.h_size = value; }
 	void set_h_shift(int value) { m_ds.gs.h_shift = value; }
 	void set_v_shift(int value) { m_ds.gs.v_shift = value; }
@@ -209,6 +210,7 @@ private:
 	int m_id_counter = 0;
 
 	void set_preset(const char *preset);
+	double get_aspect(const char* aspect);
 
 protected:
 	void* m_pf_data = nullptr;

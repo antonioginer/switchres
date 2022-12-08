@@ -622,7 +622,7 @@ int modeline_parse(const char *user_modeline, modeline *mode)
 
 	if (e != 9)
 	{
-		log_error("SwitchRes: missing parameter in user modeline\n  %s\n", user_modeline);
+		log_error("Switchres: missing parameter in user modeline\n  %s\n", user_modeline);
 		memset(mode, 0, sizeof(struct modeline));
 		return false;
 	}
@@ -634,7 +634,7 @@ int modeline_parse(const char *user_modeline, modeline *mode)
 	mode->refresh = mode->vfreq;
 	mode->width = mode->hactive;
 	mode->height = mode->vactive;
-	log_verbose("SwitchRes: user modeline %s\n", modeline_print(mode, modeline_txt, MS_FULL));
+	log_verbose("Switchres: user modeline %s\n", modeline_print(mode, modeline_txt, MS_FULL));
 
 	return true;
 }
@@ -645,11 +645,8 @@ int modeline_parse(const char *user_modeline, modeline *mode)
 
 int modeline_to_monitor_range(monitor_range *range, modeline *mode)
 {
-	if (range->vfreq_min == 0)
-	{
-		range->vfreq_min = mode->vfreq - 0.2;
-		range->vfreq_max = mode->vfreq + 0.2;
-	}
+	range->vfreq_min = mode->vfreq - 0.2;
+	range->vfreq_max = mode->vfreq + 0.2;
 
 	double line_time = 1 / mode->hfreq;
 	double pixel_time = line_time / mode->htotal * 1000000;

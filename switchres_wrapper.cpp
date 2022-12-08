@@ -43,10 +43,6 @@ void modeline_to_sr_mode(modeline* m, sr_mode* srm);
 // Switchres manager object
 switchres_manager* swr;
 
-// Multi-monitor helper
-static int disp_index = 0;
-display_manager *sr_disp() { return swr->display(disp_index); }
-
 
 //============================================================
 // Start of Switchres API
@@ -81,7 +77,7 @@ MODULE_API void sr_deinit()
 MODULE_API int sr_init_disp(const char* screen, void* pfdata)
 {
 	if (screen)
-		swr->set_screen(screen);
+		swr->display_factory()->set_screen(screen);
 
 	display_manager *disp = swr->add_display();
 	if (disp == nullptr)
@@ -106,10 +102,7 @@ MODULE_API int sr_init_disp(const char* screen, void* pfdata)
 
 MODULE_API void sr_set_disp(int index)
 {
-	if (index < 0 || index >= (int)swr->displays.size())
-		disp_index = 0;
-	else
-		disp_index = index;
+	swr->set_current_display(index);
 }
 
 
@@ -120,8 +113,17 @@ MODULE_API void sr_set_disp(int index)
 MODULE_API void sr_load_ini(char* config)
 {
 	swr->parse_config(config);
-	sr_disp()->m_ds = swr->ds;
-	sr_disp()->parse_options();
+	swr->display()->parse_options();
+}
+
+
+//============================================================
+//  sr_set_option
+//============================================================
+
+MODULE_API void sr_set_option(const char* key, const char* value)
+{
+	swr->set_option(key, value);
 }
 
 
@@ -131,8 +133,7 @@ MODULE_API void sr_load_ini(char* config)
 
 MODULE_API void sr_set_monitor(const char *preset)
 {
-	swr->set_monitor(preset);
-	sr_disp()->set_monitor(preset);
+	swr->display()->set_monitor(preset);
 }
 
 
@@ -146,7 +147,7 @@ MODULE_API void sr_set_user_mode(int width, int height, int refresh)
 	user_mode.width = width;
 	user_mode.height = height;
 	user_mode.refresh = refresh;
-	swr->set_user_mode(&user_mode);
+	swr->display()->set_user_mode(&user_mode);
 }
 
 
@@ -251,6 +252,7 @@ MODULE_API srAPI srlib =
 	sr_set_mode,
 	sr_set_monitor,
 	sr_set_user_mode,
+	sr_set_option,
 	sr_set_log_level,
 	sr_set_log_callback_error,
 	sr_set_log_callback_info,
@@ -268,7 +270,7 @@ MODULE_API srAPI srlib =
 
 int sr_mode_internal(int width, int height, double refresh, int flags, sr_mode *srm, int action, const char *caller)
 {
-	display_manager *disp = sr_disp();
+	display_manager *disp = swr->display();
 	if (disp == nullptr)
 	{
 		log_error("%s: error, didn't get a display\n", caller);

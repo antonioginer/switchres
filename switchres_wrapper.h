@@ -124,13 +124,13 @@ MODULE_API int sr_flush();
 MODULE_API int sr_set_mode(int);
 MODULE_API void sr_set_monitor(const char*);
 MODULE_API void sr_set_user_mode(int, int, int);
+MODULE_API void sr_set_option(const char* key, const char* value);
 
 /* Logging related functions */
 MODULE_API void sr_set_log_level(int);
 MODULE_API void sr_set_log_callback_error(void *);
 MODULE_API void sr_set_log_callback_info(void *);
 MODULE_API void sr_set_log_callback_debug(void *);
-
 
 /* Others */
 MODULE_API void sr_set_sdl_window(void *);
@@ -150,6 +150,7 @@ typedef struct MODULE_API
 	int (*set_mode)(int);
 	void (*set_monitor)(const char*);
 	void (*set_user_mode)(int, int, int);
+	void (*set_option)(const char*, const char*);
 	void (*set_log_level) (int);
 	void (*set_log_callback_error)(void *);
 	void (*set_log_callback_info)(void *);
