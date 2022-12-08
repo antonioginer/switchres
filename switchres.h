@@ -28,15 +28,6 @@
 
 #define SWITCHRES_VERSION "2.002"
 
-//============================================================
-//  TYPE DEFINITIONS
-//============================================================
-
-typedef struct config_settings
-{
-	bool mode_switching;
-} config_settings;
-
 
 class switchres_manager
 {
@@ -95,7 +86,6 @@ public:
 	bool parse_config(const char *file_name);
 
 	//settings
-	config_settings cs = {};
 	display_settings ds = {};
 
 	// display list
