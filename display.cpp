@@ -74,6 +74,7 @@ void display_manager::parse_options()
 	{
 		if (modeline_parse(m_ds.user_modeline, &user_mode))
 		{
+			memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 			user_mode.type |= MODE_USER_DEF;
 			set_user_mode(&user_mode);
 		}
