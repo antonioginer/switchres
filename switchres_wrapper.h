@@ -79,6 +79,7 @@ char* LIBERROR()
 /* Mode flags */
 #define SR_MODE_INTERLACED    1<<0
 #define SR_MODE_ROTATED       1<<1
+#define SR_MODE_DONT_FLUSH    1<<16
 
 /* That's all the exposed data from Switchres calculation */
 typedef struct MODULE_API
@@ -136,7 +137,7 @@ MODULE_API void sr_load_ini(char* config);
 MODULE_API void sr_deinit();
 MODULE_API int sr_init_disp(const char*, void*);
 MODULE_API void sr_set_disp(int);
-MODULE_API int sr_get_mode(int, int, double, int, sr_mode*);
+MODULE_API int sr_get_mode(int, sr_mode*);
 MODULE_API int sr_add_mode(int, int, double, int, sr_mode*);
 MODULE_API int sr_switch_to_mode(int, int, double, int, sr_mode*);
 MODULE_API int sr_flush();
@@ -163,7 +164,7 @@ typedef struct MODULE_API
 	void (*deinit)(void);
 	int (*init_disp)(const char*, void*);
 	void (*set_disp)(int);
-	int (*get_mode)(int, int, double, int, sr_mode*);
+	int (*get_mode)(int, sr_mode*);
 	int (*add_mode)(int, int, double, int, sr_mode*);
 	int (*switch_to_mode)(int, int, double, int, sr_mode*);
 	int (*flush)(void);

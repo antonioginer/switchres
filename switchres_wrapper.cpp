@@ -22,7 +22,7 @@
 extern "C" {
 #endif
 
-#define SR_ACTION_GET         1<<0
+#define SR_ACTION_ADD         1<<0
 #define SR_ACTION_GET_FROM_ID 1<<1
 #define SR_ACTION_FLUSH       1<<2
 #define SR_ACTION_SWITCH      1<<3
@@ -184,9 +184,15 @@ MODULE_API void sr_set_user_mode(int width, int height, int refresh)
 //  sr_get_mode
 //============================================================
 
-MODULE_API int sr_get_mode(int width, int height, double refresh, int flags, sr_mode *srm)
+MODULE_API int sr_get_mode(int id, sr_mode *srm)
 {
-	return sr_mode_internal(width, height, refresh, flags, srm, SR_ACTION_GET, __FUNCTION__);
+	if (srm == nullptr)
+		return 0;
+
+	*srm = {};
+	srm->id = id;
+
+	return sr_mode_internal(0, 0, 0, 0, srm, SR_ACTION_GET_FROM_ID, __FUNCTION__);
 }
 
 
@@ -196,7 +202,8 @@ MODULE_API int sr_get_mode(int width, int height, double refresh, int flags, sr_
 
 MODULE_API int sr_add_mode(int width, int height, double refresh, int flags, sr_mode *srm)
 {
-	return sr_mode_internal(width, height, refresh, flags, srm, SR_ACTION_GET | SR_ACTION_FLUSH, __FUNCTION__);
+	bool flush = !(flags & SR_MODE_DONT_FLUSH);
+	return sr_mode_internal(width, height, refresh, flags, srm, SR_ACTION_ADD | (flush? SR_ACTION_FLUSH: 0), __FUNCTION__);
 }
 
 
@@ -216,7 +223,7 @@ MODULE_API int sr_flush()
 
 MODULE_API int sr_switch_to_mode(int width, int height, double refresh, int flags, sr_mode *srm)
 {
-	return sr_mode_internal(width, height, refresh, flags, srm, SR_ACTION_GET | SR_ACTION_FLUSH | SR_ACTION_SWITCH, __FUNCTION__);
+	return sr_mode_internal(width, height, refresh, flags, srm, SR_ACTION_ADD | SR_ACTION_FLUSH | SR_ACTION_SWITCH, __FUNCTION__);
 }
 
 
@@ -307,7 +314,7 @@ int sr_mode_internal(int width, int height, double refresh, int flags, sr_mode *
 		return 0;
 	}
 
-	if (action & SR_ACTION_GET)
+	if (action & SR_ACTION_ADD)
 	{
 		if (srm == nullptr)
 		{
@@ -339,6 +346,7 @@ int sr_mode_internal(int width, int height, double refresh, int flags, sr_mode *
 				found = true;
 				disp->set_selected_mode(&mode);
 				log_verbose("%s: got mode %dx%d@%f type(%x)\n", caller, disp->width(), disp->height(), disp->v_freq(), disp->selected_mode()->type);
+				modeline_to_sr_mode(disp->selected_mode(), srm);
 				break;
 			}
 		}
