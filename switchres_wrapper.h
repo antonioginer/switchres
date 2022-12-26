@@ -110,6 +110,25 @@ typedef struct MODULE_API
 	int      id;
 } sr_mode;
 
+/* Used to retrieve SR settings and state */
+typedef struct MODULE_API
+{
+	char     monitor[32];
+	int      modeline_generation;
+	int      desktop_is_rotated;
+	int      interlace;
+	int      doublescan;
+	double   dotclock_min;
+	double   refresh_tolerance;
+	int      super_width;
+	double   monitor_aspect;
+	double   h_size;
+	double   h_shift;
+	double   v_shift;
+	int      pixel_precision;
+	int      selected_mode;
+	int      current_mode;
+} sr_state;
 
 /* Declaration of the wrapper functions */
 MODULE_API void sr_init();
@@ -125,6 +144,7 @@ MODULE_API int sr_set_mode(int);
 MODULE_API void sr_set_monitor(const char*);
 MODULE_API void sr_set_user_mode(int, int, int);
 MODULE_API void sr_set_option(const char* key, const char* value);
+MODULE_API void sr_get_state(sr_state *state);
 
 /* Logging related functions */
 MODULE_API void sr_set_log_level(int);
@@ -151,6 +171,7 @@ typedef struct MODULE_API
 	void (*set_monitor)(const char*);
 	void (*set_user_mode)(int, int, int);
 	void (*set_option)(const char*, const char*);
+	void (*get_state)(sr_state*);
 	void (*set_log_level) (int);
 	void (*set_log_callback_error)(void *);
 	void (*set_log_callback_info)(void *);

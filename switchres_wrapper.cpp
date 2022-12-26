@@ -128,6 +128,35 @@ MODULE_API void sr_set_option(const char* key, const char* value)
 
 
 //============================================================
+//  sr_get_state
+//============================================================
+
+MODULE_API void sr_get_state(sr_state *state)
+{
+	if (state == nullptr)
+		return;
+
+	*state = {};
+
+	sprintf(state->monitor, swr->display()->monitor());
+	state->modeline_generation = swr->display()->modeline_generation();
+	state->desktop_is_rotated =  swr->display()->desktop_is_rotated();
+	state->interlace =           swr->display()->interlace();
+	state->doublescan =          swr->display()->doublescan();
+	state->dotclock_min =        swr->display()->dotclock_min();
+	state->refresh_tolerance =   swr->display()->refresh_tolerance();
+	state->super_width =         swr->display()->super_width();
+	state->monitor_aspect =      swr->display()->monitor_aspect();
+	state->h_size =              swr->display()->h_size();
+	state->h_shift =             swr->display()->h_shift();
+	state->v_shift =             swr->display()->v_shift();
+	state->pixel_precision =     swr->display()->pixel_precision();
+	state->selected_mode =       swr->display()->selected_mode() == nullptr? -1 : swr->display()->selected_mode()->id;
+	state->current_mode =        swr->display()->current_mode() == nullptr? -1 : swr->display()->current_mode()->id;
+}
+
+
+//============================================================
 //  sr_set_monitor
 //============================================================
 
@@ -253,6 +282,7 @@ MODULE_API srAPI srlib =
 	sr_set_monitor,
 	sr_set_user_mode,
 	sr_set_option,
+	sr_get_state,
 	sr_set_log_level,
 	sr_set_log_callback_error,
 	sr_set_log_callback_info,
