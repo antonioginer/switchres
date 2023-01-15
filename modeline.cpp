@@ -250,6 +250,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 			if (t_mode->type & X_RES_EDITABLE)
 			{
 				x_scale *= 2;
+				x_fscale *= 2;
 				t_mode->hactive *= 2;
 				goto horizontal_values;
 			}
