@@ -138,7 +138,7 @@ MODULE_API void sr_get_state(sr_state *state)
 
 	*state = {};
 
-	sprintf(state->monitor, swr->display()->monitor());
+	sprintf(state->monitor, "%s", swr->display()->monitor());
 	state->modeline_generation = swr->display()->modeline_generation();
 	state->desktop_is_rotated =  swr->display()->desktop_is_rotated();
 	state->interlace =           swr->display()->interlace();
