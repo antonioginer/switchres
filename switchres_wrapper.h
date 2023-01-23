@@ -136,6 +136,7 @@ typedef struct MODULE_API
 
 /* Declaration of the wrapper functions */
 MODULE_API void sr_init();
+MODULE_API char* sr_get_version();
 MODULE_API void sr_load_ini(char* config);
 MODULE_API void sr_deinit();
 MODULE_API int sr_init_disp(const char*, void*);
@@ -164,6 +165,7 @@ typedef struct MODULE_API
 {
 	void (*init)(void);
 	void (*load_ini)(char*);
+	char* (*sr_get_version)(void);
 	void (*deinit)(void);
 	int (*init_disp)(const char*, void*);
 	void (*set_disp)(int);

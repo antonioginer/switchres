@@ -1,7 +1,7 @@
 *.o
 *.exe
 *.a
-*.so
+*.so.*
 *.lib
 *.dll
 switchres_main

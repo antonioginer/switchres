@@ -26,7 +26,9 @@
 //  CONSTANTS
 //============================================================
 
-#define SWITCHRES_VERSION "2.002"
+#ifndef SWITCHRES_VERSION
+#define SWITCHRES_VERSION "2.1.0"
+#endif
 
 
 class switchres_manager
@@ -40,6 +42,7 @@ public:
 	display_manager *display() const { return m_current_display; }
 	display_manager *display(int i) const { return i < (int)displays.size()? displays[i] : nullptr; }
 	display_manager *display_factory() const { return m_display_factory; }
+	static char* get_version() { return (char*) SWITCHRES_VERSION; };
 
 	// setters (log manager)
 	void set_log_level(int log_level);

@@ -61,6 +61,14 @@ MODULE_API void sr_init()
 
 
 //============================================================
+//  sr_get_version
+//============================================================
+
+MODULE_API char* sr_get_version() {
+	return switchres_manager::get_version();
+}
+
+//============================================================
 //  sr_deinit
 //============================================================
 
@@ -278,6 +286,7 @@ MODULE_API srAPI srlib =
 {
 	sr_init,
 	sr_load_ini,
+	sr_get_version,
 	sr_deinit,
 	sr_init_disp,
 	sr_set_disp,
