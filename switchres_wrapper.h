@@ -13,6 +13,9 @@
  **************************************************************/
 
 #include <stdint.h>
+#ifndef SR_DEFINES
+#include "switchres_defines.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

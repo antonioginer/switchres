@@ -129,6 +129,7 @@ prepare_pkg_config:
 
 install:
 	$(INSTALL) -Dm644 $(TARGET_LIB).$(DYNAMIC_LIB_EXT) $(LIBDIR)/$(TARGET_LIB).$(DYNAMIC_LIB_EXT)
+	$(INSTALL) -Dm644 switchres_defines.h $(INCDIR)/switchres/switchres_defines.h
 	$(INSTALL) -Dm644 switchres_wrapper.h $(INCDIR)/switchres/switchres_wrapper.h
 	$(INSTALL) -Dm644 switchres.h $(INCDIR)/switchres/switchres.h
 	$(INSTALL) -Dm644 switchres.pc $(PKGDIR)/switchres.pc
