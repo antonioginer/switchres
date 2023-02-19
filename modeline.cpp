@@ -228,12 +228,13 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 		double margin = 0;
 		double vblank_lines = 0;
 		double vvt_ini = 0;
+		double interlace_incr = !cs->interlace_force_even && interlace == 2? 0.5 : 0;
 
 		// Get resulting refresh
 		t_mode->vfreq = vfreq_real;
 
 		// Get total vertical lines
-		vvt_ini = total_lines_for_yres(t_mode->vactive, t_mode->vfreq, range, borders, scan_factor) + (!cs->interlace_force_even && interlace == 2?0.5:0);
+		vvt_ini = total_lines_for_yres(t_mode->vactive, t_mode->vfreq, range, borders, scan_factor) + interlace_incr;
 
 		// Calculate horizontal frequency
 		t_mode->hfreq = t_mode->vfreq * vvt_ini;
@@ -263,11 +264,11 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 
 		// Vertical blanking
 		t_mode->vtotal = vvt_ini * scan_factor;
-		vblank_lines = int(t_mode->hfreq * (range->vertical_blank + borders)) + (!cs->interlace_force_even && interlace == 2?0.5:0);
+		vblank_lines = round_near(t_mode->hfreq * (range->vertical_blank + borders)) + interlace_incr;
 		margin = (t_mode->vtotal - t_mode->vactive - vblank_lines * scan_factor) / (cs->v_shift_correct? 1 : 2);
 
-		double v_front_porch = margin + t_mode->hfreq * range->vfront_porch * scan_factor;
-		int (*pf_round)(double) = interlace? (cs->interlace_force_even? round_near_even : round_near_odd) : round_near;
+		double v_front_porch = margin + t_mode->hfreq * range->vfront_porch * scan_factor + interlace_incr;
+		int (*pf_round)(double) = interlace == 2? (cs->interlace_force_even? round_near_even : round_near_odd) : round_near;
 
 		t_mode->vbegin = t_mode->vactive + max(pf_round(v_front_porch), 1);
 		t_mode->vend = t_mode->vbegin + max(round_near(t_mode->hfreq * range->vsync_pulse * scan_factor), 1);
@@ -277,12 +278,12 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 
 		t_mode->hsync = range->hsync_polarity;
 		t_mode->vsync = range->vsync_polarity;
-		t_mode->interlace = interlace == 2?1:0;
-		t_mode->doublescan = doublescan == 1?0:1;
+		t_mode->interlace = interlace == 2? 1 : 0;
+		t_mode->doublescan = doublescan == 1? 0 : 1;
 	}
 
 	// finally, store result
-	t_mode->result.scan_penalty = (s_mode->interlace != t_mode->interlace? 1:0) + (s_mode->doublescan != t_mode->doublescan? 1:0);
+	t_mode->result.scan_penalty = (s_mode->interlace != t_mode->interlace? 1 : 0) + (s_mode->doublescan != t_mode->doublescan? 1 : 0);
 	t_mode->result.x_scale = t_mode->result.weight & R_RES_STRETCH || t_mode->hactive >= cs->super_width ? x_fscale : (double)x_scale;
 	t_mode->result.y_scale = t_mode->result.weight & R_RES_STRETCH? y_fscale : (double)y_scale;
 	t_mode->result.v_scale = v_fscale;
@@ -657,9 +658,11 @@ int modeline_to_monitor_range(monitor_range *range, modeline *mode)
 	range->hsync_pulse = pixel_time * (mode->hend - mode->hbegin);
 	range->hback_porch = pixel_time * (mode->htotal - mode->hend);
 
-	range->vfront_porch = line_time * (mode->vbegin - mode->vactive) * interlace_factor;
-	range->vsync_pulse = line_time * (mode->vend - mode->vbegin) * interlace_factor;
-	range->vback_porch = line_time * (mode->vtotal - mode->vend) * interlace_factor;
+	// We floor the vertical fields to remove the half line from interlaced modes, because
+	// the modeline generator will add it automatically. Otherwise it would be added twice.
+	range->vfront_porch = line_time * floor((mode->vbegin - mode->vactive) * interlace_factor);
+	range->vsync_pulse = line_time * floor((mode->vend - mode->vbegin) * interlace_factor);
+	range->vback_porch = line_time * floor((mode->vtotal - mode->vend) * interlace_factor);
 	range->vertical_blank = range->vfront_porch + range->vsync_pulse + range->vback_porch;
 
 	range->hsync_polarity = mode->hsync;
@@ -677,7 +680,7 @@ int modeline_to_monitor_range(monitor_range *range, modeline *mode)
 }
 
 //============================================================
-//  modeline_v_shift
+//  modeline_adjust
 //============================================================
 
 int modeline_adjust(modeline *mode, double hfreq_max, generator_settings *cs)
@@ -719,12 +722,26 @@ int modeline_adjust(modeline *mode, double hfreq_max, generator_settings *cs)
 	// V shift adjustment, positive or negative value
 	if (cs->v_shift != 0)
 	{
-		int v_front_porch = mode->vbegin - mode->vactive;
-		int v_back_porch =  mode->vend - mode->vtotal;
-		int max_vtotal = hfreq_max / mode->vfreq * (mode->interlace? 2 : 1);
-		int border = max_vtotal - mode->vtotal;
+		int vactive = mode->vactive;
+		int vbegin = mode->vbegin;
+		int vend = mode->vend;
+		int vtotal = mode->vtotal;
+
+		if (mode->interlace)
+		{
+			vactive >>= 1;
+			vbegin  >>= 1;
+			vend    >>= 1;
+			vtotal  >>= 1;
+		}
+
+		int v_front_porch = vbegin - vactive;
+		int v_back_porch =  vend - vtotal;
+		int max_vtotal = hfreq_max / mode->vfreq;
+		int border = max_vtotal - vtotal;
 		int padding = 0;
 
+		// v_shift positive
 		if (cs->v_shift >= v_front_porch)
 		{
 			int v_front_porch_ex = v_front_porch + border;
@@ -732,16 +749,35 @@ int modeline_adjust(modeline *mode, double hfreq_max, generator_settings *cs)
 				cs->v_shift = v_front_porch_ex - 1;
 
 			padding = cs->v_shift - v_front_porch + 1;
-			mode->vbegin += padding;
-			mode->vend += padding;
-			mode->vtotal += padding;
+			vbegin += padding;
+			vend += padding;
+			vtotal += padding;
 		}
 
+		// v_shift negative
 		else if (cs->v_shift <= v_back_porch + 1)
-			cs->v_shift = v_back_porch + 2;
+		{
+			int v_back_porch_ex = v_back_porch - border;
+			if (cs->v_shift <= v_back_porch_ex + 1)
+				cs->v_shift = v_back_porch_ex + 2;
 
-		mode->vbegin -= cs->v_shift;
-		mode->vend -= cs->v_shift;
+			padding = -(cs->v_shift - v_back_porch - 2);
+			vtotal += padding;
+		}
+
+		vbegin -= cs->v_shift;
+		vend -= cs->v_shift;
+
+		if (mode->interlace)
+		{
+			vbegin =  (vbegin << 1)  | (mode->vbegin & 1);
+			vend =    (vend << 1)    | (mode->vend & 1);
+			vtotal =  (vtotal << 1)  | (mode->vtotal & 1);
+		}
+
+		mode->vbegin = vbegin;
+		mode->vend = vend;
+		mode->vtotal = vtotal;
 
 		if (padding != 0)
 		{
