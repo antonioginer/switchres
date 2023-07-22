@@ -1178,6 +1178,9 @@ bool xrandr_timing::process_modelist(std::vector<modeline *> modelist)
 		else if (mode->type & MODE_ADD)
 			result = add_mode(mode);
 
+		else if (mode->type & MODE_UPDATE)
+			result = update_mode(mode);
+
 		if (!result)
 		{
 			mode->type |= MODE_ERROR;
