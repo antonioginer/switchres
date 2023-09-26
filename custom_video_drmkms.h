@@ -83,6 +83,7 @@ class drmkms_timing : public custom_video
 		__typeof__(drmModeFreePlaneResources) *p_drmModeFreePlaneResources;
 		__typeof__(drmIoctl) *p_drmIoctl;
 		__typeof__(drmGetCap) *p_drmGetCap;
+		__typeof__(drmGetDevices2) *p_drmGetDevices2;
 		__typeof__(drmIsMaster) *p_drmIsMaster;
 		__typeof__(drmSetMaster) *p_drmSetMaster;
 		__typeof__(drmDropMaster) *p_drmDropMaster;

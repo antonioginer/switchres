@@ -47,11 +47,13 @@
 #define drmModeFreePlaneResources p_drmModeFreePlaneResources
 #define drmIoctl p_drmIoctl
 #define drmGetCap p_drmGetCap
+#define drmGetDevices2 p_drmGetDevices2
 #define drmIsMaster p_drmIsMaster
 #define drmSetMaster p_drmSetMaster
 #define drmDropMaster p_drmDropMaster
 
 # define MAX_CARD_ID 10
+# define MAX_DRM_DEVICES 16
 
 //============================================================
 //  shared the privileges of the master fd
@@ -494,6 +496,13 @@ bool drmkms_timing::init()
 			return false;
 		}
 
+		p_drmGetDevices2 = (__typeof__(drmGetDevices2)) dlsym(mp_drm_handle, "drmGetDevices2");
+		if (p_drmGetDevices2 == NULL)
+		{
+			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmGetDevices2", "DRM_LIBRARY");
+			return false;
+		}
+
 		p_drmIsMaster = (__typeof__(drmIsMaster)) dlsym(mp_drm_handle, "drmIsMaster");
 		if (p_drmIsMaster == NULL)
 		{
@@ -529,14 +538,29 @@ bool drmkms_timing::init()
 	else if (strlen(m_device_name) == 1 && m_device_name[0] >= '0' && m_device_name[0] <= '9')
 		screen_pos = m_device_name[0] - '0';
 
-	char drm_name[15] = "/dev/dri/card_";
+	drmDevicePtr devices[MAX_DRM_DEVICES];
+	int num_devices = drmGetDevices2(0, NULL, 0);
+
+	if (num_devices > MAX_DRM_DEVICES)
+		num_devices = MAX_DRM_DEVICES;
+
+	int ret = drmGetDevices2(0, devices, num_devices);
+    if (ret < 0) {
+        log_error("DRM/KMS: drmGetDevices2() returned an error %d\n", ret);
+        return false;
+    }
+
+	char *drm_name;
 	drmModeRes *p_res;
 	drmModeConnector *p_connector;
 
 	int output_position = 0;
-	for (int num = 0; !m_desktop_output && num < MAX_CARD_ID; num++)
+	for (int num = 0; num < num_devices; num++)
 	{
-		drm_name[13] = '0' + num;
+		// Ignore render nodes
+		if (devices[num]->available_nodes & 1 << DRM_NODE_PRIMARY)
+			drm_name = devices[num]->nodes[DRM_NODE_PRIMARY];
+		else continue;
 
 		if (!access(drm_name, F_OK) == 0)
 		{
