@@ -538,6 +538,7 @@ bool drmkms_timing::init()
 	else if (strlen(m_device_name) == 1 && m_device_name[0] >= '0' && m_device_name[0] <= '9')
 		screen_pos = m_device_name[0] - '0';
 
+	// Get an array of drm devices to check
 	drmDevicePtr devices[MAX_DRM_DEVICES];
 	int num_devices = drmGetDevices2(0, NULL, 0);
 
@@ -545,10 +546,11 @@ bool drmkms_timing::init()
 		num_devices = MAX_DRM_DEVICES;
 
 	int ret = drmGetDevices2(0, devices, num_devices);
-    if (ret < 0) {
-        log_error("DRM/KMS: drmGetDevices2() returned an error %d\n", ret);
-        return false;
-    }
+	if (ret < 0)
+	{
+		log_error("DRM/KMS: drmGetDevices2() returned an error %d\n", ret);
+		return false;
+	}
 
 	char *drm_name;
 	drmModeRes *p_res;
