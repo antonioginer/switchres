@@ -55,6 +55,15 @@
 # define MAX_CARD_ID 10
 # define MAX_DRM_DEVICES 16
 
+// To enable libdrmhook: make SR_WITH_DRMHOOK=1
+#if SR_WITH_DRMHOOK
+	#define hook_handle RTLD_DEFAULT
+	#define hook_log " (will attempt hook)"
+#else
+	#define hook_handle mp_drm_handle
+	#define hook_log ""
+#endif
+
 //============================================================
 //  shared the privileges of the master fd
 //============================================================
@@ -331,7 +340,7 @@ drmkms_timing::~drmkms_timing()
 
 bool drmkms_timing::init()
 {
-	log_verbose("DRM/KMS: <%d> (init) loading DRM/KMS library\n", m_id);
+	log_verbose("DRM/KMS: <%d> (init) loading DRM/KMS library%s\n", m_id, hook_log);
 	mp_drm_handle = dlopen("libdrm.so", RTLD_NOW);
 	if (mp_drm_handle)
 	{
@@ -356,21 +365,21 @@ bool drmkms_timing::init()
 			return false;
 		}
 
-		p_drmModeGetConnector = (__typeof__(drmModeGetConnector)) dlsym(RTLD_DEFAULT, "drmModeGetConnector");
+		p_drmModeGetConnector = (__typeof__(drmModeGetConnector)) dlsym(hook_handle, "drmModeGetConnector");
 		if (p_drmModeGetConnector == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeGetConnector", "DRM_LIBRARY");
 			return false;
 		}
 
-		p_drmModeGetConnectorCurrent = (__typeof__(drmModeGetConnectorCurrent)) dlsym(RTLD_DEFAULT, "drmModeGetConnectorCurrent");
+		p_drmModeGetConnectorCurrent = (__typeof__(drmModeGetConnectorCurrent)) dlsym(hook_handle, "drmModeGetConnectorCurrent");
 		if (p_drmModeGetConnectorCurrent == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeGetConnectorCurrent", "DRM_LIBRARY");
 			return false;
 		}
 
-		p_drmModeFreeConnector = (__typeof__(drmModeFreeConnector)) dlsym(RTLD_DEFAULT, "drmModeFreeConnector");
+		p_drmModeFreeConnector = (__typeof__(drmModeFreeConnector)) dlsym(hook_handle, "drmModeFreeConnector");
 		if (p_drmModeFreeConnector == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeFreeConnector", "DRM_LIBRARY");
