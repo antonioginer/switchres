@@ -53,6 +53,7 @@ class drmkms_timing : public custom_video
 		int m_caps = 0;
 
 		char m_device_name[32];
+		char m_drm_name[32];
 		unsigned int m_desktop_output = 0;
 		int m_video_modes_position = 0;
 
