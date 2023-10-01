@@ -748,9 +748,8 @@ bool drmkms_timing::init()
 
 int drmkms_timing::get_master_fd()
 {
-	const size_t path_length = 15;
-	char dev_path[path_length];
-	char procpath[50];
+	const size_t path_length = 20;
+	char procpath[path_length];
 	char fullpath[512];
 	char* actualpath;
 	struct stat st;
@@ -799,7 +798,7 @@ int drmkms_timing::get_master_fd()
 			continue;
 		actualpath = realpath(fullpath, NULL);
 		// Only check the device we expect
-		if (strncmp(dev_path, actualpath, path_length) != 0)
+		if (strncmp(m_drm_name, actualpath, path_length) != 0)
 		{
 			free(actualpath);
 			continue;
