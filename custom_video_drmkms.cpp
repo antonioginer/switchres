@@ -647,7 +647,10 @@ bool drmkms_timing::init()
 						}
 					}
 					if (!mp_crtc_desktop)
+					{
+						m_desktop_output = 0;
 						log_error("DRM/KMS: <%d> (init) [ERROR] no crtc found\n", m_id);
+					}
 					drmModeFreeEncoder(p_encoder);
 				}
 				output_position++;
