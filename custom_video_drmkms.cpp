@@ -56,7 +56,7 @@
 # define MAX_DRM_DEVICES 16
 
 // To enable libdrmhook: make SR_WITH_DRMHOOK=1
-#if SR_WITH_DRMHOOK
+#ifdef SR_WITH_DRMHOOK
 	#define hook_handle RTLD_DEFAULT
 	#define hook_log " (will attempt hook)"
 #else
