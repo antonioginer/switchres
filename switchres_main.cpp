@@ -16,6 +16,7 @@
 #include <cstring>
 #include <getopt.h>
 #include "switchres.h"
+#include "switchres_defines.h"
 #include "log.h"
 
 using namespace std;
@@ -25,7 +26,9 @@ int show_usage();
 
 enum
  {
-	OPT_MODELINE = 128
+	OPT_MODELINE = 128,
+	OPT_DOTCLOCK_MIN,
+	OPT_ALLOW_HARDWARE_REFRESH
  };
 
 //============================================================
@@ -84,7 +87,8 @@ int main(int argc, char **argv)
 			{"backend",     required_argument, 0, 'b'},
 			{"keep",        no_argument,       0, 'k'},
 			{"geometry",    required_argument, 0, 'g'},
-			{"modeline",    required_argument, 0, OPT_MODELINE},
+			{SR_OPT_MODELINE,     required_argument, 0, OPT_MODELINE},
+			{SR_OPT_DOTCLOCK_MIN, required_argument, 0, OPT_DOTCLOCK_MIN},
 			{0, 0, 0, 0}
 		};
 
@@ -103,7 +107,11 @@ int main(int argc, char **argv)
 		switch (c)
 		{
 			case OPT_MODELINE:
-				df->set_modeline(optarg);
+				switchres.set_option(SR_OPT_MODELINE, optarg);
+				break;
+
+			case OPT_DOTCLOCK_MIN:
+				switchres.set_option(SR_OPT_DOTCLOCK_MIN, optarg);
 				break;
 
 			case 'v':
@@ -142,7 +150,8 @@ int main(int argc, char **argv)
 				// Add new display in multi-monitor case
 				if (index > 0) switchres.add_display();
 				index ++;
-				df->set_screen(optarg);
+				switchres.set_current_display(-1);
+				switchres.set_option(SR_OPT_DISPLAY, optarg);
 				break;
 
 			case 'a':
