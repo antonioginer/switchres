@@ -26,9 +26,41 @@ int show_usage();
 
 enum
  {
-	OPT_MODELINE = 128,
+	OPT_CRT_RANGE0 = 128,
+	OPT_CRT_RANGE1,
+	OPT_CRT_RANGE2,
+	OPT_CRT_RANGE3,
+	OPT_CRT_RANGE4,
+	OPT_CRT_RANGE5,
+	OPT_CRT_RANGE6,
+	OPT_CRT_RANGE7,
+	OPT_CRT_RANGE8,
+	OPT_CRT_RANGE9,
+	OPT_LCD_RANGE,
+	OPT_MODELINE,
+	OPT_USER_MODE,
+	OPT_API,
+	OPT_LOCK_UNSUPPORTED_MODES,
+	OPT_LOCK_SYSTEM_MODES,
+	OPT_REFRESH_DONT_CARE,
+	OPT_KEEP_CHANGES,
+	OPT_MODELINE_GENERATION,
+	OPT_INTERLACE,
+	OPT_DOUBLESCAN,
 	OPT_DOTCLOCK_MIN,
-	OPT_ALLOW_HARDWARE_REFRESH
+	OPT_SYNC_REFRESH_TOLERANCE,
+	OPT_SUPER_WIDTH,
+	OPT_V_SHIFT_CORRECT,
+	OPT_H_SIZE,
+	OPT_H_SHIFT,
+	OPT_V_SHIFT,
+	OPT_PIXEL_PRECISION,
+	OPT_INTERLACE_FORCE_EVEN,
+	OPT_SCREEN_COMPOSITING,
+	OPT_SCREEN_REORDERING,
+	OPT_ALLOW_HARDWARE_REFRESH,
+	OPT_CUSTOM_TIMING,
+	OPT_VERBOSITY
  };
 
 //============================================================
@@ -76,19 +108,52 @@ int main(int argc, char **argv)
 			{"calc",        no_argument,       0, 'c'},
 			{"switch",      no_argument,       0, 's'},
 			{"launch",      required_argument, 0, 'l'},
-			{"monitor",     required_argument, 0, 'm'},
-			{"aspect",      required_argument, 0, 'a'},
 			{"edid",        no_argument,       0, 'e'},
 			{"rotated",     no_argument,       0, 'r'},
-			{"display",     required_argument, 0, 'd'},
 			{"force",       required_argument, 0, 'f'},
 			{"ini",         required_argument, 0, 'i'},
-			{"verbose",     no_argument,       0, 'v'},
 			{"backend",     required_argument, 0, 'b'},
 			{"keep",        no_argument,       0, 'k'},
 			{"geometry",    required_argument, 0, 'g'},
-			{SR_OPT_MODELINE,     required_argument, 0, OPT_MODELINE},
-			{SR_OPT_DOTCLOCK_MIN, required_argument, 0, OPT_DOTCLOCK_MIN},
+			{SR_OPT_VERBOSE,                no_argument,       0, 'v'},
+			{SR_OPT_DISPLAY,                required_argument, 0, 'd'},
+			{SR_OPT_MONITOR,                required_argument, 0, 'm'},
+			{SR_OPT_ASPECT,                 required_argument, 0, 'a'},
+			{SR_OPT_CRT_RANGE0,             required_argument, 0, OPT_CRT_RANGE0},
+			{SR_OPT_CRT_RANGE1,             required_argument, 0, OPT_CRT_RANGE1},
+			{SR_OPT_CRT_RANGE2,             required_argument, 0, OPT_CRT_RANGE2},
+			{SR_OPT_CRT_RANGE3,             required_argument, 0, OPT_CRT_RANGE3},
+			{SR_OPT_CRT_RANGE4,             required_argument, 0, OPT_CRT_RANGE4},
+			{SR_OPT_CRT_RANGE5,             required_argument, 0, OPT_CRT_RANGE5},
+			{SR_OPT_CRT_RANGE6,             required_argument, 0, OPT_CRT_RANGE6},
+			{SR_OPT_CRT_RANGE7,             required_argument, 0, OPT_CRT_RANGE7},
+			{SR_OPT_CRT_RANGE8,             required_argument, 0, OPT_CRT_RANGE8},
+			{SR_OPT_CRT_RANGE9,             required_argument, 0, OPT_CRT_RANGE9},
+			{SR_OPT_LCD_RANGE,              required_argument, 0, OPT_LCD_RANGE},
+			{SR_OPT_MODELINE,               required_argument, 0, OPT_MODELINE},
+			{SR_OPT_USER_MODE,              required_argument, 0, OPT_USER_MODE},
+			{SR_OPT_API,                    required_argument, 0, OPT_API},
+			{SR_OPT_LOCK_UNSUPPORTED_MODES, required_argument, 0, OPT_LOCK_UNSUPPORTED_MODES},
+			{SR_OPT_LOCK_SYSTEM_MODES,      required_argument, 0, OPT_LOCK_SYSTEM_MODES},
+			{SR_OPT_REFRESH_DONT_CARE,      required_argument, 0, OPT_REFRESH_DONT_CARE},
+			{SR_OPT_KEEP_CHANGES,           required_argument, 0, OPT_KEEP_CHANGES},
+			{SR_OPT_MODELINE_GENERATION,    required_argument, 0, OPT_MODELINE_GENERATION},
+			{SR_OPT_INTERLACE,              required_argument, 0, OPT_INTERLACE},
+			{SR_OPT_DOUBLESCAN,             required_argument, 0, OPT_DOUBLESCAN},
+			{SR_OPT_DOTCLOCK_MIN,           required_argument, 0, OPT_DOTCLOCK_MIN},
+			{SR_OPT_SYNC_REFRESH_TOLERANCE, required_argument, 0, OPT_SYNC_REFRESH_TOLERANCE},
+			{SR_OPT_SUPER_WIDTH,            required_argument, 0, OPT_SUPER_WIDTH},
+			{SR_OPT_V_SHIFT_CORRECT,        required_argument, 0, OPT_V_SHIFT_CORRECT},
+			{SR_OPT_H_SIZE,                 required_argument, 0, OPT_H_SIZE},
+			{SR_OPT_H_SHIFT,                required_argument, 0, OPT_H_SHIFT},
+			{SR_OPT_V_SHIFT,                required_argument, 0, OPT_V_SHIFT},
+			{SR_OPT_PIXEL_PRECISION,        required_argument, 0, OPT_PIXEL_PRECISION},
+			{SR_OPT_INTERLACE_FORCE_EVEN,   required_argument, 0, OPT_INTERLACE_FORCE_EVEN},
+			{SR_OPT_SCREEN_COMPOSITING,     required_argument, 0, OPT_SCREEN_COMPOSITING},
+			{SR_OPT_SCREEN_REORDERING,      required_argument, 0, OPT_SCREEN_REORDERING},
+			{SR_OPT_ALLOW_HARDWARE_REFRESH, required_argument, 0, OPT_ALLOW_HARDWARE_REFRESH},
+			{SR_OPT_CUSTOM_TIMING,          required_argument, 0, OPT_CUSTOM_TIMING},
+			{SR_OPT_VERBOSITY,              required_argument, 0, OPT_VERBOSITY},
 			{0, 0, 0, 0}
 		};
 
@@ -106,12 +171,41 @@ int main(int argc, char **argv)
 
 		switch (c)
 		{
+			case OPT_CRT_RANGE0:
+			case OPT_CRT_RANGE1:
+			case OPT_CRT_RANGE2:
+			case OPT_CRT_RANGE3:
+			case OPT_CRT_RANGE4:
+			case OPT_CRT_RANGE5:
+			case OPT_CRT_RANGE6:
+			case OPT_CRT_RANGE7:
+			case OPT_CRT_RANGE8:
+			case OPT_CRT_RANGE9:
+			case OPT_LCD_RANGE:
 			case OPT_MODELINE:
-				switchres.set_option(SR_OPT_MODELINE, optarg);
-				break;
-
+			case OPT_API:
+			case OPT_LOCK_UNSUPPORTED_MODES:
+			case OPT_LOCK_SYSTEM_MODES:
+			case OPT_REFRESH_DONT_CARE:
+			case OPT_KEEP_CHANGES:
+			case OPT_MODELINE_GENERATION:
+			case OPT_INTERLACE:
+			case OPT_DOUBLESCAN:
 			case OPT_DOTCLOCK_MIN:
-				switchres.set_option(SR_OPT_DOTCLOCK_MIN, optarg);
+			case OPT_SYNC_REFRESH_TOLERANCE:
+			case OPT_SUPER_WIDTH:
+			case OPT_V_SHIFT_CORRECT:
+			case OPT_H_SIZE:
+			case OPT_H_SHIFT:
+			case OPT_V_SHIFT:
+			case OPT_PIXEL_PRECISION:
+			case OPT_INTERLACE_FORCE_EVEN:
+			case OPT_SCREEN_COMPOSITING:
+			case OPT_SCREEN_REORDERING:
+			case OPT_ALLOW_HARDWARE_REFRESH:
+			case OPT_CUSTOM_TIMING:
+			case OPT_VERBOSITY:
+				switchres.set_option(long_options[option_index].name, optarg);
 				break;
 
 			case 'v':
@@ -163,9 +257,10 @@ int main(int argc, char **argv)
 				break;
 
 			case 'f':
+			case OPT_USER_MODE:
 				force_flag = true;
 				if (sscanf(optarg, "%dx%d@%d", &user_mode.width, &user_mode.height, &user_mode.refresh) < 1)
-					log_error("Error: use format --force <w>x<h>@<r>\n");
+					log_error("Error: use format <w>x<h>@<r>\n");
 				break;
 
 			case 'i':
