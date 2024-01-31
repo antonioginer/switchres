@@ -112,7 +112,6 @@ int main(int argc, char **argv)
 			{"rotated",     no_argument,       0, 'r'},
 			{"force",       required_argument, 0, 'f'},
 			{"ini",         required_argument, 0, 'i'},
-			{"backend",     required_argument, 0, 'b'},
 			{"keep",        no_argument,       0, 'k'},
 			{"geometry",    required_argument, 0, 'g'},
 			{SR_OPT_VERBOSE,                no_argument,       0, 'v'},
@@ -158,7 +157,7 @@ int main(int argc, char **argv)
 		};
 
 		int option_index = 0;
-		int c = getopt_long(argc, argv, "vhcsl:m:a:erd:f:i:b:kg:", long_options, &option_index);
+		int c = getopt_long(argc, argv, "vhcsl:m:a:erd:f:i:kg:", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -446,7 +445,6 @@ int show_usage()
 		"  -d, --display <OS_display_name>   Use target display (Windows: \\\\.\\DISPLAY1, ... Linux: VGA-0, ...)\n"
 		"  -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list\n"
 		"  -i, --ini <file.ini>              Specify an ini file\n"
-		"  -b, --backend <api_name>          Specify the api name\n"
 		"  -e, --edid                        Create an EDID binary with calculated video modes\n"
 		"  -k, --keep                        Keep changes on exit (warning: this disables cleanup)\n"
 		"  -g, --geometry <h_size>:<h_shift>:<v_shift>  Adjust geometry of generated modeline\n"
