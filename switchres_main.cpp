@@ -103,6 +103,7 @@ int main(int argc, char **argv)
 	{
 		static struct option long_options[] =
 		{
+			// Options unique to standalone Switchres
 			{"version",     no_argument,       &version_flag, '1'},
 			{"help",        no_argument,       0, 'h'},
 			{"calc",        no_argument,       0, 'c'},
@@ -110,14 +111,16 @@ int main(int argc, char **argv)
 			{"launch",      required_argument, 0, 'l'},
 			{"edid",        no_argument,       0, 'e'},
 			{"rotated",     no_argument,       0, 'r'},
-			{"force",       required_argument, 0, 'f'},
+			{"force",       required_argument, 0, 'f'}, // equ. --user_mode
 			{"ini",         required_argument, 0, 'i'},
-			{"keep",        no_argument,       0, 'k'},
+			{"keep",        no_argument,       0, 'k'}, // equ. --keep_changes
 			{"geometry",    required_argument, 0, 'g'},
+			// Options available in short and long forms
 			{SR_OPT_VERBOSE,                no_argument,       0, 'v'},
 			{SR_OPT_DISPLAY,                required_argument, 0, 'd'},
 			{SR_OPT_MONITOR,                required_argument, 0, 'm'},
 			{SR_OPT_ASPECT,                 required_argument, 0, 'a'},
+			// Long options, from switchres.ini
 			{SR_OPT_CRT_RANGE0,             required_argument, 0, OPT_CRT_RANGE0},
 			{SR_OPT_CRT_RANGE1,             required_argument, 0, OPT_CRT_RANGE1},
 			{SR_OPT_CRT_RANGE2,             required_argument, 0, OPT_CRT_RANGE2},
@@ -170,43 +173,6 @@ int main(int argc, char **argv)
 
 		switch (c)
 		{
-			case OPT_CRT_RANGE0:
-			case OPT_CRT_RANGE1:
-			case OPT_CRT_RANGE2:
-			case OPT_CRT_RANGE3:
-			case OPT_CRT_RANGE4:
-			case OPT_CRT_RANGE5:
-			case OPT_CRT_RANGE6:
-			case OPT_CRT_RANGE7:
-			case OPT_CRT_RANGE8:
-			case OPT_CRT_RANGE9:
-			case OPT_LCD_RANGE:
-			case OPT_MODELINE:
-			case OPT_API:
-			case OPT_LOCK_UNSUPPORTED_MODES:
-			case OPT_LOCK_SYSTEM_MODES:
-			case OPT_REFRESH_DONT_CARE:
-			case OPT_KEEP_CHANGES:
-			case OPT_MODELINE_GENERATION:
-			case OPT_INTERLACE:
-			case OPT_DOUBLESCAN:
-			case OPT_DOTCLOCK_MIN:
-			case OPT_SYNC_REFRESH_TOLERANCE:
-			case OPT_SUPER_WIDTH:
-			case OPT_V_SHIFT_CORRECT:
-			case OPT_H_SIZE:
-			case OPT_H_SHIFT:
-			case OPT_V_SHIFT:
-			case OPT_PIXEL_PRECISION:
-			case OPT_INTERLACE_FORCE_EVEN:
-			case OPT_SCREEN_COMPOSITING:
-			case OPT_SCREEN_REORDERING:
-			case OPT_ALLOW_HARDWARE_REFRESH:
-			case OPT_CUSTOM_TIMING:
-			case OPT_VERBOSITY:
-				switchres.set_option(long_options[option_index].name, optarg);
-				break;
-
 			case 'v':
 				switchres.set_log_level(3);
 				switchres.set_log_error_fn((void*)printf);
@@ -284,6 +250,44 @@ int main(int argc, char **argv)
 				df->set_h_size(h_size);
 				df->set_h_shift(h_shift);
 				df->set_v_shift(v_shift);
+				break;
+
+			// Long options
+			case OPT_CRT_RANGE0:
+			case OPT_CRT_RANGE1:
+			case OPT_CRT_RANGE2:
+			case OPT_CRT_RANGE3:
+			case OPT_CRT_RANGE4:
+			case OPT_CRT_RANGE5:
+			case OPT_CRT_RANGE6:
+			case OPT_CRT_RANGE7:
+			case OPT_CRT_RANGE8:
+			case OPT_CRT_RANGE9:
+			case OPT_LCD_RANGE:
+			case OPT_MODELINE:
+			case OPT_API:
+			case OPT_LOCK_UNSUPPORTED_MODES:
+			case OPT_LOCK_SYSTEM_MODES:
+			case OPT_REFRESH_DONT_CARE:
+			case OPT_KEEP_CHANGES:
+			case OPT_MODELINE_GENERATION:
+			case OPT_INTERLACE:
+			case OPT_DOUBLESCAN:
+			case OPT_DOTCLOCK_MIN:
+			case OPT_SYNC_REFRESH_TOLERANCE:
+			case OPT_SUPER_WIDTH:
+			case OPT_V_SHIFT_CORRECT:
+			case OPT_H_SIZE:
+			case OPT_H_SHIFT:
+			case OPT_V_SHIFT:
+			case OPT_PIXEL_PRECISION:
+			case OPT_INTERLACE_FORCE_EVEN:
+			case OPT_SCREEN_COMPOSITING:
+			case OPT_SCREEN_REORDERING:
+			case OPT_ALLOW_HARDWARE_REFRESH:
+			case OPT_CUSTOM_TIMING:
+			case OPT_VERBOSITY:
+				switchres.set_option(long_options[option_index].name, optarg);
 				break;
 
 			default:
@@ -416,7 +420,7 @@ int show_version()
 	{
 		"Switchres " SWITCHRES_VERSION "\n"
 		"Modeline generation engine for emulation\n"
-		"Copyright (C) 2010-2021 - Chris Kennedy, Antonio Giner, Alexandre Wodarczyk, Gil Delescluse\n"
+		"Copyright (C) 2010-2024 - Chris Kennedy, Antonio Giner, Alexandre Wodarczyk, Gil Delescluse\n"
 		"License GPL-2.0+\n"
 		"This is free software: you are free to change and redistribute it.\n"
 		"There is NO WARRANTY, to the extent permitted by law.\n"
@@ -441,14 +445,17 @@ int show_usage()
 		"  -l, --launch <command>            Launch <command>\n"
 		"  -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)\n"
 		"  -a, --aspect <num:den>            Monitor aspect ratio\n"
-		"  -r, --rotated                     Original mode's native orientation is rotated\n"
-		"  -d, --display <OS_display_name>   Use target display (Windows: \\\\.\\DISPLAY1, ... Linux: VGA-0, ...)\n"
+		"  -r, --rotated                     Rotate axes, preserving aspect ratio.\n"
+		"  -d, --display <display_index>     Use target display (index = 0, 1, 2...)\n"
 		"  -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list\n"
 		"  -i, --ini <file.ini>              Specify an ini file\n"
 		"  -e, --edid                        Create an EDID binary with calculated video modes\n"
 		"  -k, --keep                        Keep changes on exit (warning: this disables cleanup)\n"
-		"  -g, --geometry <h_size>:<h_shift>:<v_shift>  Adjust geometry of generated modeline\n"
-		"  --modeline <\"pclk hdisp hsst hsend htot vdisp vsst vsend vtot flags\">  Force an XFree86 modeline\n"
+		"  -g, --geometry <adjustment>       Adjust geometry of generated modeline\n"
+		"                                    adjustment = <h_size>:<h_shift>:<v_shift>\n"
+		"                                    e.g. switchres 640 480 60 -c -g 1.1:-1:2\n\n"
+		"For more options, refer to switchres.ini. All options in switchres.ini can be applied in\n"
+		"command line as long options, e.g.: switchres 256 224 57.55 -c --dotclock_min 8.0\n\n"
 	};
 
 	log_info("%s", usage);
