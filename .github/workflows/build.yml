@@ -76,10 +76,10 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: Switchres ${GITHUB_REF#refs/*/}
+        name: Switchres ${{ GITHUB_REF#refs/*/ }}
         draft: true
         prerelease: false
         files: |
           ./switchres-linux_gcc-x86_64/*.zip
-          ./switchres-windows_mingw/*.zip
+          ./switchres-windows_mingw-x86_64/*.zip
           ./geometry-win32-x86_64/*.zip
