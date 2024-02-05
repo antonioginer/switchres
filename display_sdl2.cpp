@@ -26,7 +26,7 @@ void get_sdl_hwinfo_from_sdl_window(SDL_Window* window)
 {
 	SDL_SysWMinfo m_sdlwminfo;
 
-	SDL_VERSION(&m_sdlwminfo.version);
+	SDL_GetVersion(&m_sdlwminfo.version);
 	if(! SDL_GetWindowWMInfo(window, &m_sdlwminfo))
 	{
 		log_error("Couldn't get the SDL WMInfo\n");
