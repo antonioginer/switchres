@@ -69,6 +69,9 @@ jobs:
     needs: [buildx86_64, win32-build-x86_64-geometry]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
     - name: Download artifacts
       uses: actions/download-artifact@v2.0.5
     - name: Create release
@@ -76,7 +79,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: Switchres ${{ GITHUB_REF#refs/*/ }}
+        name: Switchres ${{ steps.get_version.outputs.VERSION }}
         draft: true
         prerelease: false
         files: |
