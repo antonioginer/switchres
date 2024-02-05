@@ -74,6 +74,11 @@ jobs:
       run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
     - name: Download artifacts
       uses: actions/download-artifact@v2.0.5
+    - name: Make packages
+      run: |
+        mv ./geometry-win32-x86_64/geometry.exe ./switchres-windows_mingw-x86_64
+        7z a switchres-windows_mingw-x86_64.7z ./switchres-windows_mingw-x86_64
+        tar cvjf switchres-linux_gcc-x86_64.tar.bz2 ./switchres-linux_gcc-x86_64
     - name: Create release
       uses: softprops/action-gh-release@v1
       env:
@@ -83,6 +88,5 @@ jobs:
         draft: true
         prerelease: false
         files: |
-          ./switchres-linux_gcc-x86_64/*.zip
-          ./switchres-windows_mingw-x86_64/*.zip
-          ./geometry-win32-x86_64/*.zip
+          ./*.bz2
+          ./*.7z
