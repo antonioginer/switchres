@@ -37,7 +37,7 @@ Options:
   -l, --launch <command>            Launch <command>
   -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)
   -a  --aspect <num:den>            Monitor aspect ratio
-  -r  --rotated                     Original mode's native orientation is rotated
+  -r  --rotated                     Rotate axes, preserving aspect ratio
   -d, --display <display_index>     Use target display (index = 0, 1, 2...)
   -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list
   -i, --ini <file.ini>              Specify an ini file
