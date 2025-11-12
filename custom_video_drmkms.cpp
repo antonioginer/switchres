@@ -191,11 +191,9 @@ void modeline_to_drm_modeline(int id, modeline *mode, drmModeModeInfo *drmmode)
 
 bool drmkms_timing::test_kernel_user_modes()
 {
-	int ret = 0, first_modes_count = 0, second_modes_count = 0;
+	int ret = 0;
 	int fd;
 	drmModeModeInfo mode = {};
-	const char* my_name = "KMS Test mode";
-	drmModeConnector *conn;
 
 	// Make sure we are master, that is required for the IOCTL
 	fd = get_master_fd();
@@ -208,7 +206,7 @@ bool drmkms_timing::test_kernel_user_modes()
 	// Create a dummy modeline with a pixel clock higher than 25MHz to avoid
 	// drivers checks rejecting the mode. Use a modeline that no one would
 	// ever use hopefully
-	strcpy(mode.name, my_name);
+	strcpy(mode.name, "KMS Test mode");
 	mode.clock       = 25212;
 	mode.hdisplay    = 1234;
 	mode.hsync_start = 1290;
@@ -220,46 +218,22 @@ bool drmkms_timing::test_kernel_user_modes()
 	mode.vtotal      = 261;
 	mode.flags       = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC;
 
-	// Count the number of existing modes, so it should be +1 when attaching
-	// a new mode. Could also check the mode name, still better
-	conn = drmModeGetConnector(fd, m_desktop_output);
-	if (!conn)
-	{
-		log_verbose("DRM/KMS: <%d> (%s) Cannot get connector\n", m_id, __FUNCTION__);
-		m_kernel_user_modes = false;
-		return false;
-	}
-
-	first_modes_count = conn->count_modes;
-	ret = drmModeAttachMode(fd, m_desktop_output, &mode);
-	drmModeFreeConnector(conn);
-
-	// This case can only happen if we're not drmMaster. If the kernel doesn't
-	// support adding new modes, the IOCTL will still return 0, not an error
-	if (ret < 0)
+	// Call the IOCT with a bad connector id, stock kernel won't return an error
+	ret = drmModeAttachMode(fd, -1, &mode);
+	if (ret == 0)
 	{
 		// Let's fail, no need to go further
-		log_verbose("DRM/KMS: <%d> (%s) Cannot add new kernel user mode\n", m_id, __FUNCTION__);
+		log_verbose("DRM/KMS: <%d> (%s) Kernel doesn't supports user modes\n", m_id, __FUNCTION__);
 		m_kernel_user_modes = false;
 		return false;
 	}
 
-	// Not using drmModeGetConnectorCurrent here since we need to force a
-	// modelist connector refresh, so the kernel will probe the connector
-	conn = drmModeGetConnector(fd, m_desktop_output);
-	second_modes_count = conn->count_modes;
-	if (first_modes_count != second_modes_count)
-	{
-		log_verbose("DRM/KMS: <%d> (%s) Kernel supports user modes (%d vs %d)\n", m_id, __FUNCTION__, first_modes_count, second_modes_count);
-		m_kernel_user_modes = true;
-		drmModeDetachMode(fd, m_desktop_output, &mode);
-		if (fd != m_hook_fd)
-			drmDropMaster(fd);
-	}
-	else
-		log_verbose("DRM/KMS: <%d> (%s) Kernel doesn't supports user modes\n", m_id, __FUNCTION__);
+	log_verbose("DRM/KMS: <%d> (%s) Kernel supports user modes\n", m_id, __FUNCTION__);
+	m_kernel_user_modes = true;
 
-	drmModeFreeConnector(conn);
+	if (fd != m_hook_fd)
+		drmDropMaster(fd);
+
 	return m_kernel_user_modes;
 }
 
