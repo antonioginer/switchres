@@ -23,6 +23,7 @@
 #include <dirent.h>
 #include "custom_video_drmkms.h"
 #include "log.h"
+#include "switchres_defines.h"
 
 #define drmGetVersion p_drmGetVersion
 #define drmFreeVersion p_drmFreeVersion
@@ -700,7 +701,7 @@ bool drmkms_timing::init()
 		m_caps |= CUSTOM_VIDEO_CAPS_UPDATE;
 	}
 	// Check if the kernel handles user modes
-	else if (test_kernel_user_modes())
+	else //if (test_kernel_user_modes())
 		m_caps |= CUSTOM_VIDEO_CAPS_ADD;
 
 	if (drmIsMaster(m_drm_fd) and m_drm_fd != m_hook_fd)
@@ -950,8 +951,10 @@ bool drmkms_timing::set_timing(modeline *mode)
 		return false;
 	}
 
+/*
 	if (!kms_has_mode(mode))
 		add_mode(mode);
+*/
 
 	// If we can't be master, no need to go further
 	drmSetMaster(m_drm_fd);
@@ -1040,14 +1043,15 @@ bool drmkms_timing::set_timing(modeline *mode)
 			if (ret)
 				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] ioctl DRM_IOCTL_MODE_MAP_DUMB %d\n", m_id, ret);
 
-			void *map = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, m_drm_fd, map_dumb.offset);
-			if (map != MAP_FAILED)
+			//void *map = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, m_drm_fd, map_dumb.offset);
+			m_map = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, m_drm_fd, map_dumb.offset);
+			if (m_map != MAP_FAILED)
 			{
 				// clear the frame buffer
-				memset(map, 0, create_dumb.size);
+				memset(m_map, 0, create_dumb.size);
 			}
 			else
-				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] failed to map frame buffer %p\n", m_id, map);
+				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] failed to map frame buffer %p\n", m_id, m_map);
 		}
 		else
 			log_verbose("DRM/KMS: <%d> (set_timing) <debug> use existing frame buffer\n", m_id);
@@ -1299,4 +1303,16 @@ bool drmkms_timing::kms_has_mode(modeline* mode)
 	log_verbose("DRM/KMS: <%d> (%s) Couldn't find the mode in the connector\n", m_id, __FUNCTION__);
 	drmModeFreeConnector(conn);
 	return false;
+}
+
+//============================================================
+//  drmkms_timing::get_resource
+//============================================================
+
+void *drmkms_timing::get_resource(const char *resource)
+{
+	if (!strcmp(resource, SR_RES_KMS_BUFFER))
+		return m_map;
+
+	return nullptr;
 }
