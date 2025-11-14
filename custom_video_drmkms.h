@@ -54,6 +54,7 @@ class drmkms_timing : public custom_video
 		int m_hook_fd = -1;
 		int m_caps = 0;
 		void *m_map = nullptr;
+		int m_pitch = 0;
 
 		char m_device_name[32];
 		char m_drm_name[32];

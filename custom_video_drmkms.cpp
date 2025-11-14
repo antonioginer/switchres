@@ -700,8 +700,14 @@ bool drmkms_timing::init()
 		log_verbose("DRM/KMS: libdrm hook found!\n");
 		m_caps |= CUSTOM_VIDEO_CAPS_UPDATE;
 	}
+	// Check if we're setting modes directly
+	else if (m_vs.kms_modesetting)
+	{
+		can_drop_master = false;
+		m_caps |= CUSTOM_VIDEO_CAPS_ADD;
+	}
 	// Check if the kernel handles user modes
-	else //if (test_kernel_user_modes())
+	else if (test_kernel_user_modes())
 		m_caps |= CUSTOM_VIDEO_CAPS_ADD;
 
 	if (drmIsMaster(m_drm_fd) and m_drm_fd != m_hook_fd)
@@ -951,11 +957,6 @@ bool drmkms_timing::set_timing(modeline *mode)
 		return false;
 	}
 
-/*
-	if (!kms_has_mode(mode))
-		add_mode(mode);
-*/
-
 	// If we can't be master, no need to go further
 	drmSetMaster(m_drm_fd);
 	if (!drmIsMaster(m_drm_fd))
@@ -1038,12 +1039,12 @@ bool drmkms_timing::set_timing(modeline *mode)
 
 			drm_mode_map_dumb map_dumb = {};
 			map_dumb.handle = create_dumb.handle;
+			m_pitch = create_dumb.pitch;
 
 			ret = drmIoctl(m_drm_fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb);
 			if (ret)
 				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] ioctl DRM_IOCTL_MODE_MAP_DUMB %d\n", m_id, ret);
 
-			//void *map = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, m_drm_fd, map_dumb.offset);
 			m_map = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, m_drm_fd, map_dumb.offset);
 			if (m_map != MAP_FAILED)
 			{
@@ -1313,6 +1314,9 @@ void *drmkms_timing::get_resource(const char *resource)
 {
 	if (!strcmp(resource, SR_RES_KMS_BUFFER))
 		return m_map;
+
+	if (!strcmp(resource, SR_RES_KMS_PITCH))
+		return (void*)&m_pitch;
 
 	return nullptr;
 }
