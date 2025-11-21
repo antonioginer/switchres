@@ -40,7 +40,7 @@ jobs:
     - name: Prepare artifacts
       run: mkdir artifacts && cp -v libswitchres.{so,a,dll,lib} switchres{,.exe,.ini} grid{,.exe} /usr/x86_64-w64-mingw32/bin/SDL2{,_ttf}.dll /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll artifacts/ || true
     - name: Upload artifact
-      uses: actions/upload-artifact@v3.1.0
+      uses: actions/upload-artifact@v4
       with:
         name: switchres-${{matrix.platform.name}}-x86_64
         path: artifacts/
@@ -58,7 +58,7 @@ jobs:
         pip install pyinstaller
         pyinstaller --onefile geometry.py --icon=tv.ico
     - name: Upload artifact
-      uses: actions/upload-artifact@v3.1.0
+      uses: actions/upload-artifact@v4
       with:
         name: geometry-win32-x86_64 
         path: dist/
