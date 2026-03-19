@@ -73,7 +73,7 @@ jobs:
       id: get_version
       run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
     - name: Download artifacts
-      uses: actions/download-artifact@v2.0.5
+      uses: actions/download-artifact@v4
     - name: Make packages
       run: |
         tag="${GITHUB_REF#refs/tags/}"
