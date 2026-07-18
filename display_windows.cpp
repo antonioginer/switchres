@@ -278,7 +278,7 @@ int windows_display::get_available_video_modes()
 				m.type |= MODE_DESKTOP;
 				if (m.type & MODE_ROTATED) set_desktop_is_rotated(true);
 				if (current_mode() == nullptr)
-				set_current_mode(&m);
+				set_current_mode(&desktop_mode);
 			}
 
 			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s%s %s: ", k, m.width, m.height, m.refresh, m.interlace?"i":"p", m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
@@ -293,6 +293,8 @@ int windows_display::get_available_video_modes()
 				m.type |= CUSTOM_VIDEO_TIMING_SYSTEM;
 				log_verbose("system mode\n");
 			}
+
+			m.id = alloc_mode_id();
 
 			// Save our desktop mode now that we queried detailed timings
 			if (m.type & MODE_DESKTOP) desktop_mode = m;

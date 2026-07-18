@@ -186,6 +186,7 @@ public:
 	bool restore_modes();
 	bool flush_modes();
 	bool auto_specs();
+	int alloc_mode_id() { return ++m_id_counter; }
 
 	// mode list
 	std::vector<modeline> video_modes = {};
