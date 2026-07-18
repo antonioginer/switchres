@@ -348,7 +348,7 @@ int sr_mode_internal(int width, int height, double refresh, int flags, sr_mode *
 	{
 		bool found = false;
 
-		for (auto mode : disp->video_modes)
+		for (auto &mode : disp->video_modes)
 		{
 			if (mode.id == srm->id)
 			{

@@ -150,12 +150,14 @@ int linux_display::get_available_video_modes()
 		if (mode.type == 0)
 			break;
 
+		mode.id = alloc_mode_id();
+
 		// set the desktop mode
 		if (mode.type & MODE_DESKTOP)
 		{
 			memcpy(&desktop_mode, &mode, sizeof(modeline));
 			if (current_mode() == nullptr)
-				set_current_mode(&mode);
+				set_current_mode(&desktop_mode);
 
 			if (mode.type & MODE_ROTATED) set_desktop_is_rotated(true);
 		}
