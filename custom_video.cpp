@@ -52,7 +52,7 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 	}
 	else
 	{
-		int vendor, device;
+		int vendor = 0, device = 0;
 		sscanf(device_id, "PCI\\VEN_%x&DEV_%x", &vendor, &device);
 
 		if (vendor == 0x1002) // ATI/AMD
