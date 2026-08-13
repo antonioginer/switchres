@@ -97,7 +97,7 @@ SO_NAME := $(LINKER_NAME).$(VERSION_MAJOR)
 LIB_CPPFLAGS := -Wl,-soname,$(SO_NAME)
 # Windows
 else ifneq (,$(findstring NT,$(PLATFORM)))
-SRC += display_windows.cpp custom_video_ati_family.cpp custom_video_ati.cpp custom_video_adl.cpp custom_video_pstrip.cpp resync_windows.cpp
+SRC += display_windows.cpp custom_video_gud.cpp custom_video_ati_family.cpp custom_video_ati.cpp custom_video_adl.cpp custom_video_pstrip.cpp resync_windows.cpp
 WIN_ONLY_FLAGS = -static-libgcc -static-libstdc++
 CPPFLAGS += -static $(WIN_ONLY_FLAGS)
 LIBS =

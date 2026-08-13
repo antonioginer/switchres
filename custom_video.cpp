@@ -22,6 +22,7 @@
 #include "custom_video_ati.h"
 #include "custom_video_adl.h"
 #include "custom_video_pstrip.h"
+#include "custom_video_gud.h"
 #elif defined(__linux__)
 #ifdef SR_WITH_XRANDR
 #include "custom_video_xrandr.h"
@@ -49,6 +50,20 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 			m_custom_method = CUSTOM_VIDEO_TIMING_POWERSTRIP;
 			return m_custom_video;
 		}
+	}
+	else if (gud_timing::is_gud_display(device_id))
+	{
+		// A Generic USB Display. There is no graphics card behind it and no
+		// PCI id to match on, so this has to be decided before the vendor
+		// sniff below rather than inside it.
+		gud_timing *gud = new gud_timing(device_name, device_id, vs);
+		if (gud && gud->init())
+		{
+			m_custom_video = gud;
+			m_custom_method = CUSTOM_VIDEO_TIMING_GUD;
+			return m_custom_video;
+		}
+		delete gud;
 	}
 	else
 	{
