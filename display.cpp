@@ -341,6 +341,9 @@ bool display_manager::filter_modes()
 			else
 				mode.type &= ~MODE_DISABLED;
 		}
+		// This has priority over desktop fallback and user resolution rules.
+		if (mode.type & MODE_SYNC_INCOMPATIBLE)
+			mode.type |= MODE_DISABLED;
 	}
 
 	return true;
@@ -352,6 +355,18 @@ bool display_manager::filter_modes()
 
 modeline *display_manager::get_mode(int width, int height, float refresh, int flags)
 {
+	if (m_ds.vs.csync == CUSTOM_VIDEO_CSYNC_INVALID)
+	{
+		log_error("Switchres: refusing to calculate a mode with invalid csync configuration\n");
+		return nullptr;
+	}
+	if (m_ds.vs.csync != CUSTOM_VIDEO_CSYNC_OFF &&
+		((m_ds.api[0] && strcmp(m_ds.api, "auto") && strcmp(m_ds.api, "xrandr")) ||
+		 (video() && strcmp(video()->api_name(), "XRANDR"))))
+	{
+		log_error("Switchres: csync is unsupported by the selected video backend\n");
+		return nullptr;
+	}
 	modeline s_mode = {};
 	modeline t_mode = {};
 	modeline best_mode = {};

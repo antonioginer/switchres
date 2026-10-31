@@ -44,6 +44,17 @@ linux_display::~linux_display()
 
 bool linux_display::init(void* pfdata)
 {
+	if (m_ds.vs.csync == CUSTOM_VIDEO_CSYNC_INVALID)
+	{
+		log_error("Switchres: invalid csync configuration\n");
+		return false;
+	}
+	if (m_ds.vs.csync != CUSTOM_VIDEO_CSYNC_OFF &&
+		m_ds.api[0] && strcmp(m_ds.api, "auto") && strcmp(m_ds.api, "xrandr"))
+	{
+		log_error("Switchres: csync requires the XRandR backend; requested api %s\n", m_ds.api);
+		return false;
+	}
 	m_pf_data = pfdata;
 	// Initialize custom video
 	int method = CUSTOM_VIDEO_TIMING_AUTO;
@@ -59,6 +70,12 @@ bool linux_display::init(void* pfdata)
 
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(m_ds.screen, NULL, method, &m_ds.vs));
+	if (m_ds.vs.csync != CUSTOM_VIDEO_CSYNC_OFF &&
+		(!video() || strcmp(video()->api_name(), "XRANDR")))
+	{
+		log_error("Switchres: csync requires the XRandR video backend\n");
+		return false;
+	}
 	if (!video() or !video()->init())
 		return false;
 

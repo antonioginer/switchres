@@ -71,6 +71,17 @@ sdl2_display::~sdl2_display()
 
 bool sdl2_display::init(void* pf_data)
 {
+	if (m_ds.vs.csync == CUSTOM_VIDEO_CSYNC_INVALID)
+	{
+		log_error("Switchres: invalid csync configuration\n");
+		return false;
+	}
+	if (m_ds.vs.csync != CUSTOM_VIDEO_CSYNC_OFF &&
+		m_ds.api[0] && strcmp(m_ds.api, "auto") && strcmp(m_ds.api, "xrandr"))
+	{
+		log_error("Switchres: csync requires the XRandR backend; requested api %s\n", m_ds.api);
+		return false;
+	}
 	m_sdlwindow = (SDL_Window*) pf_data;
 
 	// Initialize custom video
@@ -86,6 +97,12 @@ bool sdl2_display::init(void* pf_data)
 #endif
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(m_ds.screen, NULL, method, &m_ds.vs));
+	if (m_ds.vs.csync != CUSTOM_VIDEO_CSYNC_OFF &&
+		(!video() || strcmp(video()->api_name(), "XRANDR")))
+	{
+		log_error("Switchres: csync requires the XRandR video backend\n");
+		return false;
+	}
 	if (!video() or !video()->init())
 		return false;
 	// Build our display's mode list
