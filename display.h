@@ -67,8 +67,8 @@ public:
 
 	// getters (modes)
 	modeline user_mode() const { return m_user_mode; }
-	modeline *selected_mode() const { return m_selected_mode; }
-	modeline *current_mode() const { return m_current_mode; }
+	modeline *selected_mode() { return find_mode(m_selected_mode_id); }
+	modeline *current_mode() { return find_mode(m_current_mode_id); }
 
 	// getters (display manager)
 	const char *monitor() { return (const char*) &m_ds.monitor; }
@@ -100,22 +100,22 @@ public:
 	int scale_proportional() { return m_ds.gs.scale_proportional; }
 
 	// getters (modeline result)
-	bool got_mode() { return (m_selected_mode != nullptr); }
-	int width() { return m_selected_mode != nullptr? m_selected_mode->width : 0; }
-	int height() { return m_selected_mode != nullptr? m_selected_mode->height : 0; }
-	int refresh() { return m_selected_mode != nullptr? m_selected_mode->refresh : 0; }
-	double v_freq() { return m_selected_mode != nullptr? m_selected_mode->vfreq : 0; }
-	double h_freq() { return m_selected_mode != nullptr? m_selected_mode->hfreq : 0; }
-	double x_scale() { return m_selected_mode != nullptr? m_selected_mode->result.x_scale : 0; }
-	double y_scale() { return m_selected_mode != nullptr? m_selected_mode->result.y_scale : 0; }
-	double v_scale() { return m_selected_mode != nullptr? m_selected_mode->result.v_scale : 0; }
-	bool is_interlaced() { return m_selected_mode != nullptr? m_selected_mode->interlace : false; }
-	bool is_doublescanned() { return m_selected_mode != nullptr? m_selected_mode->doublescan : false; }
-	bool is_stretched() { return m_selected_mode != nullptr? m_selected_mode->result.weight & R_RES_STRETCH : false; }
-	bool is_refresh_off() { return m_selected_mode != nullptr? m_selected_mode->result.weight & R_V_FREQ_OFF : false; }
+	bool got_mode() { return (selected_mode() != nullptr); }
+	int width() { return selected_mode() != nullptr? selected_mode()->width : 0; }
+	int height() { return selected_mode() != nullptr? selected_mode()->height : 0; }
+	int refresh() { return selected_mode() != nullptr? selected_mode()->refresh : 0; }
+	double v_freq() { return selected_mode() != nullptr? selected_mode()->vfreq : 0; }
+	double h_freq() { return selected_mode() != nullptr? selected_mode()->hfreq : 0; }
+	double x_scale() { return selected_mode() != nullptr? selected_mode()->result.x_scale : 0; }
+	double y_scale() { return selected_mode() != nullptr? selected_mode()->result.y_scale : 0; }
+	double v_scale() { return selected_mode() != nullptr? selected_mode()->result.v_scale : 0; }
+	bool is_interlaced() { return selected_mode() != nullptr? selected_mode()->interlace : false; }
+	bool is_doublescanned() { return selected_mode() != nullptr? selected_mode()->doublescan : false; }
+	bool is_stretched() { return selected_mode() != nullptr? selected_mode()->result.weight & R_RES_STRETCH : false; }
+	bool is_refresh_off() { return selected_mode() != nullptr? selected_mode()->result.weight & R_V_FREQ_OFF : false; }
 	bool is_switching_required() { return m_switching_required; }
-	bool is_mode_updated() { return m_selected_mode != nullptr? m_selected_mode->type & MODE_UPDATE : false; }
-	bool is_mode_new() { return m_selected_mode != nullptr? m_selected_mode->type & MODE_ADD : false; }
+	bool is_mode_updated() { return selected_mode() != nullptr? selected_mode()->type & MODE_UPDATE : false; }
+	bool is_mode_new() { return selected_mode() != nullptr? selected_mode()->type & MODE_ADD : false; }
 
 	// getters (custom_video backend)
 	bool screen_compositing() { return m_ds.vs.screen_compositing; }
@@ -131,8 +131,8 @@ public:
 
 	// setters (modes)
 	void set_user_mode(modeline *mode) { m_ds.user_mode = m_user_mode = *mode; filter_modes(); }
-	void set_selected_mode(modeline *mode) { m_selected_mode = mode; }
-	void set_current_mode(modeline *mode) { m_current_mode = mode; }
+	void set_selected_mode(modeline *mode) { m_selected_mode_id = mode == nullptr? -1 : mode->id; }
+	void set_current_mode(modeline *mode) { m_current_mode_id = mode == nullptr? -1 : mode->id; }
 
 	// setters (display_manager)
 	void set_monitor(const char *preset) { strncpy(m_ds.monitor, preset, sizeof(m_ds.monitor)-1); set_preset(preset); }
@@ -202,20 +202,24 @@ private:
 	custom_video *m_video = 0;
 
 	modeline m_user_mode = {};
-	modeline *m_selected_mode = 0;
-	modeline *m_current_mode = 0;
+
 
 	int m_index = 0;
 	bool m_desktop_is_rotated = 0;
 	bool m_switching_required = 0;
 	bool m_has_ini = 0;
-	int m_id_counter = 0;
+
+	int m_current_mode_id = -1;
+	int m_selected_mode_id = -1;
 
 	void set_preset(const char *preset);
 	double get_aspect(const char* aspect);
 
+	modeline *find_mode(int id);
+
 protected:
 	void* m_pf_data = nullptr;
+	int m_id_counter = 0;
 };
 
 class dummy_display : public display_manager

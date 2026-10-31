@@ -348,7 +348,7 @@ int sr_mode_internal(int width, int height, double refresh, int flags, sr_mode *
 	{
 		bool found = false;
 
-		for (auto mode : disp->video_modes)
+		for (auto &mode : disp->video_modes)
 		{
 			if (mode.id == srm->id)
 			{
@@ -378,7 +378,7 @@ int sr_mode_internal(int width, int height, double refresh, int flags, sr_mode *
 
 	if (action & SR_ACTION_SWITCH)
 	{
-		if (disp->is_switching_required() || disp->current_mode() != disp->selected_mode())
+		if (disp->is_switching_required())
 		{
 			if (disp->set_mode(disp->selected_mode()))
 				log_info("%s: successfully switched to %dx%d@%f\n", caller, disp->width(), disp->height(), disp->v_freq());

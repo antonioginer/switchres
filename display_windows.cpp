@@ -273,12 +273,12 @@ int windows_display::get_available_video_modes()
 
 			for (auto &mode : video_modes) if (mode.width == m.width && mode.height == m.height && mode.refresh == m.refresh && m.interlace == mode.interlace) goto found;
 
+			m.id = ++m_id_counter;
+
 			if (m.width == desktop_mode.width && m.height == desktop_mode.height && m.refresh == desktop_mode.refresh && m.interlace == desktop_mode.interlace)
 			{
 				m.type |= MODE_DESKTOP;
 				if (m.type & MODE_ROTATED) set_desktop_is_rotated(true);
-				if (current_mode() == nullptr)
-				set_current_mode(&m);
 			}
 
 			log_verbose("Switchres: [%3d] %4dx%4d @%3d%s%s %s: ", k, m.width, m.height, m.refresh, m.interlace?"i":"p", m.type & MODE_DESKTOP?"*":"",  m.type & MODE_ROTATED?"rot":"");
@@ -294,12 +294,17 @@ int windows_display::get_available_video_modes()
 				log_verbose("system mode\n");
 			}
 
-			// Save our desktop mode now that we queried detailed timings
-			if (m.type & MODE_DESKTOP) desktop_mode = m;
-
 			video_modes.push_back(m);
 			backup_modes.push_back(m);
 			k++;
+
+			// Save our desktop mode now that we queried detailed timings
+			if (m.type & MODE_DESKTOP)
+			{
+				desktop_mode = m;
+				if (current_mode() == nullptr)
+					set_current_mode(&video_modes.back());
+			}
 		}
 		found:
 		iModeNum++;

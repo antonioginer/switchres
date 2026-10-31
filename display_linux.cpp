@@ -150,18 +150,20 @@ int linux_display::get_available_video_modes()
 		if (mode.type == 0)
 			break;
 
+		mode.id = ++m_id_counter;
+
 		// set the desktop mode
 		if (mode.type & MODE_DESKTOP)
 		{
 			memcpy(&desktop_mode, &mode, sizeof(modeline));
-			if (current_mode() == nullptr)
-				set_current_mode(&mode);
 
 			if (mode.type & MODE_ROTATED) set_desktop_is_rotated(true);
 		}
 
 		video_modes.push_back(mode);
 		backup_modes.push_back(mode);
+		if ((mode.type & MODE_DESKTOP) && current_mode() == nullptr)
+			set_current_mode(&video_modes.back());
 
 		log_verbose("Switchres: [%3ld] %4dx%4d @%3d%s%s %s: ", video_modes.size(), mode.width, mode.height, mode.refresh, mode.interlace ? "i" : "p", mode.type & MODE_DESKTOP ? "*" : "", mode.type & MODE_ROTATED ? "rot" : "");
 		log_mode(&mode);

@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "display.h"
+#include <algorithm>
 #if defined(_WIN32)
 #include "display_windows.h"
 #elif defined(__linux__)
@@ -181,8 +182,14 @@ bool display_manager::delete_mode(modeline *mode)
 	log_verbose("Switchres: deleted ");
 	log_mode(mode);
 
-	ptrdiff_t i = mode - &video_modes[0];
-	video_modes.erase(video_modes.begin() + i);
+	const int id = mode->id;
+	auto it = std::find_if(video_modes.begin(), video_modes.end(),
+		[id](const modeline &entry) { return entry.id == id; });
+	if (it == video_modes.end())
+		return false;
+	if (m_current_mode_id == id) set_current_mode(nullptr);
+	if (m_selected_mode_id == id) set_selected_mode(nullptr);
+	video_modes.erase(it);
 
 	return true;
 }
@@ -289,13 +296,16 @@ bool display_manager::flush_modes()
 
 			if (video_modes[i].type & MODE_DELETE)
 			{
+				const int removed_id = video_modes[i].id;
 				video_modes.erase(video_modes.begin() + i);
-				m_selected_mode = 0;
+				if (m_current_mode_id == removed_id) set_current_mode(nullptr);
+				if (m_selected_mode_id == removed_id) set_selected_mode(nullptr);
 			}
 			else
 				video_modes[i].type &= ~(MODE_UPDATE | MODE_ADD);
 		}
 	}
+
 
 	return !error;
 }
@@ -382,6 +392,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, int fl
 	{
 		modeline new_mode = {};
 		new_mode.type = XYV_EDITABLE | V_FREQ_EDITABLE | SCAN_EDITABLE | MODE_ADD | (desktop_is_rotated()? MODE_ROTATED : MODE_OK);
+		new_mode.id = ++m_id_counter;
 		video_modes.push_back(new_mode);
 	}
 
@@ -434,19 +445,20 @@ modeline *display_manager::get_mode(int width, int height, float refresh, int fl
 			if (modeline_compare(&t_mode, &best_mode))
 			{
 				best_mode = t_mode;
-				m_selected_mode = &mode;
+				set_selected_mode(&mode);
 			}
 		}
 	}
 
 	// If we didn't need to create a new mode, remove our dummy entry
-	if (caps() & CUSTOM_VIDEO_CAPS_ADD && m_ds.modeline_generation && m_selected_mode != &video_modes.back())
+	if (caps() & CUSTOM_VIDEO_CAPS_ADD && m_ds.modeline_generation &&
+		m_selected_mode_id != video_modes.back().id)
 		video_modes.pop_back();
 
 	// If we didn't find a suitable mode, exit now
 	if (best_mode.result.weight & R_OUT_OF_RANGE)
 	{
-		m_selected_mode = 0;
+		set_selected_mode(nullptr);
 		log_error("Switchres: could not find a video mode that meets your specs\n");
 		return nullptr;
 	}
@@ -470,7 +482,7 @@ modeline *display_manager::get_mode(int width, int height, float refresh, int fl
 			// lock new mode
 			best_mode.type &= ~(X_RES_EDITABLE | Y_RES_EDITABLE);
 		}
-		else if (modeline_is_different(&best_mode, m_selected_mode) != 0)
+		else if (modeline_is_different(&best_mode, selected_mode()) != 0)
 			best_mode.type |= MODE_UPDATE;
 
 		char modeline[256]={'\x00'};
@@ -478,14 +490,10 @@ modeline *display_manager::get_mode(int width, int height, float refresh, int fl
 	}
 
 	// Check if new best mode is different than previous one
-	m_switching_required = (m_current_mode != m_selected_mode || best_mode.type & MODE_UPDATE);
+	m_switching_required = (current_mode() != selected_mode() || best_mode.type & MODE_UPDATE);
 
-	// Add id to mode
-	if (best_mode.id == 0)
-		best_mode.id = ++m_id_counter;
-
-	*m_selected_mode = best_mode;
-	return m_selected_mode;
+	*selected_mode() = best_mode;
+	return selected_mode();
 }
 
 //============================================================
@@ -544,4 +552,18 @@ double display_manager::get_aspect(const char* aspect)
 
 	log_error("Error: use format --aspect <num:den>\n");
 	return STANDARD_CRT_ASPECT;
+}
+
+//============================================================
+//  display_manager::find_mode
+//============================================================
+
+modeline *display_manager::find_mode(int id)
+{
+	if (id <= 0)
+		return nullptr;
+	for (auto &mode : video_modes)
+		if (mode.id == id)
+			return &mode;
+	return nullptr;
 }
