@@ -241,19 +241,53 @@ void display_manager::log_mode(modeline *mode)
 bool display_manager::restore_modes()
 {
 	// Compare each mode in our table with its original state
-	for (unsigned i = video_modes.size(); i-- > 0; )
+	for (auto &mode : video_modes)
 	{
-		// First, delete all modes we've added
-		if (i + 1 > backup_modes.size())
-			video_modes[i].type |= MODE_DELETE;
+		modeline *original = nullptr;
+		for (auto &backup : backup_modes)
+			if (backup.id == mode.id)
+			{
+				original = &backup;
+				break;
+			}
 
-		// Now restore all modes which timings have been modified
-		else if (modeline_is_different(&video_modes[i], &backup_modes[i]))
+		// First, delete all modes we've added
+		if (original == nullptr)
 		{
-			video_modes[i] = backup_modes[i];
-			video_modes[i].type |= MODE_UPDATE;
+			mode.type &= ~(MODE_ADD | MODE_UPDATE | MODE_ERROR);
+			mode.type |= MODE_DELETE;
+		}
+		// Now restore all modes which timings have been modified
+		else if (modeline_is_different(&mode, original))
+		{
+			mode = *original;
+			mode.type &= ~(MODE_ADD | MODE_DELETE | MODE_ERROR);
+			mode.type |= MODE_UPDATE;
+		}
+		// Keep pending operations after a failed restore attempt
+		else if (mode.type & MODE_ERROR)
+			mode.type &= ~MODE_ERROR;
+	}
+
+	// Recover original modes that have been deleted
+	for (const auto &original : backup_modes)
+	{
+		bool found = false;
+		for (const auto &mode : video_modes)
+			if (mode.id == original.id)
+			{
+				found = true;
+				break;
+			}
+		if (!found)
+		{
+			modeline restored = original;
+			restored.type &= ~(MODE_UPDATE | MODE_DELETE | MODE_ERROR);
+			restored.type |= MODE_ADD;
+			video_modes.push_back(restored);
 		}
 	}
+
 	// Finally, flush pending changes to driver
 	return flush_modes();
 }
