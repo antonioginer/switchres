@@ -12,7 +12,8 @@
 
 #include <switchres/switchres_wrapper.h>
 
-int main(int argc, char** argv) {
+int main()
+{
 	const char* err_msg;
 
 	printf("About to open %s.\n", LIBSWR);
@@ -21,7 +22,8 @@ int main(int argc, char** argv) {
 	LIBTYPE dlp = OPENLIB(LIBSWR);
 
 	// Loading failed, inform and exit
-	if (!dlp) {
+	if (!dlp)
+	{
 		printf("Loading %s failed.\n", LIBSWR);
 		printf("Error: %s\n", LIBERROR());
 		exit(EXIT_FAILURE);
@@ -32,8 +34,9 @@ int main(int argc, char** argv) {
 
 	// Load the init()
 	LIBERROR();
-	srAPI* SRobj =  (srAPI*)LIBFUNC(dlp, "srlib");
-	if ((err_msg = LIBERROR()) != NULL) {
+	srAPI* SRobj = (srAPI*) LIBFUNC(dlp, "srlib");
+	if ((err_msg = LIBERROR()) != NULL)
+	{
 		printf("Failed to load srAPI: %s\n", err_msg);
 		CLOSELIB(dlp);
 		exit(EXIT_FAILURE);
@@ -42,6 +45,6 @@ int main(int argc, char** argv) {
 	// Testing the function
 	printf("Switchres version: %s\n" , SRobj->sr_get_version());
 
-	// We're done, let's closer
+	// We're done, let's close
 	CLOSELIB(dlp);
 }

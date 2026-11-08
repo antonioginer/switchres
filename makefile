@@ -160,3 +160,18 @@ endif
 uninstall:
 	$(REMOVE) $(LIBDIR)/$(TARGET_LIB).*
 	$(REMOVE) $(PKGDIR)/switchres.pc
+
+# Tests
+TESTS = tests/test_liblink tests/test_dlopen tests/test_restore_modes
+
+.PHONY: tests
+tests: $(TESTS)
+
+libswitchres.$(STATIC_LIB_EXT) libswitchres.$(DYNAMIC_LIB_EXT): $(TARGET_LIB)
+
+tests/test_liblink: libswitchres.$(STATIC_LIB_EXT)
+tests/test_dlopen: | libswitchres.$(DYNAMIC_LIB_EXT)
+tests/test_restore_modes: $(OBJS)
+
+$(TESTS): %: %.cpp
+	$(FINAL_CXX) $(CPPFLAGS) $(CXXFLAGS) -I.. $< $(filter %.o %.a %.lib,$^) $(LIBS) -o $@
