@@ -57,6 +57,7 @@ enum
 	OPT_PIXEL_PRECISION,
 	OPT_INTERLACE_FORCE_EVEN,
 	OPT_SCALE_PROPORTIONAL,
+	OPT_CSYNC,
 	OPT_SCREEN_COMPOSITING,
 	OPT_SCREEN_REORDERING,
 	OPT_ALLOW_HARDWARE_REFRESH,
@@ -153,6 +154,7 @@ int main(int argc, char **argv)
 			{SR_OPT_PIXEL_PRECISION,        required_argument, 0, OPT_PIXEL_PRECISION},
 			{SR_OPT_INTERLACE_FORCE_EVEN,   required_argument, 0, OPT_INTERLACE_FORCE_EVEN},
 			{SR_OPT_SCALE_PROPORTIONAL,     required_argument, 0, OPT_SCALE_PROPORTIONAL},
+			{SR_OPT_CSYNC,                  required_argument, 0, OPT_CSYNC},
 			{SR_OPT_SCREEN_COMPOSITING,     required_argument, 0, OPT_SCREEN_COMPOSITING},
 			{SR_OPT_SCREEN_REORDERING,      required_argument, 0, OPT_SCREEN_REORDERING},
 			{SR_OPT_ALLOW_HARDWARE_REFRESH, required_argument, 0, OPT_ALLOW_HARDWARE_REFRESH},
@@ -285,6 +287,7 @@ int main(int argc, char **argv)
 			case OPT_PIXEL_PRECISION:
 			case OPT_INTERLACE_FORCE_EVEN:
 			case OPT_SCALE_PROPORTIONAL:
+			case OPT_CSYNC:
 			case OPT_SCREEN_COMPOSITING:
 			case OPT_SCREEN_REORDERING:
 			case OPT_ALLOW_HARDWARE_REFRESH:
@@ -336,7 +339,16 @@ int main(int argc, char **argv)
 	if (calculate_flag)
 		switchres.display()->set_screen("dummy");
 
-	switchres.add_display();
+	if (!switchres.add_display())
+		return 1;
+	for (auto *display : switchres.displays)
+	{
+		if (display->csync() == CUSTOM_VIDEO_CSYNC_INVALID)
+		{
+			log_error("Switchres: invalid csync configuration, no mode changes performed\n");
+			return 1;
+		}
+	}
 
 	if (force_flag)
 		switchres.display()->set_user_mode(&user_mode);
@@ -344,7 +356,14 @@ int main(int argc, char **argv)
 	if (!calculate_flag && !edid_flag)
 	{
 		for (auto &display : switchres.displays)
-			display->init();
+		{
+			bool initialized = display->init();
+			if (!initialized && display->csync() != CUSTOM_VIDEO_CSYNC_OFF)
+			{
+				log_error("Switchres: display initialization failed while csync was requested\n");
+				return 1;
+			}
+		}
 	}
 
 	if (resolution_flag)

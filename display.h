@@ -120,6 +120,7 @@ public:
 	// getters (custom_video backend)
 	bool screen_compositing() { return m_ds.vs.screen_compositing; }
 	bool screen_reordering() { return m_ds.vs.screen_reordering; }
+	int csync() const { return m_ds.vs.csync; }
 	bool allow_hardware_refresh() { return m_ds.vs.allow_hardware_refresh; }
 	const char *custom_timing() { return (const char*) &m_ds.vs.custom_timing; }
 
@@ -167,6 +168,7 @@ public:
 	// setters (custom_video backend)
 	void set_screen_compositing(bool value) { m_ds.vs.screen_compositing = value; }
 	void set_screen_reordering(bool value) { m_ds.vs.screen_reordering = value; }
+	void set_csync(int value) { m_ds.vs.csync = value; }
 	void set_allow_hardware_refresh(bool value) { m_ds.vs.allow_hardware_refresh = value; }
 	void set_custom_timing(const char *custom_timing) { strncpy(m_ds.vs.custom_timing, custom_timing, sizeof(m_ds.vs.custom_timing)-1); }
 

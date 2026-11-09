@@ -607,18 +607,12 @@ bool xrandr_timing::add_mode(modeline *mode)
 		return true;
 	}
 
-	// Create specific mode name
+	// Distinct names prevent reusing a previously registered RGBHV mode.
+	const char *sync_suffix = m_vs.csync == CUSTOM_VIDEO_CSYNC_NEGATIVE ? "-cn" :
+		(m_vs.csync == CUSTOM_VIDEO_CSYNC_POSITIVE ? "-cp" : "");
 	char name[48];
-	sprintf(name, "SR-%d_%dx%d@%.02f%s", m_id, mode->hactive, mode->vactive, mode->vfreq, mode->interlace ? "i" : "");
-
-	// Check if mode is available from the SR name (should not be the case, otherwise it means that we recevied twice the same mode request)
-	pxmode = find_mode_by_name(name);
-	if (pxmode != NULL)
-	{
-		log_error("XRANDR: <%d> (add_mode) [WARNING] mode already exist (duplicate request)\n", m_id);
-		mode->platform_data = pxmode->id;
-		return true;
-	}
+	snprintf(name, sizeof(name), "SR-%d_%dx%d@%.02f%s%s", m_id, mode->hactive,
+		mode->vactive, mode->vfreq, mode->interlace ? "i" : "", sync_suffix);
 
 	log_verbose("XRANDR: <%d> (add_mode) create mode %s\n", m_id, name);
 
@@ -636,8 +630,27 @@ bool xrandr_timing::add_mode(modeline *mode)
 	xmode.vSyncStart = mode->vbegin;
 	xmode.vSyncEnd   = mode->vend;
 	xmode.vTotal     = mode->vtotal;
-	xmode.modeFlags  = (mode->interlace ? RR_Interlace : 0) | (mode->doublescan ? RR_DoubleScan : 0) | (mode->hsync ? RR_HSyncPositive : RR_HSyncNegative) | (mode->vsync ? RR_VSyncPositive : RR_VSyncNegative);
+	xmode.modeFlags = (mode->interlace ? RR_Interlace : 0) |
+		(mode->doublescan ? RR_DoubleScan : 0) |
+		(mode->hsync ? RR_HSyncPositive : RR_HSyncNegative) |
+		(mode->vsync ? RR_VSyncPositive : RR_VSyncNegative);
+	if (m_vs.csync == CUSTOM_VIDEO_CSYNC_NEGATIVE)
+		xmode.modeFlags |= RR_CSync | RR_CSyncNegative;
+	else if (m_vs.csync == CUSTOM_VIDEO_CSYNC_POSITIVE)
+		xmode.modeFlags |= RR_CSync | RR_CSyncPositive;
 	xmode.hSkew      = 0;
+
+	RRMode existing_mode = None;
+	if (find_mode_by_name(name, &xmode, &existing_mode))
+	{
+		if (existing_mode == None)
+		{
+			log_error("XRANDR: <%d> (add_mode) [ERROR] mode name %s exists with incompatible timings or sync flags\n", m_id, name);
+			return false;
+		}
+		mode->platform_data = existing_mode;
+		return true;
+	}
 
 	mode->type |= CUSTOM_VIDEO_TIMING_XRANDR;
 
@@ -691,24 +704,37 @@ bool xrandr_timing::add_mode(modeline *mode)
 //  xrandr_timing::find_mode_by_name
 //============================================================
 
-XRRModeInfo *xrandr_timing::find_mode_by_name(char *name)
+bool xrandr_timing::find_mode_by_name(const char *name, const XRRModeInfo *desired, RRMode *id)
 {
-	XRRModeInfo *pxmode = NULL;
+	*id = None;
 	XRRScreenResources *resources = XRRGetScreenResourcesCurrent(m_pdisplay, m_root);
+	if (!resources)
+		return false;
 
-	// use SR name to return the mode
+	bool found = false;
 	for (int m = 0; m < resources->nmode; m++)
 	{
-		if (strcmp(resources->modes[m].name, name) == 0)
+		const XRRModeInfo &existing = resources->modes[m];
+		if (strcmp(existing.name, name) == 0)
 		{
-			pxmode = &resources->modes[m];
+			found = true;
+			if (existing.modeFlags == desired->modeFlags &&
+				existing.dotClock == desired->dotClock &&
+				existing.width == desired->width &&
+				existing.hSyncStart == desired->hSyncStart &&
+				existing.hSyncEnd == desired->hSyncEnd &&
+				existing.hTotal == desired->hTotal &&
+				existing.height == desired->height &&
+				existing.vSyncStart == desired->vSyncStart &&
+				existing.vSyncEnd == desired->vSyncEnd &&
+				existing.vTotal == desired->vTotal)
+				*id = existing.id;
 			break;
 		}
 	}
 
 	XRRFreeScreenResources(resources);
-
-	return pxmode;
+	return found;
 }
 
 //============================================================
@@ -1133,6 +1159,13 @@ bool xrandr_timing::get_timing(modeline *mode)
 				mode->doublescan = (pxmode->modeFlags & RR_DoubleScan) ? 1 : 0;
 				mode->hsync      = (pxmode->modeFlags & RR_HSyncPositive) ? 1 : 0;
 				mode->vsync      = (pxmode->modeFlags & RR_VSyncPositive) ? 1 : 0;
+				bool has_csync = pxmode->modeFlags & RR_CSync;
+				bool sync_matches = m_vs.csync == CUSTOM_VIDEO_CSYNC_OFF ? !has_csync :
+					(has_csync && (m_vs.csync == CUSTOM_VIDEO_CSYNC_NEGATIVE ?
+						!!(pxmode->modeFlags & RR_CSyncNegative) :
+						!!(pxmode->modeFlags & RR_CSyncPositive)));
+				if (!sync_matches)
+					mode->type |= MODE_SYNC_INCOMPATIBLE;
 
 				mode->hfreq      = mode->pclock / mode->htotal;
 				mode->vfreq      = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
