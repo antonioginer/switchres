@@ -56,6 +56,14 @@ bool linux_display::init(void* pfdata)
 	if (!strcmp(m_ds.api, "drmkms"))
 		method = CUSTOM_VIDEO_TIMING_DRMKMS;
 #endif
+#ifdef SR_WITH_KDE
+    if (!strcmp(m_ds.api, "kde"))
+        method = CUSTOM_VIDEO_TIMING_KDE;
+#endif
+#ifdef SR_WITH_WLROOTS
+    if (!strcmp(m_ds.api, "wlroots"))
+        method = CUSTOM_VIDEO_TIMING_WLROOTS;
+#endif
 
 	set_factory(new custom_video);
 	set_custom_video(factory()->make(m_ds.screen, NULL, method, &m_ds.vs));

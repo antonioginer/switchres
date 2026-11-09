@@ -29,6 +29,12 @@
 #ifdef SR_WITH_KMSDRM
 #include "custom_video_drmkms.h"
 #endif
+#ifdef SR_WITH_KDE
+#include "custom_video_kde.h"
+#endif
+#ifdef SR_WITH_WLROOTS
+#include "custom_video_wlroots.h"
+#endif
 #endif
 
 
@@ -82,6 +88,37 @@ custom_video *custom_video::make(char *device_name, char *device_id, int method,
 #elif defined(__linux__)
 	if (device_id != NULL)
 		log_info("Device value is %s.\n", device_id);
+#ifdef SR_WITH_KDE
+    if (method == CUSTOM_VIDEO_TIMING_KDE || method == 0)
+    {
+        try
+        {
+            m_custom_video = new kde_timing(device_name, vs);
+        }
+        catch (...) {};
+        if (m_custom_video)
+        {
+            m_custom_method = CUSTOM_VIDEO_TIMING_KDE;
+            return m_custom_video;
+        }
+    }
+#endif /* SR_WITH_KDE */
+
+#ifdef SR_WITH_WLROOTS
+    if (method == CUSTOM_VIDEO_TIMING_WLROOTS || method == 0)
+    {
+        try
+        {
+            m_custom_video = new wlroots_timing(device_name, vs);
+        }
+        catch (...) {};
+        if (m_custom_video)
+        {
+            m_custom_method = CUSTOM_VIDEO_TIMING_WLROOTS;
+            return m_custom_video;
+        }
+    }
+#endif /* SR_WITH_WLROOTS */
 
 #ifdef SR_WITH_XRANDR
 	if (method == CUSTOM_VIDEO_TIMING_XRANDR || method == 0)

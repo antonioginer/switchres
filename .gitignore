@@ -8,3 +8,7 @@ switchres_main
 grid
 switchres
 switchres.pc
+protocols/kde/*-client.h
+protocols/kde/*-client-protocol.c
+protocols/wlroots/*-client.h
+protocols/wlroots/*-client-protocol.c
