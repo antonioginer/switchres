@@ -274,7 +274,7 @@ drmkms_timing::~drmkms_timing()
 		fd = get_master_fd();
 		if (fd >= 0)
 		{
-			conn = drmModeGetConnectorCurrent(fd, m_desktop_output);
+			conn = drmModeGetConnector(fd, m_desktop_output);
 			drmSetMaster(fd);
 			for (i = 0; i < conn->count_modes; i++)
 			{
@@ -580,7 +580,7 @@ bool drmkms_timing::init()
 
 		for (int i = 0; i < p_res->count_connectors; i++)
 		{
-			p_connector = drmModeGetConnectorCurrent(m_drm_fd, p_res->connectors[i]);
+			p_connector = drmModeGetConnector(m_drm_fd, p_res->connectors[i]);
 			if (!p_connector)
 			{
 				log_error("DRM/KMS: <%d> (init) [ERROR] card %d connector %d - %d\n", m_id, num, i, p_res->connectors[i]);
@@ -1139,7 +1139,7 @@ bool drmkms_timing::delete_mode(modeline *mode)
 		}
 
 		drmModeModeInfo srmode;
-		conn = drmModeGetConnectorCurrent(fd, m_desktop_output);
+		conn = drmModeGetConnector(fd, m_desktop_output);
 		modeline_to_drm_modeline(m_id, mode, &srmode);
 		for (i = 0; i < conn->count_modes; i++)
 		{
@@ -1181,7 +1181,7 @@ bool drmkms_timing::get_timing(modeline *mode)
 
 	for (int i = 0; i < p_res->count_connectors; i++)
 	{
-		drmModeConnector *p_connector = drmModeGetConnectorCurrent(m_drm_fd, p_res->connectors[i]);
+		drmModeConnector *p_connector = drmModeGetConnector(m_drm_fd, p_res->connectors[i]);
 
 		// Cycle through the modelines and report them back to the display manager
 		if (p_connector && m_desktop_output == p_connector->connector_id)
@@ -1285,7 +1285,7 @@ void drmkms_timing::list_drm_modes()
 	drmModeConnector *conn;
 	drmModeModeInfo *drmmode;
 
-	conn = drmModeGetConnectorCurrent(m_drm_fd, m_desktop_output);
+	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
 	for (i = 0; i < conn->count_modes; i++)
 	{
 		drmmode = &conn->modes[i];
@@ -1309,7 +1309,7 @@ bool drmkms_timing::kms_has_mode(modeline* mode)
 
 	modeline_to_drm_modeline(m_id,  mode, &drmmode);
 
-	conn = drmModeGetConnectorCurrent(m_drm_fd, m_desktop_output);
+	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
 	for (i = 0; i < conn->count_modes; i++)
 	{
 		if (memcmp(&drmmode, &conn->modes[i], size_to_compare) == 0)
