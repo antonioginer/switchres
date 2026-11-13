@@ -65,11 +65,9 @@ static __typeof__(XGetErrorText) *p_XGetErrorText;
 
 static int error_handler(Display *dpy, XErrorEvent *err)
 {
-	char buf[64];
-	XGetErrorText(dpy, err->error_code, buf, 64);
-	buf[0] = '\0';
+	char buf[64] = {};
+	XGetErrorText(dpy, err->error_code, buf, sizeof(buf));
 	xrandr_timing::ms_xerrors |= xrandr_timing::ms_xerrors_flag;
-	old_error_handler(dpy, err);
 	log_error("XRANDR: <-> (error_handler) [ERROR] %s error code %d flags %02x\n", buf, err->error_code, xrandr_timing::ms_xerrors);
 	return 0;
 }
@@ -1069,22 +1067,26 @@ bool xrandr_timing::delete_mode(modeline *mode)
 			ms_xerrors_flag = 0x01;
 			old_error_handler = XSetErrorHandler(error_handler);
 			XRRDeleteOutputMode(m_pdisplay, resources->outputs[m_desktop_output], resources->modes[m].id);
-			if (ms_xerrors & ms_xerrors_flag)
-			{
-				log_error("XRANDR: <%d> (delete_mode) [ERROR] in %s\n", m_id, "XRRDeleteOutputMode");
-				total_xerrors++;
-			}
-
-			ms_xerrors_flag = 0x02;
-			XRRDestroyMode(m_pdisplay, resources->modes[m].id);
 			XSync(m_pdisplay, False);
-			XSetErrorHandler(old_error_handler);
 			if (ms_xerrors & ms_xerrors_flag)
 			{
-				log_error("XRANDR: <%d> (delete_mode) [ERROR] in %s\n", m_id, "XRRDestroyMode");
+				log_error("XRANDR: <%d> (delete_mode) [ERROR] in XRRDeleteOutputMode\n", m_id);
 				total_xerrors++;
 			}
-			mode->platform_data = 0;
+			else
+			{
+				ms_xerrors_flag = 0x02;
+				XRRDestroyMode(m_pdisplay, resources->modes[m].id);
+				XSync(m_pdisplay, False);
+				if (ms_xerrors & ms_xerrors_flag)
+				{
+					log_error("XRANDR: <%d> (delete_mode) [ERROR] in XRRDestroyMode\n", m_id);
+					total_xerrors++;
+				}
+				else
+					mode->platform_data = 0;
+			}
+			XSetErrorHandler(old_error_handler);
 		}
 	}
 
