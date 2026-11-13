@@ -264,38 +264,6 @@ drmkms_timing::drmkms_timing(char *device_name, custom_video_settings *vs)
 
 drmkms_timing::~drmkms_timing()
 {
-	// Remove kernel user modes
-	if (m_kernel_user_modes)
-	{
-		int i = 0, ret = 0;
-		int fd;
-		drmModeConnector *conn;
-
-		fd = get_master_fd();
-		if (fd >= 0)
-		{
-			conn = drmModeGetConnector(fd, m_desktop_output);
-			drmSetMaster(fd);
-			for (i = 0; i < conn->count_modes; i++)
-			{
-				drmModeModeInfo *mode = &conn->modes[i];
-				log_verbose("DRM/KMS: <%d> (%s) Checking kernel mode: %s\n", m_id, __FUNCTION__, mode->name);
-				ret = strncmp(mode->name, "SR-", 3);
-				if (ret == 0)
-				{
-					log_verbose("DRM/KMS: <%d> (%s) Removing kernel user mode: %s\n", m_id, __FUNCTION__, mode->name);
-					drmModeDetachMode(fd, m_desktop_output, mode);
-				}
-			}
-			if (fd != m_hook_fd)
-				drmDropMaster(fd);
-
-			drmModeFreeConnector(conn);
-			if (fd != m_drm_fd and fd != m_hook_fd)
-				close(fd);
-		}
-	}
-
 	// Free the connector used
 	s_shared_conn[m_id] = -1;
 
@@ -1278,6 +1246,10 @@ bool drmkms_timing::process_modelist(std::vector<modeline *> modelist)
 
 	return !error;
 }
+
+//============================================================
+//  drmkms_timing::list_drm_modes
+//============================================================
 
 void drmkms_timing::list_drm_modes()
 {
