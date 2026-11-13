@@ -13,6 +13,7 @@
  **************************************************************/
 
 #include <stdio.h>
+#include <stddef.h>
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -1095,8 +1096,8 @@ bool drmkms_timing::delete_mode(modeline *mode)
 
 	if (m_kernel_user_modes)
 	{
-		int i = 0, ret = 0, fd = -1;
-		drmModeConnector *conn;
+		int fd = -1;
+		const size_t size_to_compare = offsetof(drmModeModeInfo, type);
 
 		// If SR was initilized before SDL2 for instance, SR lost the DRM
 		fd = get_master_fd();
@@ -1107,28 +1108,33 @@ bool drmkms_timing::delete_mode(modeline *mode)
 		}
 
 		drmModeModeInfo srmode;
-		conn = drmModeGetConnector(fd, m_desktop_output);
+		drmModeConnector *conn = drmModeGetConnector(fd, m_desktop_output);
 		modeline_to_drm_modeline(m_id, mode, &srmode);
-		for (i = 0; i < conn->count_modes; i++)
+		if (!conn)
+		{
+			if (fd != m_hook_fd)
+				drmDropMaster(fd);
+			return false;
+		}
+		bool success = false;
+		for (int i = 0; i < conn->count_modes; i++)
 		{
 			drmModeModeInfo *drmmode = &conn->modes[i];
-			ret = strcmp(drmmode->name, srmode.name);
-			if (ret != 0)
+			if (memcmp(&srmode, drmmode, size_to_compare) != 0)
 				continue;
-			ret = drmModeDetachMode(fd, m_desktop_output, drmmode);
-			if (fd != m_hook_fd)
-				drmDropMaster(m_drm_fd);
-			drmModeFreeConnector(conn);
+			int ret = drmModeDetachMode(fd, m_desktop_output, drmmode);
 			if (ret != 0)
-			{
 				log_verbose("DRM/KMS: <%d> (%s) Failed removing kernel user mode: %s (ret=%d)\n", m_id, __FUNCTION__, drmmode->name, ret);
-				return false;
-			}
-			return true;
+			success = (ret == 0);
+			break;
 		}
+		drmModeFreeConnector(conn);
+		if (fd != m_hook_fd)
+			drmDropMaster(fd);
+		return success;
 	}
 
-	return true;
+	return false;
 }
 
 //============================================================
@@ -1264,36 +1270,6 @@ void drmkms_timing::list_drm_modes()
 		log_verbose("DRM/KMS: <%d> (%s) DRM mode: %dx%d %s\n", m_id, __FUNCTION__, drmmode->hdisplay, drmmode->vdisplay, drmmode->name);
 	}
 	drmModeFreeConnector(conn);
-}
-
-//============================================================
-//  drmkms_timing::kms_has_mode
-//============================================================
-
-bool drmkms_timing::kms_has_mode(modeline* mode)
-{
-	int i = 0;
-	drmModeConnector *conn;
-	drmModeModeInfo drmmode;
-
-	// To avoid matching issues, we just compare the relevant timing fields
-	int size_to_compare = sizeof(drmModeModeInfo) - sizeof(drmModeModeInfo::type) - sizeof(drmModeModeInfo::name);
-
-	modeline_to_drm_modeline(m_id,  mode, &drmmode);
-
-	conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
-	for (i = 0; i < conn->count_modes; i++)
-	{
-		if (memcmp(&drmmode, &conn->modes[i], size_to_compare) == 0)
-		{
-			log_verbose("DRM/KMS: <%d> (%s) Found the mode in the connector\n", m_id, __FUNCTION__);
-			drmModeFreeConnector(conn);
-			return true;
-		}
-	}
-	log_verbose("DRM/KMS: <%d> (%s) Couldn't find the mode in the connector\n", m_id, __FUNCTION__);
-	drmModeFreeConnector(conn);
-	return false;
 }
 
 //============================================================
