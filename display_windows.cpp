@@ -59,6 +59,16 @@ int CALLBACK monitor_by_index(HMONITOR h_monitor, HDC, LPRECT, LPARAM data)
 
 bool windows_display::init(void*)
 {
+	if (m_ds.vs.csync == CUSTOM_VIDEO_CSYNC_INVALID)
+	{
+		log_error("Switchres: invalid csync configuration\n");
+		return false;
+	}
+	if (m_ds.vs.csync != CUSTOM_VIDEO_CSYNC_OFF)
+	{
+		log_error("Switchres: csync is not supported by Windows video backends\n");
+		return false;
+	}
 	char display[32] = {};
 
 	// If monitor is passed by index, find the matching device

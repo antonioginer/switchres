@@ -29,6 +29,9 @@
 #define CUSTOM_VIDEO_TIMING_ATI_ADL     0x00000100
 #define CUSTOM_VIDEO_TIMING_DRMKMS      0x00000200
 
+// Composite sync requested for this display. Only the XRandR backend implements it.
+enum { CUSTOM_VIDEO_CSYNC_INVALID = -1, CUSTOM_VIDEO_CSYNC_OFF = 0, CUSTOM_VIDEO_CSYNC_NEGATIVE, CUSTOM_VIDEO_CSYNC_POSITIVE };
+
 // Custom video caps
 #define CUSTOM_VIDEO_CAPS_UPDATE            0x001
 #define CUSTOM_VIDEO_CAPS_ADD               0x002
@@ -47,6 +50,7 @@ typedef struct custom_video_settings
 	bool screen_reordering;
 	bool allow_hardware_refresh;
 	bool kms_modesetting;
+	int csync;
 	char device_reg_key[128];
 	char custom_timing[256];
 } custom_video_settings;

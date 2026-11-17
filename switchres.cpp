@@ -91,6 +91,7 @@ switchres_manager::switchres_manager()
 	display()->set_lcd_range("auto");
 	for (int i = 0; i < MAX_RANGES; i++) display()->set_crt_range(i, "auto");
 	display()->set_screen("auto");
+	display()->set_csync(CUSTOM_VIDEO_CSYNC_OFF);
 	display()->set_modeline_generation(true);
 	display()->set_lock_unsupported_modes(true);
 	display()->set_lock_system_modes(true);
@@ -367,6 +368,19 @@ void switchres_manager::set_option(const char* key, const char* value)
 		// Custom video backend options
 		case s2i("screen_compositing"):
 			display()->set_screen_compositing(atoi(value));
+			break;
+		case s2i("csync"):
+			if (!strcmp(value, "off"))
+				display()->set_csync(CUSTOM_VIDEO_CSYNC_OFF);
+			else if (!strcmp(value, "negative"))
+				display()->set_csync(CUSTOM_VIDEO_CSYNC_NEGATIVE);
+			else if (!strcmp(value, "positive"))
+				display()->set_csync(CUSTOM_VIDEO_CSYNC_POSITIVE);
+			else
+			{
+				log_error("Switchres: invalid csync value %s (off|negative|positive)\n", value);
+				display()->set_csync(CUSTOM_VIDEO_CSYNC_INVALID);
+			}
 			break;
 		case s2i("screen_reordering"):
 			display()->set_screen_reordering(atoi(value));

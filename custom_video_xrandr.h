@@ -65,7 +65,7 @@ class xrandr_timing : public custom_video
 		int m_enable_screen_compositing = 0;
 
 		XRRModeInfo *find_mode(modeline *mode);
-		XRRModeInfo *find_mode_by_name(char *name);
+		bool find_mode_by_name(const char *name, const XRRModeInfo *desired, RRMode *id);
 
 		bool set_timing(modeline *mode, int flags);
 
