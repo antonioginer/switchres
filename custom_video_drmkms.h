@@ -16,6 +16,9 @@
 #define __CUSTOM_VIDEO_DRMKMS_
 
 // DRM headers
+#include <memory>
+#include <vector>
+#include <cstdint>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include "custom_video.h"
@@ -48,13 +51,17 @@ class drmkms_timing : public custom_video
 
 		int m_drm_fd = -1;
 		drmModeCrtc *mp_crtc_desktop = NULL;
+		bool m_desktop_mode_found = false;
 		int m_crtc_idx = -1;
 		int m_card_id = 0;
 		bool m_kernel_user_modes = false;
+		bool m_drm_hook = false;
+		std::vector<std::unique_ptr<drmModeModeInfo>> m_modes;
 		bool can_drop_master = true;
 		int m_hook_fd = -1;
 		int m_caps = 0;
 		void *m_map = nullptr;
+		size_t m_map_size = 0;
 		int m_pitch = 0;
 		int m_bpp = 0;
 
@@ -98,6 +105,7 @@ class drmkms_timing : public custom_video
 		bool test_kernel_user_modes();
 		void list_drm_modes();
 		int get_master_fd();
+		drmModeModeInfo *store_mode(const drmModeModeInfo &source);
 
 };
 

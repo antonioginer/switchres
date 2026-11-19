@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include <cstdint>
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -160,16 +161,24 @@ bool connector_already_used(unsigned int conn_id)
 }
 
 //============================================================
+//  Compare DRM modes by timings, ignoring connector/CRTC metadata
+//============================================================
+
+static bool drm_modes_are_equal(const drmModeModeInfo *a, const drmModeModeInfo *b)
+{
+	return a->clock == b->clock &&
+		a->hdisplay == b->hdisplay && a->hsync_start == b->hsync_start && a->hsync_end == b->hsync_end && a->htotal == b->htotal &&
+		a->vdisplay == b->vdisplay && a->vsync_start == b->vsync_start && a->vsync_end == b->vsync_end && a->vtotal == b->vtotal &&
+		a->vscan == b->vscan && a->flags == b->flags;
+}
+
+//============================================================
 //  Convert a SR modeline to a DRM modeline
 //============================================================
 
-void modeline_to_drm_modeline(int id, modeline *mode, drmModeModeInfo *drmmode)
+void modeline_to_drm_modeline(const modeline *mode, drmModeModeInfo *drmmode)
 {
-	// Clear struct
-	memset(drmmode, 0, sizeof(drmModeModeInfo));
-
-	// Create specific mode name
-	snprintf(drmmode->name, 32, "SR-%d_%dx%d@%.02f%s", id, mode->hactive, mode->vactive, mode->vfreq, mode->interlace ? "i" : "");
+	// Only update timings. Preserve the original DRM name and type.
 	drmmode->clock       = mode->pclock / 1000;
 	drmmode->hdisplay    = mode->hactive;
 	drmmode->hsync_start = mode->hbegin;
@@ -179,12 +188,36 @@ void modeline_to_drm_modeline(int id, modeline *mode, drmModeModeInfo *drmmode)
 	drmmode->vsync_start = mode->vbegin;
 	drmmode->vsync_end   = mode->vend;
 	drmmode->vtotal      = mode->vtotal;
-	drmmode->flags       = (mode->interlace ? DRM_MODE_FLAG_INTERLACE : 0) | (mode->doublescan ? DRM_MODE_FLAG_DBLSCAN : 0) | (mode->hsync ? DRM_MODE_FLAG_PHSYNC : DRM_MODE_FLAG_NHSYNC) | (mode->vsync ? DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC);
-
+	drmmode->flags       = (mode->interlace ? DRM_MODE_FLAG_INTERLACE : 0) | (mode->doublescan ? DRM_MODE_FLAG_DBLSCAN : 0)
+						 | (mode->hsync ? DRM_MODE_FLAG_PHSYNC : DRM_MODE_FLAG_NHSYNC) | (mode->vsync ? DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC);
 	drmmode->hskew       = 0;
 	drmmode->vscan       = 0;
+	drmmode->vrefresh    = mode->refresh; // Used only for human readable output
+}
 
-	drmmode->vrefresh    = mode->refresh;  // Used only for human readable output
+//============================================================
+//  Stable identity for kernel user modes
+//============================================================
+
+static unsigned int kernel_user_mode_id(const char *name)
+{
+	unsigned int id = 0;
+	int length = 0;
+	if (sscanf(name, "SR-%8x%n", &id, &length) != 1 || length != 11 || name[length] != '_')
+		return 0;
+	return id;
+}
+
+//=================================================================
+//  Keep DRM mode addresses stable for the lifetime of this backend
+//=================================================================
+
+drmModeModeInfo *drmkms_timing::store_mode(const drmModeModeInfo &source)
+{
+	auto entry = std::make_unique<drmModeModeInfo>(source);
+	auto *result = entry.get();
+	m_modes.push_back(std::move(entry));
+	return result;
 }
 
 //============================================================
@@ -267,6 +300,37 @@ drmkms_timing::~drmkms_timing()
 {
 	// Free the connector used
 	s_shared_conn[m_id] = -1;
+
+	// Restore the original CRTC before releasing the framebuffer used by Switchres.
+	if (m_drm_fd >= 0 && mp_crtc_desktop && m_desktop_output && m_framebuffer_id)
+	{
+		int fd = get_master_fd();
+		if (fd < 0)
+			log_verbose("DRM/KMS: <%d> (%s) (close) Need master to restore desktop CRTC\n", m_id, __FUNCTION__);
+		else
+		{
+			if (drmModeSetCrtc(m_drm_fd, mp_crtc_desktop->crtc_id, mp_crtc_desktop->buffer_id, mp_crtc_desktop->x, mp_crtc_desktop->y, &m_desktop_output, 1, mp_crtc_desktop->mode_valid ? &mp_crtc_desktop->mode : nullptr))
+				log_error("DRM/KMS: <%d> (close) [ERROR] cannot restore desktop CRTC\n", m_id);
+			else
+			{
+				if (m_map && m_map != MAP_FAILED && m_map_size && munmap(m_map, m_map_size))
+					log_error("DRM/KMS: <%d> (close) [ERROR] cannot unmap framebuffer\n", m_id);
+
+				if (m_framebuffer_id != mp_crtc_desktop->buffer_id && drmModeRmFB(m_drm_fd, m_framebuffer_id))
+					log_error("DRM/KMS: <%d> (close) [ERROR] cannot remove framebuffer %u\n", m_id, m_framebuffer_id);
+
+				if (m_dumb_handle)
+				{
+					drm_mode_destroy_dumb destroy_dumb = {};
+					destroy_dumb.handle = m_dumb_handle;
+					if (drmIoctl(m_drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb))
+						log_error("DRM/KMS: <%d> (close) [ERROR] cannot destroy dumb buffer %u\n", m_id, m_dumb_handle);
+				}
+			}
+		}
+	}
+	if (mp_crtc_desktop)
+		drmModeFreeCrtc(mp_crtc_desktop);
 
 	// close DRM/KMS library
 	if (mp_drm_handle)
@@ -660,14 +724,12 @@ bool drmkms_timing::init()
 		log_error("DRM/KMS: <%d> (init) [ERROR] no screen detected\n", m_id);
 		return false;
 	}
-	else
-	{
-	}
 
 	// Check if we have a libdrm hook
 	if (drmModeGetConnectorCurrent(-1, 0) != NULL)
 	{
 		log_verbose("DRM/KMS: libdrm hook found!\n");
+		m_drm_hook = true;
 		m_caps |= CUSTOM_VIDEO_CAPS_UPDATE;
 	}
 	// Check if we're setting modes directly
@@ -802,50 +864,52 @@ int drmkms_timing::get_master_fd()
 
 bool drmkms_timing::update_mode(modeline *mode)
 {
-	if (!mode)
+	if (!mode || !(mode->type & MODE_USER_DEF) || !mode->platform_data || !m_desktop_output)
 		return false;
 
-	if (!m_desktop_output)
-	{
-		log_error("DRM/KMS: <%d> (update_mode) [ERROR] no screen detected\n", m_id);
+	// If we can't be master, no need to go further
+	int fd = get_master_fd();
+	if (fd < 0)
 		return false;
+
+	auto *drmmode = reinterpret_cast<drmModeModeInfo *>(static_cast<uintptr_t>(mode->platform_data));
+
+	// libdrm hook case, we can update timings directly in the connector's data
+	if (m_drm_hook)
+	{
+		// drm_hook owns a persistent, fixed mode array: update it in place.
+		modeline_to_drm_modeline(mode, drmmode);
+		return true;
 	}
 
 	// Without libdrm hook, the update method isn't natively supported, so we must delete
 	// the mode and readd it with updated timings.
-	if (!(m_caps & CUSTOM_VIDEO_CAPS_UPDATE))
-	{
-		if (!delete_mode(mode))
-		{
-			log_error("DRM/KMS: <%d> (update_mode) [ERROR] delete operation not successful", m_id);
-			return false;
-		}
-		if (!add_mode(mode))
-		{
-			log_error("DRM/KMS: <%d> (update_mode) [ERROR] add operation not successful", m_id);
-			return false;
-		}
-		return true;
-	}
 
-	// libdrn hook case, we can update timings directly in the connector's data
-	drmModeConnector *conn = drmModeGetConnectorCurrent(m_drm_fd, m_desktop_output);
-	if (conn)
+	drmModeModeInfo updated = *drmmode;
+	modeline_to_drm_modeline(mode, &updated);
+
+	bool success = false;
+	if (drmModeDetachMode(fd, m_desktop_output, drmmode) != 0)
+		log_error("DRM/KMS: <%d> (update_mode) [ERROR] failed deleting original mode\n", m_id);
+
+	else
 	{
-		for (int i = 0; i < conn->count_modes; i++)
+		if (drmModeAttachMode(fd, m_desktop_output, &updated) != 0)
 		{
-			drmModeModeInfo *drmmode = &conn->modes[i];
-			if ((int)mode->platform_data == i)
-			{
-				int m_type = drmmode->type;
-				modeline_to_drm_modeline(m_id, mode, drmmode);
-				drmmode->type = m_type;
-				return true;
-			}
+			log_error("DRM/KMS: <%d> (update_mode) [ERROR] failed adding updated mode, restoring original\n", m_id);
+			if (drmModeAttachMode(fd, m_desktop_output, drmmode) != 0)
+				log_error("DRM/KMS: <%d> (update_mode) [ERROR] failed restoring original mode\n", m_id);
+		}
+		else
+		{
+			// Success. Keep platform_data stable.
+			*drmmode = updated;
+			success = true;
 		}
 	}
 
-	return false;
+	if (fd != m_hook_fd) drmDropMaster(fd);
+	return success;
 }
 
 //============================================================
@@ -854,61 +918,54 @@ bool drmkms_timing::update_mode(modeline *mode)
 
 bool drmkms_timing::add_mode(modeline *mode)
 {
-	if (!mode)
+	if (!mode || !m_desktop_output || !mp_crtc_desktop)
 		return false;
 
-	// Handle no screen detected case
-	if (!m_desktop_output)
+	// If we can't be master, no need to go further
+	int fd = get_master_fd();
+	if (fd < 0)
+		return false;
+
+	bool success = false;
+	do
 	{
-		log_error("DRM/KMS: <%d> (add_mode) [ERROR] no screen detected\n", m_id);
-		return false;
-	}
+		// Create a new stable id for the mode
+		drmModeConnector *conn = drmModeGetConnector(fd, m_desktop_output);
+		if (!conn) break;
 
-	if (!mp_crtc_desktop)
-	{
-		log_error("DRM/KMS: <%d> (add_mode) [ERROR] no desktop crtc\n", m_id);
-		return false;
-	}
-
-	if (!mode)
-		return false;
-
-	if (m_kernel_user_modes)
-	{
-		int ret = 0, fd = m_drm_fd;
-		drmModeModeInfo drmmode;
-
-		if (!drmIsMaster(fd))
-			fd = get_master_fd();
-
-		if (!drmIsMaster(fd))
+		unsigned int id = 0;
+		for (int i = 0; i < conn->count_modes; i++)
 		{
-			log_error("DRM/KMS: <%d> (%s) Need master to add a kernel mode (%d)\n", m_id, __FUNCTION__, ret);
-			return false;
+			unsigned int candidate = kernel_user_mode_id(conn->modes[i].name);
+			if (candidate > id) id = candidate;
 		}
+		drmModeFreeConnector(conn);
 
-		modeline_to_drm_modeline(m_id, mode, &drmmode);
-		drmmode.type = DRM_MODE_TYPE_USERDEF;
+		if (id == 0xffffffffU) break;
+
+		drmModeModeInfo drmmode = {};
+		snprintf(drmmode.name, sizeof(drmmode.name), "SR-%08x_%dx%d@%.02f%s", ++id, mode->hactive, mode->vactive, mode->vfreq, mode->interlace ? "i" : "");
+		modeline_to_drm_modeline(mode, &drmmode);
 
 		log_verbose("DRM/KMS: <%d> (add_mode) [DEBUG] Adding a mode to the kernel: %dx%d %s\n", m_id, drmmode.hdisplay, drmmode.vdisplay, drmmode.name);
-		// Calling drmModeGetConnector forces a refresh of the connector modes, which is slow, so don't do it
-		ret = drmModeAttachMode(fd, m_desktop_output, &drmmode);
+		int ret = drmModeAttachMode(fd, m_desktop_output, &drmmode);
 		if (ret != 0)
 		{
 			// This case hardly has any chance to happen, since at this point
 			// we are drmMaster, and we have already checked that the kernel
 			// supports user modes. If any error, it's on the kernel side
-			log_verbose("DRM/KMS: <%d> (%s) Couldn't add mode (ret=%d)\n", m_id, __FUNCTION__, ret);
-			if (fd != m_hook_fd)
-				drmDropMaster(fd);
-			return false;
+			log_error("DRM/KMS: <%d> (add_mode) [ERROR] couldn't add mode %s (ret=%d)\n", m_id, drmmode.name, ret);
+			break;
 		}
-		log_verbose("DRM/KMS: <%d> (%s) Mode added\n", m_id, __FUNCTION__);
-		if (fd != m_hook_fd)
-			drmDropMaster(fd);
-	}
 
-	return true;
+		mode->platform_data = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(store_mode(drmmode)));
+		mode->type |= MODE_USER_DEF | V_FREQ_EDITABLE | SCAN_EDITABLE;
+		success = true;
+	}
+	while(false);
+
+	if (fd != m_hook_fd) drmDropMaster(fd);
+	return success;
 }
 
 //============================================================
@@ -917,165 +974,138 @@ bool drmkms_timing::add_mode(modeline *mode)
 
 bool drmkms_timing::set_timing(modeline *mode)
 {
-	if (!mode)
+	if (!mode || !m_desktop_output || !mp_crtc_desktop)
 		return false;
-
-	// Handle no screen detected case
-	if (!m_desktop_output)
-	{
-		log_error("DRM/KMS: <%d> (set_timing) [ERROR] no screen detected\n", m_id);
-		return false;
-	}
 
 	// If we can't be master, no need to go further
-	drmSetMaster(m_drm_fd);
-	if (!drmIsMaster(m_drm_fd))
+	int fd = get_master_fd();
+	if (fd < 0)
 		return false;
 
-	// If no valid mode, exit
-	if (mode->hactive == 0 || mode->vactive == 0)
-		return false;
+	bool success = false;
+	void *new_map = MAP_FAILED;
+	size_t new_map_size = 0;
+	unsigned int new_dumb_handle = 0;
+	unsigned int new_framebuffer_id = 0;
+	unsigned int new_pitch = 0;
+	unsigned int new_bpp = 0;
 
-	// Setup the DRM mode structure
-	drmModeModeInfo dmode = {};
-
-	// Create specific mode name
-	snprintf(dmode.name, 32, "SR-%d_%dx%d@%.02f%s", m_id, mode->hactive, mode->vactive, mode->vfreq, mode->interlace ? "i" : "");
-	dmode.clock       = mode->pclock / 1000;
-	dmode.hdisplay    = mode->hactive;
-	dmode.hsync_start = mode->hbegin;
-	dmode.hsync_end   = mode->hend;
-	dmode.htotal      = mode->htotal;
-	dmode.vdisplay    = mode->vactive;
-	dmode.vsync_start = mode->vbegin;
-	dmode.vsync_end   = mode->vend;
-	dmode.vtotal      = mode->vtotal;
-	dmode.flags       = (mode->interlace ? DRM_MODE_FLAG_INTERLACE : 0) | (mode->doublescan ? DRM_MODE_FLAG_DBLSCAN : 0) | (mode->hsync ? DRM_MODE_FLAG_PHSYNC : DRM_MODE_FLAG_NHSYNC) | (mode->vsync ? DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC);
-
-	dmode.hskew       = 0;
-	dmode.vscan       = 0;
-
-	dmode.vrefresh    = mode->refresh;  // Used only for human readable output
-
-	dmode.type        = DRM_MODE_TYPE_USERDEF;  //DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
-
-	mode->type |= CUSTOM_VIDEO_TIMING_DRMKMS;
-
-	if (mode->type & MODE_DESKTOP)
+	do
 	{
-		log_verbose("DRM/KMS: <%d> (set_timing) <debug> restore desktop mode\n", m_id);
-		drmModeSetCrtc(m_drm_fd, mp_crtc_desktop->crtc_id, mp_crtc_desktop->buffer_id, mp_crtc_desktop->x, mp_crtc_desktop->y, &m_desktop_output, 1, &mp_crtc_desktop->mode);
-		if (m_dumb_handle)
+		if (!mode->hactive || !mode->vactive || !mode->platform_data)
 		{
-			int ret = ioctl(m_drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &m_dumb_handle);
-			if (ret)
-				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] ioctl DRM_IOCTL_MODE_DESTROY_DUMB %d\n", m_id, ret);
-			m_dumb_handle = 0;
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] invalid mode or missing DRM mode\n", m_id);
+			break;
 		}
-		if (m_framebuffer_id && m_framebuffer_id != mp_crtc_desktop->buffer_id)
-		{
-			if (drmModeRmFB(m_drm_fd, m_framebuffer_id))
-				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] remove frame buffer\n", m_id);
-			m_framebuffer_id = 0;
-		}
-	}
-	else
-	{
-		unsigned int old_dumb_handle = m_dumb_handle;
 
+		// All modes, including MODE_DESKTOP, use the same framebuffer and mapping path.
+		drmModeModeInfo dmode = *reinterpret_cast<drmModeModeInfo *>(static_cast<uintptr_t>(mode->platform_data));
+		if (mode->type & MODE_DESKTOP)
+			log_verbose("DRM/KMS: <%d> (set_timing) selecting desktop mode\n", m_id);
+
+		// Use the original framebuffer format, or a fallback if no console framebuffer is available.
+		unsigned int depth = 24;
+		new_bpp = 32;
 		drmModeFB *pframebuffer = drmModeGetFB(m_drm_fd, mp_crtc_desktop->buffer_id);
-
-		// This condition happens when the console is not active on the output, use a dummy buffer instead
-		if (pframebuffer == nullptr)
+		if (pframebuffer)
 		{
-			log_verbose("DRM/KMS: <%d> (set_timing) <debug> can't get framebuffer, using dummy size\n", m_id);
-			pframebuffer = new drmModeFB;
-			pframebuffer->width = 640;
-			pframebuffer->height = 480;
-			pframebuffer->depth = 24;
-			pframebuffer->bpp = 32;
-		}
-
-		log_verbose("DRM/KMS: <%d> (set_timing) <debug> existing frame buffer id %d size %dx%d bpp %d\n", m_id, mp_crtc_desktop->buffer_id, pframebuffer->width, pframebuffer->height, pframebuffer->bpp);
-		//drmModePlaneRes *pplanes = drmModeGetPlaneResources(m_drm_fd);
-		//log_verbose("DRM/KMS: <%d> (add_mode) <debug> total planes %d\n", m_id, pplanes->count_planes);
-		//drmModeFreePlaneResources(pplanes);
-
-		unsigned int framebuffer_id = mp_crtc_desktop->buffer_id;
-
-		//if (pframebuffer->width < dmode.hdisplay || pframebuffer->height < dmode.vdisplay)
-		if (1)
-		{
-			log_verbose("DRM/KMS: <%d> (set_timing) <debug> creating new frame buffer with size %dx%d\n", m_id, dmode.hdisplay, dmode.vdisplay);
-
-			// create a new dumb fb (not driver specefic)
-			drm_mode_create_dumb create_dumb = {};
-			create_dumb.width = dmode.hdisplay;
-			create_dumb.height = dmode.vdisplay;
-			create_dumb.bpp = pframebuffer->bpp;
-
-			int ret = ioctl(m_drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
-			if (ret)
-				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] ioctl DRM_IOCTL_MODE_CREATE_DUMB %d\n", m_id, ret);
-
-			if (drmModeAddFB(m_drm_fd, dmode.hdisplay, dmode.vdisplay, pframebuffer->depth, pframebuffer->bpp, create_dumb.pitch, create_dumb.handle, &framebuffer_id))
-				log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot add frame buffer\n", m_id);
-			else
-				m_dumb_handle = create_dumb.handle;
-
-			drm_mode_map_dumb map_dumb = {};
-			map_dumb.handle = create_dumb.handle;
-			m_pitch = create_dumb.pitch;
-			m_bpp = create_dumb.bpp;
-
-			ret = drmIoctl(m_drm_fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb);
-			if (ret)
-				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] ioctl DRM_IOCTL_MODE_MAP_DUMB %d\n", m_id, ret);
-
-			m_map = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, m_drm_fd, map_dumb.offset);
-			if (m_map != MAP_FAILED)
-			{
-				// clear the frame buffer
-				memset(m_map, 0, create_dumb.size);
-			}
-			else
-				log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] failed to map frame buffer %p\n", m_id, m_map);
+			depth = pframebuffer->depth;
+			new_bpp = pframebuffer->bpp;
+			log_verbose("DRM/KMS: <%d> (set_timing) <debug> existing frame buffer id %d size %dx%d bpp %d\n", m_id, mp_crtc_desktop->buffer_id, pframebuffer->width, pframebuffer->height, pframebuffer->bpp);
+			drmModeFreeFB(pframebuffer);
 		}
 		else
-			log_verbose("DRM/KMS: <%d> (set_timing) <debug> use existing frame buffer\n", m_id);
+			log_verbose("DRM/KMS: <%d> (set_timing) <debug> can't get framebuffer, using dummy format\n", m_id);
 
-		drmModeFreeFB(pframebuffer);
+		// create a new dumb fb (not driver specific)
+		log_verbose("DRM/KMS: <%d> (set_timing) <debug> creating new frame buffer with size %dx%d\n", m_id, dmode.hdisplay, dmode.vdisplay);
+		drm_mode_create_dumb create_dumb = {};
+		create_dumb.width = dmode.hdisplay;
+		create_dumb.height = dmode.vdisplay;
+		create_dumb.bpp = new_bpp;
+		if (drmIoctl(m_drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb))
+		{
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] ioctl DRM_IOCTL_MODE_CREATE_DUMB\n", m_id);
+			break;
+		}
+		new_dumb_handle = create_dumb.handle;
+		new_pitch = create_dumb.pitch;
+		new_bpp = create_dumb.bpp;
+		new_map_size = create_dumb.size;
 
-		pframebuffer = drmModeGetFB(m_drm_fd, framebuffer_id);
-		log_verbose("DRM/KMS: <%d> (set_timing) <debug> frame buffer id %d size %dx%d bpp %d\n", m_id, framebuffer_id, pframebuffer->width, pframebuffer->height, pframebuffer->bpp);
-		drmModeFreeFB(pframebuffer);
+		if (drmModeAddFB(m_drm_fd, dmode.hdisplay, dmode.vdisplay, depth, new_bpp, new_pitch, new_dumb_handle, &new_framebuffer_id))
+		{
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot add frame buffer\n", m_id);
+			break;
+		}
+
+		drm_mode_map_dumb map_dumb = {};
+		map_dumb.handle = new_dumb_handle;
+		if (drmIoctl(m_drm_fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb))
+		{
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] ioctl DRM_IOCTL_MODE_MAP_DUMB\n", m_id);
+			break;
+		}
+
+		new_map = mmap(0, new_map_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_drm_fd, map_dumb.offset);
+		if (new_map == MAP_FAILED)
+		{
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] failed to map frame buffer\n", m_id);
+			break;
+		}
+		// clear the frame buffer
+		memset(new_map, 0, new_map_size);
 
 		// set the mode on the crtc
-		if (drmModeSetCrtc(m_drm_fd, mp_crtc_desktop->crtc_id, framebuffer_id, 0, 0, &m_desktop_output, 1, &dmode))
-			log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot attach the mode to the crtc %d frame buffer %d\n", m_id, mp_crtc_desktop->crtc_id, framebuffer_id);
-		else
+		if (drmModeSetCrtc(m_drm_fd, mp_crtc_desktop->crtc_id, new_framebuffer_id, 0, 0, &m_desktop_output, 1, &dmode))
 		{
-			if (old_dumb_handle)
-			{
-				log_verbose("DRM/KMS: <%d> (set_timing) <debug> remove old dumb %d\n", m_id, old_dumb_handle);
-				int ret = ioctl(m_drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &old_dumb_handle);
-				if (ret)
-					log_verbose("DRM/KMS: <%d> (set_timing) [ERROR] ioctl DRM_IOCTL_MODE_DESTROY_DUMB %d\n", m_id, ret);
-				old_dumb_handle = 0;
-			}
-			if (m_framebuffer_id && framebuffer_id != mp_crtc_desktop->buffer_id)
-			{
-				log_verbose("DRM/KMS: <%d> (set_timing) <debug> remove old frame buffer %d\n", m_id, m_framebuffer_id);
-				drmModeRmFB(m_drm_fd, m_framebuffer_id);
-				m_framebuffer_id = 0;
-			}
-			m_framebuffer_id = framebuffer_id;
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot attach the mode to the crtc %d frame buffer %d\n", m_id, mp_crtc_desktop->crtc_id, new_framebuffer_id);
+			break;
+		}
+
+		// The new framebuffer is active; release the previous one before publishing its replacement.
+		if (m_map && m_map != MAP_FAILED && m_map_size && munmap(m_map, m_map_size))
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot unmap old framebuffer\n", m_id);
+
+		if (m_framebuffer_id && m_framebuffer_id != mp_crtc_desktop->buffer_id && drmModeRmFB(m_drm_fd, m_framebuffer_id))
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot remove old framebuffer %u\n", m_id, m_framebuffer_id);
+
+		if (m_dumb_handle)
+		{
+			drm_mode_destroy_dumb destroy_dumb = {};
+			destroy_dumb.handle = m_dumb_handle;
+			if (drmIoctl(m_drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb))
+				log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot destroy old dumb buffer %u\n", m_id, m_dumb_handle);
+		}
+
+		m_map = new_map;
+		m_map_size = new_map_size;
+		m_dumb_handle = new_dumb_handle;
+		m_framebuffer_id = new_framebuffer_id;
+		m_pitch = new_pitch;
+		m_bpp = new_bpp;
+		success = true;
+	}
+	while (false);
+
+	if (!success)
+	{
+		if (new_map != MAP_FAILED && munmap(new_map, new_map_size))
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot unmap new framebuffer\n", m_id);
+		if (new_framebuffer_id && drmModeRmFB(m_drm_fd, new_framebuffer_id))
+			log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot remove new framebuffer %u\n", m_id, new_framebuffer_id);
+		if (new_dumb_handle)
+		{
+			drm_mode_destroy_dumb destroy_dumb = {};
+			destroy_dumb.handle = new_dumb_handle;
+			if (drmIoctl(m_drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb))
+				log_error("DRM/KMS: <%d> (set_timing) [ERROR] cannot destroy new dumb buffer %u\n", m_id, new_dumb_handle);
 		}
 	}
+
 	if (can_drop_master)
 		drmDropMaster(m_drm_fd);
-
-	return true;
+	return success;
 }
 
 //============================================================
@@ -1084,57 +1114,25 @@ bool drmkms_timing::set_timing(modeline *mode)
 
 bool drmkms_timing::delete_mode(modeline *mode)
 {
-	if (!mode)
+	if (!mode || !m_desktop_output || !(mode->type & MODE_USER_DEF) || !mode->platform_data)
 		return false;
 
-	// Handle no screen detected case
-	if (!m_desktop_output)
+	auto *drmmode = reinterpret_cast<drmModeModeInfo *>(static_cast<uintptr_t>(mode->platform_data));
+	int fd = get_master_fd();
+	if (fd < 0)
+		return false;
+
+	int ret = drmModeDetachMode(fd, m_desktop_output, drmmode);
+	if (fd != m_hook_fd) drmDropMaster(fd);
+	if (ret != 0)
 	{
-		log_error("DRM/KMS: <%d> (delete_mode) [ERROR] no screen detected\n", m_id);
+		log_error("DRM/KMS: <%d> (delete_mode) [ERROR] failed removing mode %s (ret=%d)\n", m_id, drmmode->name, ret);
 		return false;
 	}
 
-	if (m_kernel_user_modes)
-	{
-		int fd = -1;
-		const size_t size_to_compare = offsetof(drmModeModeInfo, type);
-
-		// If SR was initilized before SDL2 for instance, SR lost the DRM
-		fd = get_master_fd();
-		if (fd < 0)
-		{
-			log_verbose("DRM/KMS: <%d> (%s) Need master to remove kernel user modes\n", m_id, __FUNCTION__);
-			return false;
-		}
-
-		drmModeModeInfo srmode;
-		drmModeConnector *conn = drmModeGetConnector(fd, m_desktop_output);
-		modeline_to_drm_modeline(m_id, mode, &srmode);
-		if (!conn)
-		{
-			if (fd != m_hook_fd)
-				drmDropMaster(fd);
-			return false;
-		}
-		bool success = false;
-		for (int i = 0; i < conn->count_modes; i++)
-		{
-			drmModeModeInfo *drmmode = &conn->modes[i];
-			if (memcmp(&srmode, drmmode, size_to_compare) != 0)
-				continue;
-			int ret = drmModeDetachMode(fd, m_desktop_output, drmmode);
-			if (ret != 0)
-				log_verbose("DRM/KMS: <%d> (%s) Failed removing kernel user mode: %s (ret=%d)\n", m_id, __FUNCTION__, drmmode->name, ret);
-			success = (ret == 0);
-			break;
-		}
-		drmModeFreeConnector(conn);
-		if (fd != m_hook_fd)
-			drmDropMaster(fd);
-		return success;
-	}
-
-	return false;
+	// Remove reference but keep the allocation until backend destruction
+	mode->platform_data = 0;
+	return true;
 }
 
 //============================================================
@@ -1143,80 +1141,85 @@ bool drmkms_timing::delete_mode(modeline *mode)
 
 bool drmkms_timing::get_timing(modeline *mode)
 {
-	// Handle no screen detected case
-	if (!m_desktop_output)
-	{
-		log_error("DRM/KMS: <%d> (get_timing) [ERROR] no screen detected\n", m_id);
+	if (!mode || !m_desktop_output)
 		return false;
-	}
 
-	// INFO: not used vrefresh, hskew, vscan
-	drmModeRes *p_res = drmModeGetResources(m_drm_fd);
+	mode->type = 0;
+	mode->platform_data = 0;
 
-	for (int i = 0; i < p_res->count_connectors; i++)
+	drmModeConnector *conn = drmModeGetConnector(m_drm_fd, m_desktop_output);
+	if (!conn)
+		return false;
+
+	drmModeModeInfo *pdmode = nullptr;
+	bool mode_from_crtc = false;
+
+	// Cycle through the modes in the connector and report them back to the display manager
+	if (m_video_modes_position < conn->count_modes)
+		pdmode = &conn->modes[m_video_modes_position++];
+
+	// If we reached the end of the list and still didn't found the desktop mode in the connector, grab whatever is on the crtc
+	else if (m_video_modes_position == conn->count_modes && !m_desktop_mode_found && mp_crtc_desktop && mp_crtc_desktop->mode_valid)
 	{
-		drmModeConnector *p_connector = drmModeGetConnector(m_drm_fd, p_res->connectors[i]);
-
-		// Cycle through the modelines and report them back to the display manager
-		if (p_connector && m_desktop_output == p_connector->connector_id)
-		{
-			if (m_video_modes_position < p_connector->count_modes)
-			{
-				drmModeModeInfo *pdmode = &p_connector->modes[m_video_modes_position++];
-
-				// Use mode position as index
-				mode->platform_data = m_video_modes_position - 1;
-
-				mode->pclock        = pdmode->clock * 1000;
-				mode->hactive       = pdmode->hdisplay;
-				mode->hbegin        = pdmode->hsync_start;
-				mode->hend          = pdmode->hsync_end;
-				mode->htotal        = pdmode->htotal;
-				mode->vactive       = pdmode->vdisplay;
-				mode->vbegin        = pdmode->vsync_start;
-				mode->vend          = pdmode->vsync_end;
-				mode->vtotal        = pdmode->vtotal;
-				mode->interlace     = (pdmode->flags & DRM_MODE_FLAG_INTERLACE) ? 1 : 0;
-				mode->doublescan    = (pdmode->flags & DRM_MODE_FLAG_DBLSCAN) ? 1 : 0;
-				mode->hsync         = (pdmode->flags & DRM_MODE_FLAG_PHSYNC) ? 1 : 0;
-				mode->vsync         = (pdmode->flags & DRM_MODE_FLAG_PVSYNC) ? 1 : 0;
-
-				mode->hfreq         = mode->pclock / mode->htotal;
-				mode->vfreq         = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
-
-				// Store drm's integer refresh to make sure we use the same rounding
-				mode->refresh       = pdmode->vrefresh;
-
-				mode->width         = pdmode->hdisplay;
-				mode->height        = pdmode->vdisplay;
-
-				// Add the rotation flag from the plane (DRM_MODE_ROTATE_xxx)
-				// TODO: mode->type |= MODE_ROTATED;
-
-				mode->type |= CUSTOM_VIDEO_TIMING_DRMKMS;
-
-				// Check if this is a dummy mode
-				if (pdmode->type & (1<<7)) mode->type |= XYV_EDITABLE | SCAN_EDITABLE;
-
-				if (strncmp(pdmode->name, "SR-", 3) == 0)
-					log_verbose("DRM/KMS: <%d> (get_timing) [WARNING] modeline %s detected\n", m_id, pdmode->name);
-				else if (!strcmp(pdmode->name, mp_crtc_desktop->mode.name) && pdmode->clock == mp_crtc_desktop->mode.clock && pdmode->vrefresh == mp_crtc_desktop->mode.vrefresh)
-				{
-					// Add the desktop flag to desktop modeline
-					log_verbose("DRM/KMS: <%d> (get_timing) desktop mode name %s refresh %d found\n", m_id, mp_crtc_desktop->mode.name, mp_crtc_desktop->mode.vrefresh);
-					mode->type |= MODE_DESKTOP;
-				}
-			}
-			else
-			{
-				// Inititalise the position for the modeline list
-				m_video_modes_position = 0;
-			}
-		}
-		drmModeFreeConnector(p_connector);
+		pdmode = &mp_crtc_desktop->mode;
+		mode_from_crtc = true;
+		m_video_modes_position++;
 	}
-	drmModeFreeResources(p_res);
 
+	if (pdmode)
+	{
+		// We keep a pointer to the original drmkms struct in platform_data
+		auto *stored        = (m_drm_hook || mode_from_crtc)? pdmode : store_mode(*pdmode);
+		mode->platform_data = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(stored));
+		mode->pclock        = pdmode->clock * 1000;
+		mode->hactive       = pdmode->hdisplay;
+		mode->hbegin        = pdmode->hsync_start;
+		mode->hend          = pdmode->hsync_end;
+		mode->htotal        = pdmode->htotal;
+		mode->vactive       = pdmode->vdisplay;
+		mode->vbegin        = pdmode->vsync_start;
+		mode->vend          = pdmode->vsync_end;
+		mode->vtotal        = pdmode->vtotal;
+		mode->interlace     = (pdmode->flags & DRM_MODE_FLAG_INTERLACE) ? 1 : 0;
+		mode->doublescan    = (pdmode->flags & DRM_MODE_FLAG_DBLSCAN) ? 1 : 0;
+		mode->hsync         = (pdmode->flags & DRM_MODE_FLAG_PHSYNC) ? 1 : 0;
+		mode->vsync         = (pdmode->flags & DRM_MODE_FLAG_PVSYNC) ? 1 : 0;
+		mode->hfreq         = mode->pclock / mode->htotal;
+		mode->vfreq         = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
+		mode->refresh       = pdmode->vrefresh;
+		mode->width         = pdmode->hdisplay;
+		mode->height        = pdmode->vdisplay;
+		mode->type         |= CUSTOM_VIDEO_TIMING_DRMKMS;
+
+		// Add the rotation flag from the plane (DRM_MODE_ROTATE_xxx)
+		// TODO: mode->type |= MODE_ROTATED;
+
+		// Check if this is a dummy mode
+		if (pdmode->type & (1 << 7))
+			mode->type |= MODE_USER_DEF | XYV_EDITABLE | SCAN_EDITABLE;
+
+		// If this mode came from Switchres, mark it as editable
+		if (strncmp(pdmode->name, "SR-", 3) == 0)
+		{
+			log_verbose("DRM/KMS: <%d> (get_timing) modeline %s detected\n", m_id, pdmode->name);
+			mode->type |= MODE_USER_DEF | V_FREQ_EDITABLE | SCAN_EDITABLE;
+		}
+
+		// Check if this is the current desktop (console) mode
+		if (mp_crtc_desktop && mp_crtc_desktop->mode_valid && drm_modes_are_equal(pdmode, &mp_crtc_desktop->mode))
+		{
+			mode->type |= MODE_DESKTOP;
+			m_desktop_mode_found = true;
+		}
+	}
+	// We reached the end of the list, reset the position
+	else
+	{
+		m_video_modes_position = 0;
+		m_desktop_mode_found = false;
+	}
+
+	drmModeFreeConnector(conn);
 	return true;
 }
 
