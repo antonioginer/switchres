@@ -996,7 +996,8 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 	crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
 
 	// crtc config modeline change fail
-	if (crtc_info->mode == 0)
+	bool mode_set_success = (crtc_info->mode == 0);
+	if (!mode_set_success)
 		log_error("XRANDR: <%d> (set_timing) [ERROR] switching resolution failed, no modeline is set\n", m_id);
 	else
 		// save last crtc
@@ -1006,7 +1007,7 @@ bool xrandr_timing::set_timing(modeline *mode, int flags)
 	XRRFreeOutputInfo(output_info);
 	XRRFreeScreenResources(resources);
 
-	return (ms_xerrors == 0 && crtc_info->mode != 0);
+	return (ms_xerrors == 0 && mode_set_success);
 }
 
 //============================================================
